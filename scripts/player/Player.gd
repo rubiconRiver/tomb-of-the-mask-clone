@@ -62,8 +62,10 @@ func move(direction: Vector2):
 		var collision_point = ray.get_collision_point()
 		var distance_to_wall = position.distance_to(collision_point)
 		
+		# Calculate cells to wall without subtracting 1
 		var cells_to_wall = int(distance_to_wall / GRID_SIZE)
-		target_position = position + move_direction * (cells_to_wall - 1) * GRID_SIZE
+		
+		target_position = position + move_direction * cells_to_wall * GRID_SIZE
 		target_position = target_position.snapped(Vector2(GRID_SIZE, GRID_SIZE))
 	else:
 		target_position = position + move_direction * 2000

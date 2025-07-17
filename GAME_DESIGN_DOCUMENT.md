@@ -52,6 +52,8 @@ A fast-paced arcade game where players navigate through procedurally generated m
   - Power-up activation
   - UI clicks
 
+  We also want to make moving with the beat a part of the game design.  maybe the level is designed around that.  or maybe you get a bonus for with the beat.  either way I want a guitar hero style indictaor on the side showing if I'm swiping on beat
+
 ## Monetization (Mobile)
 - **Ads**:
   - Rewarded video ads for extra lives
