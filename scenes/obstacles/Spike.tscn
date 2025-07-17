@@ -1,0 +1,16 @@
+[gd_scene load_steps=3 format=3 uid="uid://b1234spike"]
+
+[sub_resource type="RectangleShape2D" id="1"]
+size = Vector2(32, 32)
+
+[sub_resource type="PlaceholderTexture2D" id="2"]
+size = Vector2(32, 32)
+
+[node name="Spike" type="Area2D" groups=["hazards"]]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("1")
+
+[node name="Sprite2D" type="Sprite2D" parent="."]
+texture = SubResource("2")
+modulate = Color(1, 0, 0, 1)
