@@ -3,6 +3,10 @@
 ## Project Overview
 Building a Tomb of the Mask clone in Godot targeting mobile platforms with ad integration.
 
+## Troubleshooting Tips
+- **Class registration errors**: If you see "Could not find type" errors, reload the project in the Godot editor before changing code
+- **Asset import errors**: Open the editor once to trigger asset imports
+
 ## Godot Setup Commands
 ```bash
 # Create new Godot project
