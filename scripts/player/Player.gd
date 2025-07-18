@@ -9,6 +9,8 @@ var move_direction = Vector2.ZERO
 var target_position = Vector2.ZERO
 var grid_position = Vector2i.ZERO
 var trail_effect: TrailEffect
+var player_visual: Node2D
+var last_timing_quality = -1
 
 @onready var area = $Area2D
 
@@ -26,6 +28,16 @@ func _ready():
 	trail_effect = trail_script.new()
 	add_child(trail_effect)
 	trail_effect.set_trail_color(Color(0.0, 1.0, 0.8, 0.8))  # Cyan trail
+	
+	# Add player visual controller
+	var visual_script = preload("res://scripts/player/PlayerVisual.gd")
+	player_visual = visual_script.new()
+	add_child(player_visual)
+	
+	# Connect to beat system
+	var game_manager = get_tree().get_first_node_in_group("game_manager")
+	if game_manager and game_manager.has_signal("beat_occurred"):
+		game_manager.beat_occurred.connect(_on_beat)
 
 func _physics_process(delta):
 	if is_moving:
@@ -98,3 +110,12 @@ func _on_area_entered(other_area):
 		emit_signal("collected_coin")
 	elif other_area.is_in_group("hazards"):
 		die()
+
+func _on_beat():
+	if player_visual:
+		player_visual.pulse_on_beat()
+
+func set_timing_quality(quality: int):
+	last_timing_quality = quality
+	if player_visual:
+		player_visual.set_timing_quality_color(quality)

@@ -165,11 +165,8 @@ func spawn_player():
 	player.collected_coin.connect(_on_coin_collected)
 	player.moved.connect(_on_player_moved)
 	
-	# Apply techno shader to player
-	if beat_visualizer:
-		var sprite = player.get_node("Sprite2D")
-		if sprite:
-			sprite.material = beat_visualizer.get_material_for_type("player")
+	# Remove the old techno shader application since player now has its own visual system
+	# The player handles its own visuals through PlayerVisual.gd
 	
 	if camera:
 		camera.position = player.position
@@ -269,6 +266,10 @@ func restart_game():
 	start_game()
 
 func _on_timing_calculated(quality: int, multiplier: float):
+	# Update player visual based on timing quality
+	if player and player.has_method("set_timing_quality"):
+		player.set_timing_quality(quality)
+	
 	# Create visual feedback
 	if player and ui_layer:
 		# Since we're using a CanvasLayer for UI, we need to position relative to game viewport
