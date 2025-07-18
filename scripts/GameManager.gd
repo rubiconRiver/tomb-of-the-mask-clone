@@ -7,6 +7,7 @@ var beat_indicator_script = preload("res://scripts/ui/BeatIndicator.gd")
 var style_score_manager_script = preload("res://scripts/ui/StyleScoreManager.gd")
 var timing_feedback_script = preload("res://scripts/ui/TimingFeedback.gd")
 var beat_timeline_script = preload("res://scripts/ui/BeatTimeline.gd")
+var beat_visualizer_script = preload("res://scripts/visual/BeatVisualizer.gd")
 
 var player: Player
 var level_generator: LevelGenerator
@@ -15,6 +16,7 @@ var camera: Camera2D
 var beat_indicator: Control
 var beat_timeline: BeatTimeline
 var style_score_manager: StyleScoreManager
+var beat_visualizer: BeatVisualizer
 
 var score = 0
 var coins = 0
@@ -49,6 +51,7 @@ func _ready():
 	setup_beat_indicator()
 	setup_beat_timeline()
 	setup_beat_audio()
+	setup_beat_visualizer()
 	start_game()
 
 func setup_camera():
@@ -82,6 +85,11 @@ func setup_beat_audio():
 	audio_generator.buffer_length = 0.5  # Buffer for continuous playback
 	
 	beat_audio.stream = audio_generator
+
+func setup_beat_visualizer():
+	beat_visualizer = beat_visualizer_script.new()
+	add_child(beat_visualizer)
+	beat_occurred.connect(beat_visualizer.trigger_beat)
 
 func _process(delta):
 	if camera and player:
@@ -157,11 +165,24 @@ func spawn_player():
 	player.collected_coin.connect(_on_coin_collected)
 	player.moved.connect(_on_player_moved)
 	
+	# Apply techno shader to player
+	if beat_visualizer:
+		var sprite = player.get_node("Sprite2D")
+		if sprite:
+			sprite.material = beat_visualizer.get_material_for_type("player")
+	
 	if camera:
 		camera.position = player.position
 
 func _on_beat():
 	emit_signal("beat_occurred")
+	
+	# Pulse the background
+	var background = get_node_or_null("Background")
+	if background and background.material:
+		var tween = get_tree().create_tween()
+		tween.tween_property(background.material, "shader_parameter/pulse_strength", 0.6, 0.1)
+		tween.tween_property(background.material, "shader_parameter/pulse_strength", 0.3, 0.3)
 
 func play_beat_sound():
 	if not beat_audio or not beat_audio.stream:

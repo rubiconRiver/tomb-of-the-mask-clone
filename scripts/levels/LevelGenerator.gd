@@ -89,6 +89,12 @@ func build_level():
 	for child in get_children():
 		child.queue_free()
 	
+	# Get beat visualizer from GameManager
+	var game_manager = get_parent()
+	var beat_visualizer = null
+	if game_manager and game_manager.has_method("get_node"):
+		beat_visualizer = game_manager.get_node_or_null("BeatVisualizer")
+	
 	for y in range(LEVEL_HEIGHT):
 		for x in range(LEVEL_WIDTH):
 			var world_pos = Vector2(x * GRID_SIZE, y * GRID_SIZE)
@@ -98,14 +104,26 @@ func build_level():
 					var wall = wall_scene.instantiate()
 					wall.position = world_pos
 					add_child(wall)
+					if beat_visualizer:
+						var sprite = wall.get_node_or_null("Sprite2D")
+						if sprite:
+							sprite.material = beat_visualizer.get_material_for_type("wall")
 				CellType.SPIKE:
 					var spike = spike_scene.instantiate()
 					spike.position = world_pos
 					add_child(spike)
+					if beat_visualizer:
+						var sprite = spike.get_node_or_null("Sprite2D")
+						if sprite:
+							sprite.material = beat_visualizer.get_material_for_type("spike")
 				CellType.COIN:
 					var coin = coin_scene.instantiate()
 					coin.position = world_pos
 					add_child(coin)
+					if beat_visualizer:
+						var sprite = coin.get_node_or_null("Sprite2D")
+						if sprite:
+							sprite.material = beat_visualizer.get_material_for_type("coin")
 
 func get_player_spawn_position() -> Vector2:
 	for y in range(LEVEL_HEIGHT):

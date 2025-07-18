@@ -1,5 +1,5 @@
-extends Node
 class_name BeatVisualizer
+extends Node
 
 signal beat_pulse()
 

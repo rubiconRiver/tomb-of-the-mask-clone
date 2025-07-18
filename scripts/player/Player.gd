@@ -8,6 +8,7 @@ var is_moving = false
 var move_direction = Vector2.ZERO
 var target_position = Vector2.ZERO
 var grid_position = Vector2i.ZERO
+var trail_effect: TrailEffect
 
 @onready var area = $Area2D
 
@@ -19,11 +20,21 @@ func _ready():
 	snap_to_grid()
 	if area:
 		area.area_entered.connect(_on_area_entered)
+	
+	# Add trail effect
+	var trail_script = preload("res://scripts/visual/TrailEffect.gd")
+	trail_effect = trail_script.new()
+	add_child(trail_effect)
+	trail_effect.set_trail_color(Color(0.0, 1.0, 0.8, 0.8))  # Cyan trail
 
 func _physics_process(delta):
 	if is_moving:
 		velocity = move_direction * MOVE_SPEED
 		move_and_slide()
+		
+		# Add trail points while moving
+		if trail_effect:
+			trail_effect.add_point(global_position)
 		
 		if position.distance_to(target_position) <= 5.0:
 			position = target_position
