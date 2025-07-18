@@ -23,7 +23,7 @@ var is_game_over = false
 
 var beat_timer = 0.0
 var beat_interval = 0.5
-var audio_latency_offset = 0.05  # Adjust this to sync audio with visual
+var audio_latency_offset = 0.0  # Default to 0 as requested
 
 @onready var ui_layer = $UILayer
 @onready var score_label = $UILayer/ScoreLabel
@@ -104,6 +104,11 @@ func _process(delta):
 		audio_latency_offset = min(0.2, audio_latency_offset + 0.01)
 		update_latency_display()
 		print("Audio latency offset: ", audio_latency_offset * 1000, "ms")
+		
+	# Toggle beat timeline with ESC
+	if Input.is_action_just_pressed("ui_cancel"):
+		if beat_timeline:
+			beat_timeline.toggle_visibility()
 		
 	beat_timer += delta
 	
@@ -193,12 +198,23 @@ func _on_swipe_detected(direction: Vector2):
 	if not is_game_over and player and not player.is_moving:
 		# Calculate timing and score
 		var timing_result = style_score_manager.register_move(beat_timer, beat_interval)
-		print("Move timing: ", timing_result.name, " Combo: ", timing_result.combo)
+		
+		# Debug info
+		var timing_text = timing_result.name
+		if timing_result.timing == StyleScoreManager.TimingQuality.OFF_BEAT and timing_result.distance < 0.5:
+			timing_text = "too early" if timing_result.is_early else "too late"
+		
+		print("Move timing: ", timing_result.name, " Combo: ", timing_result.combo, 
+			  " Distance: ", int(timing_result.distance * 1000), "ms",
+			  " (", timing_text, ")")
 		
 		# Apply score multiplier
 		var base_score = 1
 		score += int(base_score * timing_result.multiplier)
 		update_ui()
+		
+		# Store timing info for visual feedback
+		set_meta("last_timing", timing_result)
 		
 		player.move(direction)
 
@@ -257,6 +273,15 @@ func _on_timing_calculated(quality: int, multiplier: float):
 			var feedback = timing_feedback_script.new()
 			ui_layer.add_child(feedback)
 			feedback.setup(texts[quality], colors[quality], screen_pos + Vector2(0, -100))
+		else:
+			# Add subtle early/late feedback
+			var timing_info = get_meta("last_timing", null)
+			if timing_info and timing_info.distance < 0.5:  # Within 500ms but missed
+				var feedback = timing_feedback_script.new()
+				ui_layer.add_child(feedback)
+				var subtle_text = "early" if timing_info.is_early else "late"
+				feedback.setup(subtle_text, Color(0.5, 0.5, 0.5, 0.5), screen_pos + Vector2(0, -60))
+				feedback.add_theme_font_size_override("font_size", 12)  # Smaller text
 
 func _on_combo_changed(new_combo: int):
 	update_ui()

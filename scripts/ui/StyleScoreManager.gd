@@ -9,9 +9,9 @@ enum TimingQuality {
 }
 
 const TIMING_WINDOWS = {
-	TimingQuality.PERFECT: 0.05,  # ±50ms
-	TimingQuality.GREAT: 0.15,    # ±150ms
-	TimingQuality.GOOD: 0.3        # ±300ms
+	TimingQuality.PERFECT: 0.08,  # ±80ms (increased from 50ms)
+	TimingQuality.GREAT: 0.2,     # ±200ms (increased from 150ms)
+	TimingQuality.GOOD: 0.4       # ±400ms (increased from 300ms)
 }
 
 const SCORE_MULTIPLIERS = {
@@ -36,44 +36,55 @@ var on_beat_moves = 0
 signal timing_calculated(quality: TimingQuality, multiplier: float)
 signal combo_changed(new_combo: int)
 
-func calculate_timing(beat_timer: float, beat_interval: float) -> TimingQuality:
+func calculate_timing(beat_timer: float, beat_interval: float) -> Dictionary:
 	# Calculate time to nearest beat
 	var time_since_beat = beat_timer
 	var time_to_next_beat = beat_interval - beat_timer
 	var distance_to_beat = min(time_since_beat, time_to_next_beat)
 	
+	# Determine if early or late
+	var is_early = time_to_next_beat < time_since_beat
+	
 	# Check timing windows
+	var quality = TimingQuality.OFF_BEAT
 	if distance_to_beat <= TIMING_WINDOWS[TimingQuality.PERFECT]:
-		return TimingQuality.PERFECT
+		quality = TimingQuality.PERFECT
 	elif distance_to_beat <= TIMING_WINDOWS[TimingQuality.GREAT]:
-		return TimingQuality.GREAT
+		quality = TimingQuality.GREAT
 	elif distance_to_beat <= TIMING_WINDOWS[TimingQuality.GOOD]:
-		return TimingQuality.GOOD
-	else:
-		return TimingQuality.OFF_BEAT
+		quality = TimingQuality.GOOD
+	
+	return {
+		"quality": quality,
+		"is_early": is_early,
+		"distance": distance_to_beat
+	}
 
 func register_move(beat_timer: float, beat_interval: float) -> Dictionary:
 	total_moves += 1
-	var timing = calculate_timing(beat_timer, beat_interval)
-	var multiplier = SCORE_MULTIPLIERS[timing]
+	var timing_result = calculate_timing(beat_timer, beat_interval)
+	var quality = timing_result.quality
+	var multiplier = SCORE_MULTIPLIERS[quality]
 	
 	# Update combo
-	if timing != TimingQuality.OFF_BEAT:
+	if quality != TimingQuality.OFF_BEAT:
 		combo_count += 1
 		on_beat_moves += 1
-		if timing == TimingQuality.PERFECT:
+		if quality == TimingQuality.PERFECT:
 			perfect_moves += 1
 	else:
 		combo_count = 0
 	
-	emit_signal("timing_calculated", timing, multiplier)
+	emit_signal("timing_calculated", quality, multiplier)
 	emit_signal("combo_changed", combo_count)
 	
 	return {
-		"timing": timing,
+		"timing": quality,
 		"multiplier": multiplier,
-		"name": TIMING_NAMES[timing],
-		"combo": combo_count
+		"name": TIMING_NAMES[quality],
+		"combo": combo_count,
+		"is_early": timing_result.is_early,
+		"distance": timing_result.distance
 	}
 
 func get_accuracy() -> float:

@@ -1,17 +1,19 @@
-extends Control
 class_name BeatTimeline
+extends Control
 
 var beat_timer: float = 0.0
 var beat_interval: float = 0.5
 var upcoming_beat_indicator: Control
+var instructions_label: Label
+var is_visible: bool = true
 
 func _ready():
-	custom_minimum_size = Vector2(600, 60)
-	position = Vector2(60, 500)
+	custom_minimum_size = Vector2(600, 120)
+	position = Vector2(60, 400)
 	
-	# Create timeline background
+	# Create semi-transparent background
 	var background = ColorRect.new()
-	background.color = Color(0.1, 0.1, 0.1, 0.8)
+	background.color = Color(0.05, 0.05, 0.05, 0.9)
 	background.size = custom_minimum_size
 	add_child(background)
 	
@@ -22,11 +24,20 @@ func _ready():
 	center_line.position = Vector2(custom_minimum_size.x / 2 - 2, 0)
 	add_child(center_line)
 	
-	# Create upcoming beat indicator
-	upcoming_beat_indicator = ColorRect.new()
-	upcoming_beat_indicator.color = Color(0.0, 1.0, 1.0, 1.0)
-	upcoming_beat_indicator.size = Vector2(8, 60)
+	# Create upcoming beat indicator (circle)
+	upcoming_beat_indicator = Control.new()
+	upcoming_beat_indicator.custom_minimum_size = Vector2(40, 40)
 	add_child(upcoming_beat_indicator)
+	
+	# Add instructions
+	instructions_label = Label.new()
+	instructions_label.text = "Make sure the beat lines up - use LEFT/RIGHT keys to adjust the delay.\nHit ESC to close/open"
+	instructions_label.position = Vector2(10, 65)
+	instructions_label.size = Vector2(580, 50)
+	instructions_label.add_theme_font_size_override("font_size", 14)
+	instructions_label.add_theme_color_override("font_color", Color(0.8, 0.8, 0.8))
+	instructions_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	add_child(instructions_label)
 	
 	# Add timing window indicators
 	create_timing_windows()
@@ -65,14 +76,32 @@ func update_beat(timer: float, interval: float):
 	var pixels_per_second = 400.0
 	var beat_x = (custom_minimum_size.x / 2) + (time_to_beat * pixels_per_second)
 	
-	# Position the beat indicator
-	upcoming_beat_indicator.position.x = beat_x - 4
+	# Position the beat indicator (centered)
+	upcoming_beat_indicator.position = Vector2(beat_x - 20, 10)
 	
-	# Pulse effect when close to center
-	if abs(time_to_beat) < 0.05:
-		upcoming_beat_indicator.modulate = Color(1.0, 1.0, 0.0, 1.0)  # Yellow flash
-		upcoming_beat_indicator.size = Vector2(12, 60)
-		upcoming_beat_indicator.position.x -= 2
-	else:
-		upcoming_beat_indicator.modulate = Color(0.0, 1.0, 1.0, 1.0)  # Cyan
-		upcoming_beat_indicator.size = Vector2(8, 60)
+	# Clear previous drawing
+	upcoming_beat_indicator.queue_redraw()
+
+func _draw():
+	if upcoming_beat_indicator:
+		var center = upcoming_beat_indicator.position + Vector2(20, 20)
+		var time_to_beat = beat_interval - beat_timer
+		
+		# Draw circle - make it pulse and change color when on beat
+		if abs(time_to_beat) < 0.05:
+			# ON BEAT - Big white circle with high contrast
+			draw_circle(center, 25, Color(1.0, 1.0, 1.0, 1.0))
+			draw_circle(center, 20, Color(0.0, 0.0, 0.0, 1.0))
+			draw_circle(center, 15, Color(1.0, 0.0, 1.0, 1.0))  # Magenta center
+		else:
+			# Approaching beat - Cyan circle
+			draw_circle(center, 15, Color(0.0, 1.0, 1.0, 0.8))
+			draw_circle(center, 12, Color(0.0, 0.0, 0.0, 0.8))
+			draw_circle(center, 10, Color(0.0, 1.0, 1.0, 1.0))
+
+func _process(_delta):
+	queue_redraw()  # Continuously redraw for smooth animation
+	
+func toggle_visibility():
+	visible = not visible
+	is_visible = visible
