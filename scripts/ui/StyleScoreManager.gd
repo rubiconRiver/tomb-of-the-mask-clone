@@ -8,10 +8,12 @@ enum TimingQuality {
 	OFF_BEAT
 }
 
-const TIMING_WINDOWS = {
-	TimingQuality.PERFECT: 0.12,  # ±120ms (more forgiving for testing)
-	TimingQuality.GREAT: 0.25,    # ±250ms
-	TimingQuality.GOOD: 0.4       # ±400ms
+# Base timing windows at 120 BPM (0.5s beat interval)
+const BASE_BEAT_INTERVAL = 0.5
+const BASE_TIMING_WINDOWS = {
+	TimingQuality.PERFECT: 0.05,   # ±50ms at 120 BPM
+	TimingQuality.GREAT: 0.12,     # ±120ms at 120 BPM
+	TimingQuality.GOOD: 0.2        # ±200ms at 120 BPM
 }
 
 const SCORE_MULTIPLIERS = {
@@ -45,19 +47,24 @@ func calculate_timing(beat_timer: float, beat_interval: float) -> Dictionary:
 	# Determine if early or late
 	var is_early = time_to_next_beat < time_since_beat
 	
-	# Check timing windows
+	# Scale timing windows based on BPM
+	# Faster BPM = smaller windows, slower BPM = larger windows
+	var window_scale = beat_interval / BASE_BEAT_INTERVAL
+	
+	# Check timing windows with scaling
 	var quality = TimingQuality.OFF_BEAT
-	if distance_to_beat <= TIMING_WINDOWS[TimingQuality.PERFECT]:
+	if distance_to_beat <= BASE_TIMING_WINDOWS[TimingQuality.PERFECT] * window_scale:
 		quality = TimingQuality.PERFECT
-	elif distance_to_beat <= TIMING_WINDOWS[TimingQuality.GREAT]:
+	elif distance_to_beat <= BASE_TIMING_WINDOWS[TimingQuality.GREAT] * window_scale:
 		quality = TimingQuality.GREAT
-	elif distance_to_beat <= TIMING_WINDOWS[TimingQuality.GOOD]:
+	elif distance_to_beat <= BASE_TIMING_WINDOWS[TimingQuality.GOOD] * window_scale:
 		quality = TimingQuality.GOOD
 	
 	return {
 		"quality": quality,
 		"is_early": is_early,
-		"distance": distance_to_beat
+		"distance": distance_to_beat,
+		"window_scale": window_scale
 	}
 
 func register_move(beat_timer: float, beat_interval: float) -> Dictionary:
