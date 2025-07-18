@@ -22,6 +22,7 @@ var spike_glow_color = Color(1.0, 0.0, 0.3, 1.0)  # Red
 
 # Shader materials
 var techno_shader = preload("res://shaders/techno_pulse.gdshader")
+var wall_shader = preload("res://shaders/tetris_effect_wall.gdshader")
 var player_material: ShaderMaterial
 var wall_material: ShaderMaterial
 var coin_material: ShaderMaterial
@@ -35,10 +36,14 @@ func _ready():
 	player_material.set_shader_parameter("pulse_strength", player_pulse_strength)
 	
 	wall_material = ShaderMaterial.new()
-	wall_material.shader = techno_shader
-	wall_material.set_shader_parameter("glow_color", wall_glow_color)
-	wall_material.set_shader_parameter("pulse_strength", wall_pulse_strength)
-	wall_material.set_shader_parameter("scanline_opacity", 0.05)
+	wall_material.shader = wall_shader
+	wall_material.set_shader_parameter("base_color", Color(0.29, 0.08, 0.55, 1.0))  # Deep purple
+	wall_material.set_shader_parameter("glow_color", Color(0.0, 0.74, 0.83, 1.0))  # Cyan
+	wall_material.set_shader_parameter("accent_color", Color(0.91, 0.12, 0.39, 1.0))  # Magenta
+	wall_material.set_shader_parameter("glow_intensity", 0.8)
+	wall_material.set_shader_parameter("edge_softness", 0.1)
+	wall_material.set_shader_parameter("pattern_scale", 4.0)
+	wall_material.set_shader_parameter("flow_speed", 0.5)
 	
 	coin_material = ShaderMaterial.new()
 	coin_material.shader = techno_shader
@@ -72,8 +77,9 @@ func _update_all_materials():
 		player_material.set_shader_parameter("glow_strength", 0.5 + 0.5 * pulse_multiplier)
 	
 	if wall_material:
-		wall_material.set_shader_parameter("pulse_strength", wall_pulse_strength * pulse_multiplier)
-		wall_material.set_shader_parameter("glow_strength", 0.2 + 0.3 * pulse_multiplier)
+		wall_material.set_shader_parameter("beat_pulse", pulse_multiplier)
+		wall_material.set_shader_parameter("beat_time", beat_time)
+		wall_material.set_shader_parameter("glow_intensity", 0.6 + 0.4 * pulse_multiplier)
 	
 	if coin_material:
 		coin_material.set_shader_parameter("pulse_strength", coin_pulse_strength * pulse_multiplier)

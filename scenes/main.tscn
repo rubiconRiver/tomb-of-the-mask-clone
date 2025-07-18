@@ -16,7 +16,7 @@ shader_parameter/wave_amplitude = 5.0
 [sub_resource type="LabelSettings" id="1"]
 font_size = 32
 
-[node name="Main" type="Node2D"]
+[node name="Main" type="Node2D" groups=["game_manager"]]
 script = ExtResource("1")
 
 [node name="Background" type="ColorRect" parent="."]

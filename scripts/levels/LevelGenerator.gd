@@ -92,8 +92,13 @@ func build_level():
 	# Get beat visualizer from GameManager
 	var game_manager = get_parent()
 	var beat_visualizer = null
-	if game_manager and game_manager.has_method("get_node"):
+	if game_manager:
 		beat_visualizer = game_manager.get_node_or_null("BeatVisualizer")
+		if not beat_visualizer and "beat_visualizer" in game_manager:
+			beat_visualizer = game_manager.beat_visualizer
+		print("Beat visualizer found: ", beat_visualizer != null)
+		if beat_visualizer:
+			print("Wall material: ", beat_visualizer.get_material_for_type("wall"))
 	
 	for y in range(LEVEL_HEIGHT):
 		for x in range(LEVEL_WIDTH):
