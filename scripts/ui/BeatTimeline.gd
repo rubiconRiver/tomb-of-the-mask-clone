@@ -46,24 +46,24 @@ func create_timing_windows():
 	var center_x = custom_minimum_size.x / 2
 	var pixels_per_second = 400.0  # How many pixels = 1 second
 	
-	# Perfect window (±50ms)
+	# Perfect window (±120ms)
 	var perfect_rect = ColorRect.new()
 	perfect_rect.color = Color(1.0, 0.0, 1.0, 0.3)  # Magenta
-	perfect_rect.size = Vector2(0.1 * pixels_per_second, 60)  # 100ms total width
+	perfect_rect.size = Vector2(0.24 * pixels_per_second, 60)  # 240ms total width
 	perfect_rect.position = Vector2(center_x - perfect_rect.size.x / 2, 0)
 	add_child(perfect_rect)
 	
-	# Great window (±150ms)
+	# Great window (±250ms)
 	var great_rect = ColorRect.new()
 	great_rect.color = Color(0.0, 1.0, 1.0, 0.2)  # Cyan
-	great_rect.size = Vector2(0.3 * pixels_per_second, 60)  # 300ms total width
+	great_rect.size = Vector2(0.5 * pixels_per_second, 60)  # 500ms total width
 	great_rect.position = Vector2(center_x - great_rect.size.x / 2, 0)
 	add_child(great_rect)
 	
-	# Good window (±300ms)
+	# Good window (±400ms)
 	var good_rect = ColorRect.new()
 	good_rect.color = Color(0.0, 1.0, 0.0, 0.1)  # Green
-	good_rect.size = Vector2(0.6 * pixels_per_second, 60)  # 600ms total width
+	good_rect.size = Vector2(0.8 * pixels_per_second, 60)  # 800ms total width
 	good_rect.position = Vector2(center_x - good_rect.size.x / 2, 0)
 	add_child(good_rect)
 

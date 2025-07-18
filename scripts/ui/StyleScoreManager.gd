@@ -9,9 +9,9 @@ enum TimingQuality {
 }
 
 const TIMING_WINDOWS = {
-	TimingQuality.PERFECT: 0.08,  # ±80ms (increased from 50ms)
-	TimingQuality.GREAT: 0.2,     # ±200ms (increased from 150ms)
-	TimingQuality.GOOD: 0.4       # ±400ms (increased from 300ms)
+	TimingQuality.PERFECT: 0.12,  # ±120ms (more forgiving for testing)
+	TimingQuality.GREAT: 0.25,    # ±250ms
+	TimingQuality.GOOD: 0.4       # ±400ms
 }
 
 const SCORE_MULTIPLIERS = {
