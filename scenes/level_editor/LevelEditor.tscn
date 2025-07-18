@@ -1,0 +1,51 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/tools/LevelEditor.gd" id="1"]
+
+[sub_resource type="LabelSettings" id="1"]
+font_size = 24
+
+[node name="LevelEditor" type="Node2D"]
+script = ExtResource("1")
+
+[node name="Grid" type="Node2D" parent="."]
+
+[node name="UI" type="CanvasLayer" parent="."]
+
+[node name="Instructions" type="Panel" parent="UI"]
+offset_right = 250.0
+offset_bottom = 400.0
+modulate = Color(1, 1, 1, 0.9)
+
+[node name="Label" type="Label" parent="UI/Instructions"]
+offset_left = 10.0
+offset_top = 10.0
+offset_right = 240.0
+offset_bottom = 390.0
+text = "LEVEL EDITOR
+
+Click to place tiles:
+
+1 - Wall (Gray)
+2 - Coin (Yellow)
+3 - Spike (Red)
+4 - Player Spawn (Green)
+5 - Erase
+
+Mouse:
+- Left Click: Place tile
+- Right Click: Erase
+
+Commands:
+- S: Save level
+- L: Load into game
+- C: Clear all"
+label_settings = SubResource("1")
+
+[node name="CurrentTile" type="Label" parent="UI"]
+offset_left = 260.0
+offset_top = 10.0
+offset_right = 460.0
+offset_bottom = 50.0
+text = "Current: Wall"
+label_settings = SubResource("1")

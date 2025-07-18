@@ -1,6 +1,6 @@
 [gd_scene load_steps=3 format=3 uid="uid://b1234wall"]
 
-[ext_resource type="Script" path="res://scripts/obstacles/Wall.gd" id="1_wall"]
+[ext_resource type="Script" uid="uid://bavdpvwofa3u7" path="res://scripts/obstacles/Wall.gd" id="1_wall"]
 
 [sub_resource type="RectangleShape2D" id="1"]
 size = Vector2(64, 64)

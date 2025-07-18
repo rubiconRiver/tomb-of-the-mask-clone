@@ -1,6 +1,6 @@
-[gd_scene load_steps=2 format=3 uid="uid://b1234spike"]
+[gd_scene load_steps=3 format=3 uid="uid://b1234spike"]
 
-[ext_resource type="Texture2D" uid="uid://bqr4dvfb6bvl3" path="res://assets/sprites/spike.svg" id="1_spike"]
+[ext_resource type="Texture2D" uid="uid://drwgihu665k28" path="res://assets/sprites/spike.svg" id="1_spike"]
 
 [sub_resource type="RectangleShape2D" id="1"]
 size = Vector2(32, 32)
@@ -11,5 +11,5 @@ size = Vector2(32, 32)
 shape = SubResource("1")
 
 [node name="Sprite2D" type="Sprite2D" parent="."]
-texture = ExtResource("1_spike")
 modulate = Color(1, 0, 0, 1)
+texture = ExtResource("1_spike")

@@ -35,6 +35,38 @@ func generate_level():
 	
 	build_level()
 
+func load_from_tilemap(tilemap: TileMap):
+	# Clear existing level
+	for child in get_children():
+		child.queue_free()
+	
+	level_data = []
+	
+	# Read tiles from TileMap
+	for y in range(LEVEL_HEIGHT):
+		var row = []
+		for x in range(LEVEL_WIDTH):
+			var atlas_coords = tilemap.get_cell_atlas_coords(0, Vector2i(x, y))
+			
+			# Map atlas coordinates to cell types
+			# Based on our tileset layout:
+			# (0,0) = Wall, (1,0) = Coin, (2,0) = Spike, (3,0) = Player spawn
+			match atlas_coords:
+				Vector2i(0, 0):
+					row.append(CellType.WALL)
+				Vector2i(1, 0):
+					row.append(CellType.COIN)
+				Vector2i(2, 0):
+					row.append(CellType.SPIKE)
+				Vector2i(3, 0):
+					row.append(CellType.PLAYER_SPAWN)
+				_:
+					row.append(CellType.EMPTY)
+		
+		level_data.append(row)
+	
+	build_level()
+
 func generate_random_level():
 	level_data = []
 	
