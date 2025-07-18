@@ -6,12 +6,14 @@ var level_generator_scene = preload("res://scenes/levels/LevelGenerator.tscn")
 var beat_indicator_script = preload("res://scripts/ui/BeatIndicator.gd")
 var style_score_manager_script = preload("res://scripts/ui/StyleScoreManager.gd")
 var timing_feedback_script = preload("res://scripts/ui/TimingFeedback.gd")
+var beat_timeline_script = preload("res://scripts/ui/BeatTimeline.gd")
 
 var player: Player
 var level_generator: LevelGenerator
 var swipe_detector: SwipeDetector
 var camera: Camera2D
 var beat_indicator: Control
+var beat_timeline: BeatTimeline
 var style_score_manager: StyleScoreManager
 
 var score = 0
@@ -21,11 +23,13 @@ var is_game_over = false
 
 var beat_timer = 0.0
 var beat_interval = 0.5
+var audio_latency_offset = 0.05  # Adjust this to sync audio with visual
 
 @onready var ui_layer = $UILayer
 @onready var score_label = $UILayer/ScoreLabel
 @onready var coins_label = $UILayer/CoinsLabel
 @onready var combo_label = $UILayer/ComboLabel
+@onready var latency_label = $UILayer/LatencyLabel
 @onready var game_over_panel = $UILayer/GameOverPanel
 @onready var beat_audio: AudioStreamPlayer
 
@@ -43,6 +47,7 @@ func _ready():
 	
 	setup_camera()
 	setup_beat_indicator()
+	setup_beat_timeline()
 	setup_beat_audio()
 	start_game()
 
@@ -59,6 +64,12 @@ func setup_beat_indicator():
 		ui_layer.add_child(beat_indicator)
 		
 	beat_occurred.connect(beat_indicator.pulse)
+
+func setup_beat_timeline():
+	beat_timeline = beat_timeline_script.new()
+	
+	if ui_layer:
+		ui_layer.add_child(beat_timeline)
 
 func setup_beat_audio():
 	beat_audio = AudioStreamPlayer.new()
@@ -84,10 +95,29 @@ func _process(delta):
 		beat_interval = min(2.0, beat_interval + 0.05)
 		print("Beat interval: ", beat_interval)
 		
+	# Handle audio latency adjustment
+	if Input.is_action_just_pressed("ui_left"):
+		audio_latency_offset = max(-0.2, audio_latency_offset - 0.01)
+		update_latency_display()
+		print("Audio latency offset: ", audio_latency_offset * 1000, "ms")
+	elif Input.is_action_just_pressed("ui_right"):
+		audio_latency_offset = min(0.2, audio_latency_offset + 0.01)
+		update_latency_display()
+		print("Audio latency offset: ", audio_latency_offset * 1000, "ms")
+		
 	beat_timer += delta
+	
+	# Play sound slightly early to compensate for audio latency
+	if beat_timer >= beat_interval - audio_latency_offset and beat_timer - delta < beat_interval - audio_latency_offset:
+		play_beat_sound()
+	
 	if beat_timer >= beat_interval:
 		beat_timer -= beat_interval
 		_on_beat()
+		
+	# Update beat timeline
+	if beat_timeline:
+		beat_timeline.update_beat(beat_timer, beat_interval)
 
 func start_game():
 	score = 0
@@ -101,6 +131,7 @@ func start_game():
 	setup_level()
 	spawn_player()
 	update_ui()
+	update_latency_display()
 
 func setup_level():
 	if level_generator:
@@ -126,9 +157,6 @@ func spawn_player():
 
 func _on_beat():
 	emit_signal("beat_occurred")
-	
-	# Play the beat sound
-	play_beat_sound()
 
 func play_beat_sound():
 	if not beat_audio or not beat_audio.stream:
@@ -232,3 +260,7 @@ func _on_timing_calculated(quality: int, multiplier: float):
 
 func _on_combo_changed(new_combo: int):
 	update_ui()
+
+func update_latency_display():
+	if latency_label:
+		latency_label.text = "Latency: " + str(int(audio_latency_offset * 1000)) + "ms"

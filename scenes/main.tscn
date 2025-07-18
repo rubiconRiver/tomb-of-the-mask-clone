@@ -35,6 +35,14 @@ offset_bottom = 160.0
 text = "Combo: x0"
 label_settings = SubResource("1")
 
+[node name="LatencyLabel" type="Label" parent="UILayer"]
+offset_left = 20.0
+offset_top = 170.0
+offset_right = 250.0
+offset_bottom = 210.0
+text = "Latency: 50ms"
+label_settings = SubResource("1")
+
 [node name="GameOverPanel" type="Panel" parent="UILayer"]
 visible = false
 anchors_preset = 8
