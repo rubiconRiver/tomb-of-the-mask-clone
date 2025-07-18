@@ -5,6 +5,7 @@ var player_scene = preload("res://scenes/player/Player.tscn")
 var level_generator_scene = preload("res://scenes/levels/LevelGenerator.tscn")
 var beat_indicator_script = preload("res://scripts/ui/BeatIndicator.gd")
 var style_score_manager_script = preload("res://scripts/ui/StyleScoreManager.gd")
+var timing_feedback_script = preload("res://scripts/ui/TimingFeedback.gd")
 
 var player: Player
 var level_generator: LevelGenerator
@@ -24,6 +25,7 @@ var beat_interval = 0.5
 @onready var ui_layer = $UILayer
 @onready var score_label = $UILayer/ScoreLabel
 @onready var coins_label = $UILayer/CoinsLabel
+@onready var combo_label = $UILayer/ComboLabel
 @onready var game_over_panel = $UILayer/GameOverPanel
 @onready var beat_audio: AudioStreamPlayer
 
@@ -37,6 +39,7 @@ func _ready():
 	style_score_manager = style_score_manager_script.new()
 	add_child(style_score_manager)
 	style_score_manager.timing_calculated.connect(_on_timing_calculated)
+	style_score_manager.combo_changed.connect(_on_combo_changed)
 	
 	setup_camera()
 	setup_beat_indicator()
@@ -190,10 +193,42 @@ func update_ui():
 		score_label.text = "Score: " + str(score)
 	if coins_label:
 		coins_label.text = "Coins: " + str(coins)
+	if combo_label and style_score_manager:
+		if style_score_manager.combo_count > 0:
+			combo_label.text = "Combo: x" + str(style_score_manager.combo_count)
+			combo_label.visible = true
+		else:
+			combo_label.visible = false
 
 func restart_game():
 	start_game()
 
 func _on_timing_calculated(quality: int, multiplier: float):
-	# This will be used for visual feedback in Stage 4
-	pass
+	# Create visual feedback
+	if player and ui_layer:
+		# Since we're using a CanvasLayer for UI, we need to position relative to game viewport
+		# The game is designed for 720x1280, and player should be centered
+		var screen_pos = Vector2(360, 640)  # Center of design resolution
+		
+		# Setup feedback based on quality
+		var colors = {
+			StyleScoreManager.TimingQuality.PERFECT: Color(1.0, 0.0, 1.0), # Magenta
+			StyleScoreManager.TimingQuality.GREAT: Color(0.0, 1.0, 1.0),   # Cyan
+			StyleScoreManager.TimingQuality.GOOD: Color(0.0, 1.0, 0.0),    # Green
+			StyleScoreManager.TimingQuality.OFF_BEAT: Color(0.5, 0.5, 0.5)  # Gray
+		}
+		
+		var texts = {
+			StyleScoreManager.TimingQuality.PERFECT: "PERFECT!",
+			StyleScoreManager.TimingQuality.GREAT: "GREAT!",
+			StyleScoreManager.TimingQuality.GOOD: "Good!",
+			StyleScoreManager.TimingQuality.OFF_BEAT: ""
+		}
+		
+		if quality != StyleScoreManager.TimingQuality.OFF_BEAT:
+			var feedback = timing_feedback_script.new()
+			ui_layer.add_child(feedback)
+			feedback.setup(texts[quality], colors[quality], screen_pos + Vector2(0, -100))
+
+func _on_combo_changed(new_combo: int):
+	update_ui()
