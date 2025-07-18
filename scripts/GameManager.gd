@@ -18,8 +18,6 @@ var is_game_over = false
 
 var beat_timer = 0.0
 var beat_interval = 0.5
-var queued_direction = null
-var can_move_on_beat = false
 
 @onready var ui_layer = $UILayer
 @onready var score_label = $UILayer/ScoreLabel
@@ -114,10 +112,6 @@ func _on_beat():
 	
 	# Play the beat sound
 	play_beat_sound()
-	
-	if queued_direction and player and not player.is_moving:
-		player.move(queued_direction)
-		queued_direction = null
 
 func play_beat_sound():
 	if not beat_audio or not beat_audio.stream:
@@ -141,8 +135,8 @@ func play_beat_sound():
 			playback.push_frame(Vector2(sample, sample) * 0.5)
 
 func _on_swipe_detected(direction: Vector2):
-	if not is_game_over and player:
-		queued_direction = direction
+	if not is_game_over and player and not player.is_moving:
+		player.move(direction)
 
 func _on_player_died():
 	is_game_over = true

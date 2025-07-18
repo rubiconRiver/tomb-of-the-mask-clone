@@ -24,10 +24,6 @@ window/size/mode=2
 window/stretch/mode="viewport"
 window/handheld/orientation=1
 
-[gui]
-
-; theme/custom="res://assets/theme/default_theme.tres"
-
 [input]
 
 swipe_up={
