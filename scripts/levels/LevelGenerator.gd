@@ -24,6 +24,18 @@ func _ready():
 	generate_level()
 
 func generate_level():
+	# Use hand-crafted levels instead of random generation
+	if current_level == 0:
+		# Load Level 1
+		var template = LevelTemplates.get_level_1()
+		level_data = LevelTemplates.parse_template(template)
+	else:
+		# Fall back to random generation for now
+		generate_random_level()
+	
+	build_level()
+
+func generate_random_level():
 	level_data = []
 	
 	for y in range(LEVEL_HEIGHT):
@@ -40,8 +52,6 @@ func generate_level():
 	place_coins()
 	
 	level_data[LEVEL_HEIGHT - 2][LEVEL_WIDTH / 2] = CellType.PLAYER_SPAWN
-	
-	build_level()
 
 func generate_maze():
 	for i in range(current_level + 5):
