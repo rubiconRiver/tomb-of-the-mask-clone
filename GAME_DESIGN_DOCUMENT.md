@@ -38,10 +38,15 @@ A fast-paced arcade game where players navigate through procedurally generated m
 - **Daily Challenges**: Special levels with unique rewards
 
 ## Visual Style
-- **Retro Pixel Art**: 16x16 or 32x32 sprites
-- **Limited Color Palette**: 4-8 colors per level theme
-- **Clean UI**: Minimalist design that doesn't obstruct gameplay
-- **Smooth Animations**: Fluid movement despite pixel art style
+- **Techno Aesthetic**: Inspired by Tetris Effect's synesthetic design
+- **Beat-Synchronized Visuals**: Every element pulses with the beat
+  - **Primary Elements**: Strong pulse (player, active UI)
+  - **Secondary Elements**: Medium pulse (walls, collectibles)
+  - **Background Elements**: Subtle pulse (particles, effects)
+- **Neon Color Palette**: Vibrant, glowing colors on dark backgrounds
+- **Particle Effects**: Reactive trails and sparkles that respond to beat
+- **UI Design**: Minimalist with soft glow effects, all pulsing to rhythm
+- **Visual Hierarchy**: Importance determined by pulse intensity
 
 ## Audio Design
 - **Chiptune Soundtrack**: Energetic retro music
@@ -51,8 +56,26 @@ A fast-paced arcade game where players navigate through procedurally generated m
   - Death sound
   - Power-up activation
   - UI clicks
+  - Beat pulse sound
 
-  We also want to make moving with the beat a part of the game design.  maybe the level is designed around that.  or maybe you get a bonus for with the beat.  either way I want a guitar hero style indictaor on the side showing if I'm swiping on beat
+### Style Scoring System
+Players are rewarded for moving in sync with the beat, but movement is never restricted:
+- **Timing Windows**:
+  - **Perfect!**: ±50ms from beat (3x score multiplier)
+  - **Great!**: ±150ms from beat (2x score multiplier)
+  - **Good!**: ±300ms from beat (1.5x score multiplier)
+  - **Off-beat**: No multiplier (1x score)
+- **Visual Feedback**: Floating text shows timing quality
+- **Beat Indicator**: Visual pulse on screen edge shows beat timing
+
+### Combo System
+- **Building Combos**: Chain 3-5 consecutive on-beat moves
+- **Queue Mode Unlock**: After achieving combo, unlock movement queuing
+- **Queue Benefits**: 
+  - Queue up to 2 moves ahead
+  - Character bounces rhythmically on beat
+  - Higher score multipliers
+- **Combo Break**: Missing a beat or hitting off-beat resets combo
 
 ## Monetization (Mobile)
 - **Ads**:
