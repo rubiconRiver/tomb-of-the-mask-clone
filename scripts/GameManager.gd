@@ -644,7 +644,13 @@ func update_latency_display():
 func show_results_screen():
 	var results_scene = preload("res://scenes/ui/ResultsScreen.tscn")
 	var results_screen = results_scene.instantiate()
-	add_child(results_screen)
+	
+	# Add to UILayer instead of directly to GameManager
+	var ui_layer = get_node("UILayer")
+	if ui_layer:
+		ui_layer.add_child(results_screen)
+	else:
+		add_child(results_screen)
 	
 	var style_accuracy = 0.0
 	if style_score_manager:
