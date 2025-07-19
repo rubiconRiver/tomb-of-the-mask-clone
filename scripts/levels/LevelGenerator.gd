@@ -24,8 +24,13 @@ func _ready():
 	generate_level()
 
 func generate_level():
+	# Check if we should use a custom level from the editor
+	if LevelEditorData.should_use_custom_level():
+		print("Loading custom level from editor...")
+		level_data = LevelEditorData.get_custom_level()
+		LevelEditorData.clear_custom_level()  # Use it once, then clear
 	# Use hand-crafted levels instead of random generation
-	if current_level == 0:
+	elif current_level == 0:
 		# Load Level 1
 		var template = LevelTemplates.get_level_1()
 		level_data = LevelTemplates.parse_template(template)

@@ -1,6 +1,6 @@
-[gd_scene load_steps=3 format=3]
+[gd_scene load_steps=3 format=3 uid="uid://t5cl84b1nyd8"]
 
-[ext_resource type="Script" path="res://scripts/tools/LevelEditor.gd" id="1"]
+[ext_resource type="Script" uid="uid://cxrjxmyr60n3a" path="res://scripts/tools/LevelEditor.gd" id="1"]
 
 [sub_resource type="LabelSettings" id="1"]
 font_size = 24
@@ -13,33 +13,38 @@ script = ExtResource("1")
 [node name="UI" type="CanvasLayer" parent="."]
 
 [node name="Instructions" type="Panel" parent="UI"]
+modulate = Color(1, 1, 1, 0.9)
 offset_right = 250.0
 offset_bottom = 400.0
-modulate = Color(1, 1, 1, 0.9)
 
 [node name="Label" type="Label" parent="UI/Instructions"]
+layout_mode = 0
 offset_left = 10.0
 offset_top = 10.0
 offset_right = 240.0
 offset_bottom = 390.0
 text = "LEVEL EDITOR
 
-Click to place tiles:
-
+Keyboard Tools:
 1 - Wall (Gray)
-2 - Coin (Yellow)
+2 - Coin (Yellow) 
 3 - Spike (Red)
 4 - Player Spawn (Green)
 5 - Erase
 
-Mouse:
-- Left Click: Place tile
-- Right Click: Erase
+Mouse Controls:
+- Left Click: Place current tile
+- Right Click: Erase any tile
 
 Commands:
-- S: Save level
-- L: Load into game
-- C: Clear all"
+- S: Save level to file
+- L: Test in main game
+- C: Clear all (add borders)
+
+Tips:
+- Level auto-saves as template
+- Grid shows 64x64 tiles
+- Each level needs 1 player spawn"
 label_settings = SubResource("1")
 
 [node name="CurrentTile" type="Label" parent="UI"]

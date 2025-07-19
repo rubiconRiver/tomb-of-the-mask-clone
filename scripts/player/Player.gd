@@ -17,6 +17,7 @@ var last_timing_quality = -1
 signal moved
 signal died
 signal collected_coin
+signal hit_wall
 
 func _ready():
 	snap_to_grid()
@@ -62,6 +63,7 @@ func _physics_process(delta):
 				position = target_position
 				is_moving = false
 				velocity = Vector2.ZERO
+				emit_signal("hit_wall")
 				emit_signal("moved")
 				break
 			elif collider.is_in_group("hazards"):
