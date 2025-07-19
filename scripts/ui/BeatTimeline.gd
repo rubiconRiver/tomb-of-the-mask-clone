@@ -5,12 +5,12 @@ var beat_timer: float = 0.0
 var beat_interval: float = 0.5
 var upcoming_beat_indicator: Control
 var instructions_label: Label
-var is_visible: bool = true
 var perfect_rect: ColorRect
 var great_rect: ColorRect
 var good_rect: ColorRect
 
 func _ready():
+	visible = false
 	custom_minimum_size = Vector2(600, 120)
 	position = Vector2(60, 400)
 	
@@ -48,42 +48,42 @@ func _ready():
 func create_timing_windows():
 	# Good window (widest, draw first)
 	good_rect = ColorRect.new()
-	good_rect.color = Color(0.0, 1.0, 0.0, 0.1)  # Green
+	good_rect.color = Color(0.0, 1.0, 0.0, 0.1) # Green
 	add_child(good_rect)
 	
 	# Great window
 	great_rect = ColorRect.new()
-	great_rect.color = Color(0.0, 1.0, 1.0, 0.2)  # Cyan
+	great_rect.color = Color(0.0, 1.0, 1.0, 0.2) # Cyan
 	add_child(great_rect)
 	
 	# Perfect window (narrowest, draw last)
 	perfect_rect = ColorRect.new()
-	perfect_rect.color = Color(1.0, 0.0, 1.0, 0.3)  # Magenta
+	perfect_rect.color = Color(1.0, 0.0, 1.0, 0.3) # Magenta
 	add_child(perfect_rect)
 	
 	update_timing_window_sizes()
 
 func update_timing_window_sizes():
 	var center_x = custom_minimum_size.x / 2
-	var pixels_per_second = 400.0  # How many pixels = 1 second
+	var pixels_per_second = 400.0 # How many pixels = 1 second
 	
 	# Get window scale from beat interval
-	var base_beat_interval = 0.5  # 120 BPM
+	var base_beat_interval = 0.5 # 120 BPM
 	var window_scale = beat_interval / base_beat_interval
 	
 	# Update window sizes based on scaled timing windows
 	if perfect_rect:
-		var perfect_width = 0.1 * window_scale * pixels_per_second  # ±50ms at 120 BPM
+		var perfect_width = 0.1 * window_scale * pixels_per_second # ±50ms at 120 BPM
 		perfect_rect.size = Vector2(perfect_width, 60)
 		perfect_rect.position = Vector2(center_x - perfect_rect.size.x / 2, 0)
 	
 	if great_rect:
-		var great_width = 0.24 * window_scale * pixels_per_second  # ±120ms at 120 BPM
+		var great_width = 0.24 * window_scale * pixels_per_second # ±120ms at 120 BPM
 		great_rect.size = Vector2(great_width, 60)
 		great_rect.position = Vector2(center_x - great_rect.size.x / 2, 0)
 	
 	if good_rect:
-		var good_width = 0.4 * window_scale * pixels_per_second  # ±200ms at 120 BPM
+		var good_width = 0.4 * window_scale * pixels_per_second # ±200ms at 120 BPM
 		good_rect.size = Vector2(good_width, 60)
 		good_rect.position = Vector2(center_x - good_rect.size.x / 2, 0)
 
@@ -115,7 +115,7 @@ func _draw():
 			# ON BEAT - Big white circle with high contrast
 			draw_circle(center, 25, Color(1.0, 1.0, 1.0, 1.0))
 			draw_circle(center, 20, Color(0.0, 0.0, 0.0, 1.0))
-			draw_circle(center, 15, Color(1.0, 0.0, 1.0, 1.0))  # Magenta center
+			draw_circle(center, 15, Color(1.0, 0.0, 1.0, 1.0)) # Magenta center
 		else:
 			# Approaching beat - Cyan circle
 			draw_circle(center, 15, Color(0.0, 1.0, 1.0, 0.8))
@@ -123,8 +123,4 @@ func _draw():
 			draw_circle(center, 10, Color(0.0, 1.0, 1.0, 1.0))
 
 func _process(_delta):
-	queue_redraw()  # Continuously redraw for smooth animation
-	
-func toggle_visibility():
-	visible = not visible
-	is_visible = visible
+	queue_redraw() # Continuously redraw for smooth animation

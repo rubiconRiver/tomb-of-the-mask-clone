@@ -181,10 +181,6 @@ func _process(delta):
 		update_latency_display()
 		print("Audio latency offset: ", audio_latency_offset * 1000, "ms")
 		
-	# Toggle beat timeline with ESC
-	if Input.is_action_just_pressed("ui_cancel"):
-		if beat_timeline:
-			beat_timeline.toggle_visibility()
 	
 	# Return to level editor with E key
 	if Input.is_action_just_pressed("ui_select"):  # Usually Enter/Space
