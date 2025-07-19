@@ -645,6 +645,9 @@ func show_results_screen():
 	var results_scene = preload("res://scenes/ui/ResultsScreen.tscn")
 	var results_screen = results_scene.instantiate()
 	
+	# Pass the game_manager reference before adding to tree
+	results_screen.game_manager = self
+	
 	# Add to UILayer instead of directly to GameManager
 	var ui_layer = get_node("UILayer")
 	if ui_layer:
@@ -659,21 +662,14 @@ func show_results_screen():
 	results_screen.show_results(level_complete_time, coins, total_coins_in_level, style_accuracy, current_level + 1)
 
 func restart_level():
-	is_level_complete = false
-	level_start_time = Time.get_ticks_msec() / 1000.0
-	coins = 0
+	# Save current level before resetting
+	var saved_level = current_level
 	
-	# Reload the current level
-	if level_generator:
-		level_generator.generate_level()
-		var spawn_pos = level_generator.get_player_spawn_position()
-		if player:
-			player.position = spawn_pos
-			player.reset()
+	# Use start_game to properly reset everything
+	start_game()
 	
-	# Reset style scoring
-	if style_score_manager:
-		style_score_manager.reset_score()
+	# Restore the level we were on
+	current_level = saved_level
 
 func next_level():
 	current_level += 1

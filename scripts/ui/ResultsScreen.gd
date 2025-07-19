@@ -30,7 +30,6 @@ const COIN_PERCENTAGES = [0.33, 0.66, 1.0]  # 1 star at 33%, 2 at 66%, 3 at 100%
 const STYLE_PERCENTAGES = [40, 70, 90]  # 1 star at 40%, 2 at 70%, 3 at 90%
 
 func _ready():
-	game_manager = get_node("/root/GameManager")
 	retry_button.pressed.connect(_on_retry_pressed)
 	next_button.pressed.connect(_on_next_pressed)
 	menu_button.pressed.connect(_on_menu_pressed)
@@ -132,17 +131,19 @@ func format_time(seconds: float) -> String:
 	var secs = int(seconds) % 60
 	return "%d:%02d" % [minutes, secs]
 
-func _on_retry_pressed():
+func _on_retry_pressed(): 
+	print("Retry pressed")
 	if game_manager:
+		print("restarting level")
 		game_manager.restart_level()
-	visible = false
+	queue_free()
 
 func _on_next_pressed():
 	if game_manager:
 		game_manager.next_level()
-	visible = false
+	queue_free()
 
 func _on_menu_pressed():
 	if game_manager:
 		game_manager.return_to_menu()
-	visible = false
+	queue_free()

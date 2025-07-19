@@ -39,6 +39,9 @@ func update_portal():
 
 func _on_body_entered(body):
 	if body.is_in_group("player"):
+		print("Goal detection - Player pos: ", body.position, " Goal pos: ", position)
+		print("Distance: ", body.position.distance_to(position))
+		
 		emit_signal("player_reached_goal")
 		
 		# Visual feedback
