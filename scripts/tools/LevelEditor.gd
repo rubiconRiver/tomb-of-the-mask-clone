@@ -36,6 +36,15 @@ var current_filename = ""
 @onready var instructions_panel = $UI/Instructions
 
 func _ready():
+	# Set a good window size for level editing
+	if OS.has_feature("editor"):
+		# Running in editor
+		pass
+	else:
+		# Running standalone - set window size
+		get_window().size = Vector2i(1200, 800)
+		get_window().position = Vector2i(100, 100)
+	
 	setup_tilemap()
 	setup_ui()
 	setup_camera()
@@ -85,8 +94,8 @@ func setup_tilemap():
 	atlas_source.texture = texture
 	atlas_source.texture_region_size = Vector2i(64, 64)
 	
-	# Set up tiles based on TileType enum count
-	for i in range(TileType.values().size()):
+	# Set up tiles (excluding EMPTY which is -1)
+	for i in range(5):  # Wall(0), Coin(1), Spike(2), PlayerSpawn(3), Goal(4)
 		atlas_source.create_tile(Vector2i(i, 0))
 		var tile_data = atlas_source.get_tile_data(Vector2i(i, 0), 0)
 	
@@ -312,6 +321,8 @@ func load_into_game():
 						cell_type = LevelGenerator.CellType.SPIKE
 					TileType.PLAYER_SPAWN:
 						cell_type = LevelGenerator.CellType.PLAYER_SPAWN
+					TileType.GOAL:
+						cell_type = LevelGenerator.CellType.GOAL
 			
 			row.append(cell_type)
 		level_data.append(row)
