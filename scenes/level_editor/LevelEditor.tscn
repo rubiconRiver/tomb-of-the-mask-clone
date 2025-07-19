@@ -25,26 +25,30 @@ offset_right = 240.0
 offset_bottom = 390.0
 text = "LEVEL EDITOR
 
-Keyboard Tools:
+Tile Selection:
 1 - Wall (Gray)
 2 - Coin (Yellow) 
 3 - Spike (Red)
 4 - Player Spawn (Green)
-5 - Erase
+5 - Goal (Blue)
+6 - Eraser
 
 Mouse Controls:
-- Left Click: Place current tile
-- Right Click: Erase any tile
+- Left Click: Place tile
+- Right Click: Erase
 
 Commands:
-- S: Save level to file
+- Ctrl+S: Save to test_levels.txt
 - L: Test in main game
-- C: Clear all (add borders)
+- C: Clear all
+- N: Change level size
+
+Camera:
+- Arrow Keys: Move camera
 
 Tips:
-- Level auto-saves as template
-- Grid shows 64x64 tiles
-- Each level needs 1 player spawn"
+- Saves append with timestamp
+- Each level needs 1 spawn + 1 goal"
 label_settings = SubResource("1")
 
 [node name="CurrentTile" type="Label" parent="UI"]
