@@ -24,8 +24,8 @@ LevelEditorData="*res://scripts/LevelEditorData.gd"
 
 window/size/viewport_width=720
 window/size/viewport_height=1560
-window/size/window_width_override=393
-window/size/window_height_override=852
+window/size/window_width_override=1200
+window/size/window_height_override=800
 window/stretch/mode="viewport"
 window/handheld/orientation=1
 

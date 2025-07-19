@@ -31,7 +31,6 @@ var camera: Camera2D
 var file_dialog: FileDialog
 var current_filename = ""
 
-@onready var grid_node = $Grid
 @onready var ui_layer = $UI
 @onready var instructions_panel = $UI/Instructions
 
@@ -334,25 +333,6 @@ func load_into_game():
 	var main_scene = preload("res://scenes/main.tscn")
 	get_tree().change_scene_to_packed(main_scene)
 
-func _draw():
-	# Draw grid lines
-	var grid_color = Color(0.5, 0.5, 0.5, 0.3)
-	
-	# Vertical lines
-	for x in range(level_width + 1):
-		var start_pos = Vector2(x * GRID_SIZE, 0)
-		var end_pos = Vector2(x * GRID_SIZE, level_height * GRID_SIZE)
-		draw_line(start_pos, end_pos, grid_color, 1.0)
-	
-	# Horizontal lines
-	for y in range(level_height + 1):
-		var start_pos = Vector2(0, y * GRID_SIZE)
-		var end_pos = Vector2(level_width * GRID_SIZE, y * GRID_SIZE)
-		draw_line(start_pos, end_pos, grid_color, 1.0)
-
-func _process(_delta):
-	# Redraw grid every frame
-	queue_redraw()
 
 func new_level_dialog():
 	print("Select level size:")
