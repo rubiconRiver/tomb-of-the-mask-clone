@@ -8,6 +8,7 @@ const LEVEL_HEIGHT = 20
 var wall_scene = preload("res://scenes/obstacles/Wall.tscn")
 var spike_scene = preload("res://scenes/obstacles/Spike.tscn")
 var coin_scene = preload("res://scenes/obstacles/Coin.tscn")
+var goal_scene = preload("res://scenes/obstacles/Goal.tscn")
 
 var level_data = []
 var current_level = 0
@@ -17,7 +18,8 @@ enum CellType {
 	WALL,
 	SPIKE,
 	COIN,
-	PLAYER_SPAWN
+	PLAYER_SPAWN,
+	GOAL
 }
 
 func _ready():
@@ -176,6 +178,13 @@ func build_level():
 						var sprite = coin.get_node_or_null("Sprite2D")
 						if sprite:
 							sprite.material = beat_visualizer.get_material_for_type("coin")
+				CellType.GOAL:
+					var goal = goal_scene.instantiate()
+					goal.position = world_pos
+					add_child(goal)
+					# Connect goal signal to game manager
+					if game_manager and game_manager.has_method("_on_goal_reached"):
+						goal.player_reached_goal.connect(game_manager._on_goal_reached)
 
 func get_player_spawn_position() -> Vector2:
 	for y in range(LEVEL_HEIGHT):

@@ -22,6 +22,9 @@ var score = 0
 var coins = 0
 var current_level = 0
 var is_game_over = false
+var level_start_time = 0.0
+var level_complete_time = 0.0
+var is_level_complete = false
 
 var beat_timer = 0.0
 var beat_interval = 0.5
@@ -228,6 +231,8 @@ func start_game():
 	coins = 0
 	current_level = 0
 	is_game_over = false
+	is_level_complete = false
+	level_start_time = Time.get_ticks_msec() / 1000.0
 	beat_count = 0
 	beat_timer = 0.0
 	hihat_timer = 0.0
@@ -634,3 +639,19 @@ func _on_combo_changed(new_combo: int):
 func update_latency_display():
 	if latency_label:
 		latency_label.text = "Latency: " + str(int(audio_latency_offset * 1000)) + "ms"
+
+func _on_goal_reached():
+	if is_level_complete:
+		return
+		
+	is_level_complete = true
+	level_complete_time = (Time.get_ticks_msec() / 1000.0) - level_start_time
+	
+	# Stop the guitar if playing
+	stop_guitar_chord()
+	
+	print("Level completed! Time: ", level_complete_time, " seconds")
+	print("Coins collected: ", coins)
+	print("Style accuracy: ", style_score_manager.get_accuracy(), "%")
+	
+	# TODO: Show results screen

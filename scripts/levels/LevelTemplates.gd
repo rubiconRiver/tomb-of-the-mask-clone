@@ -7,6 +7,7 @@ extends RefCounted
 # 'S' = Spike
 # 'C' = Coin
 # 'P' = Player spawn
+# 'G' = Goal
 
 static func get_level_1() -> Array:
 	# "First Level" - Simple zigzag with proper walls
@@ -30,7 +31,7 @@ static func get_level_1() -> Array:
 		"###...C####",  # Row 15 - Continue up
 		"####..C####",  # Row 16 - UP: near the top
 		"####CCC####",  # Row 17 - LEFT: final coins
-		"####...####",  # Row 18 - Exit area
+		"####.G.####",  # Row 18 - Goal!
 		"###########"   # Row 19 (top)
 	]
 	return template
@@ -57,6 +58,8 @@ static func parse_template(template: Array) -> Array:
 					row.append(LevelGenerator.CellType.COIN)
 				'P':
 					row.append(LevelGenerator.CellType.PLAYER_SPAWN)
+				'G':
+					row.append(LevelGenerator.CellType.GOAL)
 				_:
 					row.append(LevelGenerator.CellType.EMPTY)
 		
