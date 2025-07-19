@@ -14,10 +14,10 @@ Since we need simple tiles for editing, here's how to create them:
 2. Click the "+" button at the bottom to add a new Atlas
 3. For the texture, we'll create a simple one:
    - Create a new Image texture (64x256 pixels) with 4 colored squares:
-     - Gray square (Wall)
-     - Yellow square (Coin) 
-     - Red square (Spike)
-     - Green square (Player spawn)
+	 - Gray square (Wall)
+	 - Yellow square (Coin) 
+	 - Red square (Spike)
+	 - Green square (Player spawn)
    - OR just use any 64x64 tiles you have
 4. Set up the atlas with 4 tiles in a row
 
