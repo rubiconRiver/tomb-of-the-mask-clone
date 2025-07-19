@@ -25,6 +25,7 @@ var is_game_over = false
 var level_start_time = 0.0
 var level_complete_time = 0.0
 var is_level_complete = false
+var total_coins_in_level = 0
 
 var beat_timer = 0.0
 var beat_interval = 0.5
@@ -640,6 +641,56 @@ func update_latency_display():
 	if latency_label:
 		latency_label.text = "Latency: " + str(int(audio_latency_offset * 1000)) + "ms"
 
+func show_results_screen():
+	var results_scene = preload("res://scenes/ui/ResultsScreen.tscn")
+	var results_screen = results_scene.instantiate()
+	add_child(results_screen)
+	
+	var style_accuracy = 0.0
+	if style_score_manager:
+		style_accuracy = style_score_manager.get_accuracy()
+	
+	results_screen.show_results(level_complete_time, coins, total_coins_in_level, style_accuracy, current_level + 1)
+
+func restart_level():
+	is_level_complete = false
+	level_start_time = Time.get_ticks_msec() / 1000.0
+	coins = 0
+	
+	# Reload the current level
+	if level_generator:
+		level_generator.generate_level()
+		var spawn_pos = level_generator.get_player_spawn_position()
+		if player:
+			player.position = spawn_pos
+			player.reset()
+	
+	# Reset style scoring
+	if style_score_manager:
+		style_score_manager.reset_score()
+
+func next_level():
+	current_level += 1
+	is_level_complete = false
+	level_start_time = Time.get_ticks_msec() / 1000.0
+	coins = 0
+	
+	# Generate the next level
+	if level_generator:
+		level_generator.generate_level()
+		var spawn_pos = level_generator.get_player_spawn_position()
+		if player:
+			player.position = spawn_pos
+			player.reset()
+	
+	# Reset style scoring
+	if style_score_manager:
+		style_score_manager.reset_score()
+
+func return_to_menu():
+	# For now, just restart the game
+	start_game()
+
 func _on_goal_reached():
 	if is_level_complete:
 		return
@@ -654,4 +705,5 @@ func _on_goal_reached():
 	print("Coins collected: ", coins)
 	print("Style accuracy: ", style_score_manager.get_accuracy(), "%")
 	
-	# TODO: Show results screen
+	# Show results screen
+	show_results_screen()

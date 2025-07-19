@@ -19,6 +19,12 @@ signal died
 signal collected_coin
 signal hit_wall
 
+func reset():
+	is_moving = false
+	move_direction = Vector2.ZERO
+	velocity = Vector2.ZERO
+	snap_to_grid()
+
 func _ready():
 	snap_to_grid()
 	if area:

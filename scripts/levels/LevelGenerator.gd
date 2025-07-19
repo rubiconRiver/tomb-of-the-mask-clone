@@ -141,6 +141,8 @@ func build_level():
 	# Get beat visualizer from GameManager
 	var game_manager = get_parent()
 	var beat_visualizer = null
+	var coin_count = 0
+	
 	if game_manager:
 		beat_visualizer = game_manager.get_node_or_null("BeatVisualizer")
 		if not beat_visualizer and "beat_visualizer" in game_manager:
@@ -174,6 +176,7 @@ func build_level():
 					var coin = coin_scene.instantiate()
 					coin.position = world_pos
 					add_child(coin)
+					coin_count += 1
 					if beat_visualizer:
 						var sprite = coin.get_node_or_null("Sprite2D")
 						if sprite:
@@ -185,6 +188,10 @@ func build_level():
 					# Connect goal signal to game manager
 					if game_manager and game_manager.has_method("_on_goal_reached"):
 						goal.player_reached_goal.connect(game_manager._on_goal_reached)
+	
+	# Pass total coin count to game manager
+	if game_manager:
+		game_manager.total_coins_in_level = coin_count
 
 func get_player_spawn_position() -> Vector2:
 	for y in range(LEVEL_HEIGHT):
