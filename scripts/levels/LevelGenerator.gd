@@ -33,6 +33,14 @@ func generate_level():
 		LevelEditorData.clear_custom_level()  # Use it once, then clear
 	# Use hand-crafted levels instead of random generation
 	elif current_level == 0:
+		# Load Big Level
+		var template = LevelTemplates.get_big_level()
+		level_data = LevelTemplates.parse_template(template)
+	elif current_level == 1:
+		# Load Tutorial Level
+		var template = LevelTemplates.get_tutorial_level()
+		level_data = LevelTemplates.parse_template(template)
+	elif current_level == 2:
 		# Load Level 1
 		var template = LevelTemplates.get_level_1()
 		level_data = LevelTemplates.parse_template(template)
@@ -151,8 +159,14 @@ func build_level():
 		if beat_visualizer:
 			print("Wall material: ", beat_visualizer.get_material_for_type("wall"))
 	
-	for y in range(LEVEL_HEIGHT):
-		for x in range(LEVEL_WIDTH):
+	# Use actual level dimensions from level_data
+	var level_height = level_data.size()
+	var level_width = 0
+	if level_height > 0:
+		level_width = level_data[0].size()
+	
+	for y in range(level_height):
+		for x in range(level_width):
 			var world_pos = Vector2(x * GRID_SIZE, y * GRID_SIZE)
 			
 			match level_data[y][x]:
@@ -194,12 +208,19 @@ func build_level():
 		game_manager.total_coins_in_level = coin_count
 
 func get_player_spawn_position() -> Vector2:
-	for y in range(LEVEL_HEIGHT):
-		for x in range(LEVEL_WIDTH):
+	# Use actual level dimensions from level_data
+	var level_height = level_data.size()
+	var level_width = 0
+	if level_height > 0:
+		level_width = level_data[0].size()
+		
+	for y in range(level_height):
+		for x in range(level_width):
 			if level_data[y][x] == CellType.PLAYER_SPAWN:
 				return Vector2(x * GRID_SIZE, y * GRID_SIZE)
 	
-	return Vector2(LEVEL_WIDTH / 2 * GRID_SIZE, (LEVEL_HEIGHT - 2) * GRID_SIZE)
+	# Default spawn position if none found
+	return Vector2(level_width / 2 * GRID_SIZE, (level_height - 2) * GRID_SIZE)
 
 func next_level():
 	current_level += 1

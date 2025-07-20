@@ -9,6 +9,59 @@ extends RefCounted
 # 'P' = Player spawn
 # 'G' = Goal
 
+static func get_big_level() -> Array:
+	# Big room-based level - 20x100 with 10 rooms (2 rows x 5 columns)
+	var template = [
+		"####################################################################################################",
+		"#P                 #                   #                   #                   #                   #",
+		"#                  #                   #                   #                   #                   #",
+		"#                  #                   #                   #                   #                   #",
+		"#                  #                   #                   #                   #                   #",
+		"#                  #                   #                   #                   #                   #",
+		"#                  #                   #                   #                   #                   #",
+		"#                  #                   #                   #                   #                   #",
+		"#                  #                   #                   #                   #                   #",
+		"#                  #                   #                   #                   #                   #",
+		"####################################################################################.###############",
+		"#                  #                   #                   #                   #                   #",
+		"#                  #                   #                   #                   #                   #",
+		"#                  #                   #                   #                   #                   #",
+		"#                  #                   #                   #                   #                   #",
+		"#                  #                   #                   #                   #                   #",
+		"#                  #                   #                   #                   #                   #",
+		"#                  #                   #                   #                   #                   #",
+		"#                  #                   #                   #                   #                  G#",
+		"####################################################################################################"
+	]
+	return template
+
+static func get_tutorial_level() -> Array:
+	# Tutorial Level - 20x20 grid teaching basic movement
+	# Path: Start top-left, go right, down, left, down to goal
+	var template = [
+		"####################",  # Row 0 (bottom)
+		"#G..................#",  # Row 1 - Goal at bottom-left
+		"#...................#",  # Row 2
+		"##########.#########",  # Row 3 - Wall forcing left turn
+		"#........#.#........#",  # Row 4
+		"#........#.#........#",  # Row 5
+		"#........#.#........#",  # Row 6
+		"#........#.#........#",  # Row 7
+		"#CCCCCCCC#.#........#",  # Row 8 - Coin path left
+		"#........#.#........#",  # Row 9
+		"#.#########.#######.#",  # Row 10 - Wall forcing up turn
+		"#.#.......C.......#.#",  # Row 11
+		"#.#.......C.......#.#",  # Row 12
+		"#.#.......C.......#.#",  # Row 13 - Coin path up
+		"#.#.......C.......#.#",  # Row 14
+		"#.#.......C.......#.#",  # Row 15
+		"#.........C.........#",  # Row 16
+		"#.CCCCCCCCCCCCCCCC..#",  # Row 17 - Coin path right
+		"#P..................#",  # Row 18 - Player spawn top-left
+		"####################"   # Row 19 (top)
+	]
+	return template
+
 static func get_level_1() -> Array:
 	# "First Level" - Simple zigzag with proper walls
 	# Movement path with coins showing the way
