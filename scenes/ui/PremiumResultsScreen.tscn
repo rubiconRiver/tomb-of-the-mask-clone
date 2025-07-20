@@ -79,29 +79,31 @@ func show_results(time: float, coins: int, total: int, accuracy: float, level: i
 	animate_entrance()
 
 func animate_entrance():
-	# Fade in background
+	# Fade in background and panel together
 	var tween = create_tween()
-	tween.tween_property(self, \"modulate:a\", 1.0, 0.3)
+	tween.tween_property(self, \"modulate:a\", 1.0, 0.2)
 	
-	# Animate title
-	await get_tree().create_timer(0.2).timeout
-	var title_tween = create_tween()
-	title_tween.set_ease(Tween.EASE_OUT)
-	title_tween.set_trans(Tween.TRANS_BACK)
-	title_tween.tween_property(title_label, \"modulate:a\", 1.0, 0.3)
-	title_tween.parallel().tween_property(title_label, \"scale\", Vector2(1.2, 1.2), 0.3)
-	title_tween.tween_property(title_label, \"scale\", Vector2.ONE, 0.2)
-	
-	# Animate panel
-	await get_tree().create_timer(0.3).timeout
+	# Panel appears immediately
 	var panel_tween = create_tween()
 	panel_tween.set_ease(Tween.EASE_OUT)
 	panel_tween.set_trans(Tween.TRANS_BACK)
-	panel_tween.tween_property(panel, \"scale\", Vector2.ONE, 0.5)
+	panel_tween.tween_property(panel, \"scale\", Vector2.ONE, 0.3)
 	
-	# Start stat animations
-	await get_tree().create_timer(0.5).timeout
-	animate_stats()
+	# Title appears quickly
+	var title_tween = create_tween()
+	title_tween.set_ease(Tween.EASE_OUT)
+	title_tween.tween_property(title_label, \"modulate:a\", 1.0, 0.2)
+	title_tween.parallel().tween_property(title_label, \"scale\", Vector2(1.1, 1.1), 0.15)
+	title_tween.tween_property(title_label, \"scale\", Vector2.ONE, 0.1)
+	
+	# Show all stat containers immediately (no slide animation)
+	var containers = [speed_container, coins_container, style_container]
+	for container in containers:
+		container.modulate.a = 1.0
+	
+	# Go straight to values
+	await get_tree().create_timer(0.3).timeout
+	animate_values()
 
 func animate_stats():
 	# Animate each stat container sliding in
@@ -125,24 +127,20 @@ func animate_stats():
 	animate_values()
 
 func animate_values():
-	# Animate speed (time counting up)
+	# All values count up simultaneously and quickly
 	var time_tween = create_tween()
-	time_tween.tween_method(update_time_display, 0.0, level_time, 1.0)
+	time_tween.tween_method(update_time_display, 0.0, level_time, 0.4)
 	
-	# Animate coins (counting up)
-	await get_tree().create_timer(0.3).timeout
 	var coins_tween = create_tween()
-	coins_tween.tween_method(update_coins_display, 0, coins_collected, 0.8)
+	coins_tween.tween_method(update_coins_display, 0, coins_collected, 0.4)
 	
-	# Animate style (percentage counting up)
-	await get_tree().create_timer(0.3).timeout
 	var style_tween = create_tween()
-	style_tween.tween_method(update_style_display, 0.0, style_accuracy, 0.8)
+	style_tween.tween_method(update_style_display, 0.0, style_accuracy, 0.4)
 	
-	# Wait for counters to finish
-	await get_tree().create_timer(1.2).timeout
+	# Wait briefly for counters to finish
+	await get_tree().create_timer(0.5).timeout
 	
-	# Animate stars
+	# Animate stars immediately
 	animate_star_ratings()
 
 func update_time_display(value: float):
@@ -165,19 +163,15 @@ func animate_star_ratings():
 	var coins_rating = calculate_coins_rating(coins_collected, total_coins)
 	var style_rating = calculate_style_rating(style_accuracy)
 	
-	# Animate each star rating
+	# Animate all star ratings at once
 	speed_stars.set_rating(speed_rating, true)
-	await get_tree().create_timer(0.3).timeout
-	
-	coins_stars.set_rating(coins_rating, true)
-	await get_tree().create_timer(0.3).timeout
-	
+	coins_stars.set_rating(coins_rating, true) 
 	style_stars.set_rating(style_rating, true)
 	
 	# Wait for stars to finish
 	await style_stars.animation_finished
 	
-	# Show total score and grade
+	# Show total score and grade quickly
 	animate_final_score(speed_rating, coins_rating, style_rating)
 
 func animate_final_score(speed_rating: int, coins_rating: int, style_rating: int):
@@ -190,21 +184,21 @@ func animate_final_score(speed_rating: int, coins_rating: int, style_rating: int
 	
 	# Animate score container appearing
 	total_score_container.modulate.a = 0.0
-	total_score_container.scale = Vector2(0.8, 0.8)
+	total_score_container.scale = Vector2(0.9, 0.9)
 	
 	var score_tween = create_tween()
 	score_tween.set_ease(Tween.EASE_OUT)
 	score_tween.set_trans(Tween.TRANS_BACK)
-	score_tween.tween_property(total_score_container, \"modulate:a\", 1.0, 0.3)
-	score_tween.parallel().tween_property(total_score_container, \"scale\", Vector2.ONE, 0.3)
+	score_tween.tween_property(total_score_container, \"modulate:a\", 1.0, 0.2)
+	score_tween.parallel().tween_property(total_score_container, \"scale\", Vector2.ONE, 0.2)
 	
-	# Count up score
-	await get_tree().create_timer(0.3).timeout
+	# Count up score quickly
+	await get_tree().create_timer(0.1).timeout
 	var count_tween = create_tween()
-	count_tween.tween_method(update_score_display, 0, total_score, 1.2)
+	count_tween.tween_method(update_score_display, 0, total_score, 0.5)
 	
-	# Show grade badge
-	await get_tree().create_timer(0.8).timeout
+	# Show grade badge quickly
+	await get_tree().create_timer(0.3).timeout
 	animate_grade_badge(speed_rating, coins_rating, style_rating)
 
 func update_score_display(value: int):
@@ -226,17 +220,17 @@ func animate_grade_badge(speed: int, coins: int, style: int):
 	
 	grade_badge.modulate = grade_colors.get(letter_grade, Color.WHITE)
 	grade_badge.modulate.a = 0.0
-	grade_badge.scale = Vector2(3.0, 3.0)
+	grade_badge.scale = Vector2(2.0, 2.0)
 	
 	var grade_tween = create_tween()
 	grade_tween.set_ease(Tween.EASE_OUT)
 	grade_tween.set_trans(Tween.TRANS_BACK)
-	grade_tween.tween_property(grade_badge, \"scale\", Vector2.ONE, 0.5)
-	grade_tween.parallel().tween_property(grade_badge, \"modulate:a\", 1.0, 0.3)
-	grade_tween.parallel().tween_property(grade_badge, \"rotation\", deg_to_rad(360), 0.5)
+	grade_tween.tween_property(grade_badge, \"scale\", Vector2.ONE, 0.3)
+	grade_tween.parallel().tween_property(grade_badge, \"modulate:a\", 1.0, 0.2)
+	grade_tween.parallel().tween_property(grade_badge, \"rotation\", deg_to_rad(360), 0.3)
 	
-	# Show buttons
-	await get_tree().create_timer(0.5).timeout
+	# Show buttons quickly
+	await get_tree().create_timer(0.2).timeout
 	animate_buttons()
 
 func animate_buttons():
@@ -484,7 +478,7 @@ offset_right = 106.0
 offset_bottom = -20.0
 
 [node name="StyleContainer" type="Panel" parent="AnimationContainer/ResultsPanel/ContentContainer/StatsContainer"]
-custom_minimum_size = Vector2(0, 100)
+custom_minimum_size = Vector2(0, 140)
 layout_mode = 2
 theme_override_styles/panel = SubResource("4")
 

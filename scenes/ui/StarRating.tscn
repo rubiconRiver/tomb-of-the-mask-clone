@@ -11,7 +11,7 @@ signal animation_finished
 @export var star_spacing: int = 10
 @export var filled_color: Color = Color(1.0, 0.84, 0.0)  # Gold
 @export var empty_color: Color = Color(0.3, 0.3, 0.3)    # Dark gray
-@export var animation_delay: float = 0.2  # Delay between each star
+@export var animation_delay: float = 0.1  # Delay between each star
 
 var rating: int = 0
 var max_stars: int = 3
@@ -72,9 +72,9 @@ func animate_stars():
 		tween.set_trans(Tween.TRANS_BACK)
 		
 		# Scale up with overshoot
-		tween.tween_property(star, \"scale\", Vector2(1.3, 1.3), 0.3)
-		tween.parallel().tween_property(star, \"rotation\", deg_to_rad(360), 0.3)
-		tween.tween_property(star, \"scale\", Vector2.ONE, 0.2)
+		tween.tween_property(star, \"scale\", Vector2(1.3, 1.3), 0.15)
+		tween.parallel().tween_property(star, \"rotation\", deg_to_rad(360), 0.15)
+		tween.tween_property(star, \"scale\", Vector2.ONE, 0.1)
 		
 		# Color change
 		star.add_theme_color_override(\"font_color\", filled_color)
@@ -82,7 +82,7 @@ func animate_stars():
 		# Play a sound here if needed
 	
 	# Wait for last animation to finish
-	await get_tree().create_timer(animation_delay * rating + 0.5).timeout
+	await get_tree().create_timer(animation_delay * rating + 0.25).timeout
 	is_animating = false
 	emit_signal(\"animation_finished\")
 "

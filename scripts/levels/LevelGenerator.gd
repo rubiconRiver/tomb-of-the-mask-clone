@@ -204,3 +204,6 @@ func get_player_spawn_position() -> Vector2:
 func next_level():
 	current_level += 1
 	generate_level()
+
+func get_level_data() -> Array:
+	return level_data
