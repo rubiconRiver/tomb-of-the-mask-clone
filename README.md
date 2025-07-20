@@ -62,6 +62,34 @@ godot --path . --editor
 
 This is a Tomb of the Mask clone built in Godot, targeting mobile platforms with planned ad integration. See CLAUDE.md for development details.
 
+### Building for iOS
+
+**First Time Setup:**
+```bash
+# Create Xcode project (only do this once!)
+godot --path . --export-release "iOS" "../ios exports/TombOfTheMask.ipa"
+
+# Open in Xcode and configure:
+# 1. Set your development team
+# 2. Configure bundle ID
+# 3. Add app icons
+```
+
+**Updating Your iOS Build:**
+```bash
+# Export only the game content (much faster!)
+godot --path . --export-pack "iOS" "../ios exports/TombOfTheMask/TombOfTheMask.pck"
+
+# Then in Xcode: Clean (Shift+Cmd+K) and Run (Cmd+R)
+```
+
+### Building for Android
+
+```bash
+# Make sure you have Android export templates installed
+godot --path . --export-release "Android" "TombOfTheMask.apk"
+```
+
 ---
 
 Have fun playing! If you encounter any issues, feel free to reach out.

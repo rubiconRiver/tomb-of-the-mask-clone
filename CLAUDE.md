@@ -77,20 +77,16 @@ godot --path . --export-release "iOS" "../ios exports/TombOfTheMask.ipa"
 # 3. Configure bundle identifier, app icons, etc.
 ```
 
-### Updating Existing Build
+### Updating Existing Build (PREFERRED METHOD)
 ```bash
-# For subsequent updates, just export the .pck file:
+# Export just the PCK file with game content:
 godot --path . --export-pack "iOS" "../ios exports/TombOfTheMask/TombOfTheMask.pck"
 
+# This overwrites the .pck file in your existing Xcode project
 # Then in Xcode:
-# 1. Replace the old .pck file with the new one
+# 1. Clean build folder (Shift+Cmd+K)
 # 2. Build and run (Cmd+R)
-```
-
-### Alternative: Direct PCK Export
-```bash
-# You can also export just the PCK to update game content:
-godot --path . --export-release "iOS" "../ios exports/TombOfTheMask/data.pck" --export-pack-only
+# Your signing settings and project config remain unchanged!
 ```
 
 ### For App Store Release
