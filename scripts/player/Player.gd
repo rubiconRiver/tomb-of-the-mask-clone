@@ -1,7 +1,7 @@
 extends CharacterBody2D
 class_name Player
 
-@export var move_speed = 1400.0
+@export var move_speed = 1280.0  # Exactly 10 cells per beat at 120 BPM
 const GRID_SIZE = 64
 
 var is_moving = false

@@ -97,7 +97,7 @@ func setup_beat_indicator():
 	if ui_layer:
 		ui_layer.add_child(beat_indicator)
 		
-	beat_occurred.connect(beat_indicator.pulse)
+	# Don't auto-connect, we'll call manually based on beat type
 
 func setup_beat_timeline():
 	beat_timeline = beat_timeline_script.new()
@@ -211,8 +211,10 @@ func _process(delta):
 		print("Audio latency offset: ", audio_latency_offset * 1000, "ms")
 		
 	
-	# Return to level editor with L key when launched from editor
-	if Input.is_key_pressed(KEY_L) and LevelEditorData.is_launched_from_editor():
+	# Return to level editor with M key when launched from editor
+	if Input.is_key_pressed(KEY_M) and LevelEditorData.is_launched_from_editor():
+		print("M key pressed - checking if we should return to editor")
+		print("Is launched from editor: ", LevelEditorData.is_launched_from_editor())
 		return_to_level_editor()
 		return  # Prevent further processing this frame
 		
@@ -318,6 +320,13 @@ func spawn_player():
 func _on_beat():
 	emit_signal("beat_occurred")
 	
+	# Update beat indicator with appropriate pulse strength
+	if beat_indicator:
+		if beat_count % 4 == 0:
+			beat_indicator.pulse_strong()
+		else:
+			beat_indicator.pulse()
+	
 	# Check if this is a 4th beat and we haven't moved
 	if beat_count % 4 == 0 and beat_count > 0:
 		# Check if we've made a successful move since the last 4th beat
@@ -340,12 +349,19 @@ func _on_beat():
 		play_wall_hit_tom_fill()
 		pending_wall_hits -= 1
 	
-	# Pulse the background
+	# Pulse the background - stronger pulse on 4th beat (whole note)
 	var background = get_node_or_null("Background")
 	if background and background.material:
 		var tween = get_tree().create_tween()
-		tween.tween_property(background.material, "shader_parameter/pulse_strength", 0.6, 0.1)
-		tween.tween_property(background.material, "shader_parameter/pulse_strength", 0.3, 0.3)
+		
+		if beat_count % 4 == 0:
+			# Whole note - much stronger pulse
+			tween.tween_property(background.material, "shader_parameter/pulse_strength", 1.0, 0.1)
+			tween.tween_property(background.material, "shader_parameter/pulse_strength", 0.3, 0.4)
+		else:
+			# Regular beats - normal pulse
+			tween.tween_property(background.material, "shader_parameter/pulse_strength", 0.6, 0.1)
+			tween.tween_property(background.material, "shader_parameter/pulse_strength", 0.3, 0.3)
 
 func play_beat_sound():
 	if not beat_audio or not beat_audio.stream:
@@ -777,14 +793,20 @@ func next_level():
 		style_score_manager.reset_score()
 
 func return_to_menu():
-	# For now, just restart the game
-	start_game()
+	# If launched from editor, go back to editor instead
+	if LevelEditorData.is_launched_from_editor():
+		return_to_level_editor()
+	else:
+		# For now, just restart the game
+		start_game()
 
 func return_to_level_editor():
-	print("Returning to level editor...")
+	print("=== RETURNING TO LEVEL EDITOR ===")
+	print("Has backup: ", LevelEditorData.get_editor_backup() != null)
 	
 	# Clear the launched from editor flag
 	LevelEditorData.set_launched_from_editor(false)
+	print("Cleared launched from editor flag")
 	
 	# Reset viewport settings for editor
 	get_window().content_scale_mode = Window.CONTENT_SCALE_MODE_DISABLED
@@ -792,8 +814,14 @@ func return_to_level_editor():
 	get_window().size = Vector2i(2200, 1400)
 	
 	# Switch back to level editor
-	var editor_scene = preload("res://scenes/level_editor/LevelEditor.tscn")
-	get_tree().change_scene_to_packed(editor_scene)
+	print("Loading level editor scene...")
+	var editor_scene = load("res://scenes/level_editor/LevelEditor.tscn")
+	if editor_scene:
+		print("Editor scene loaded successfully")
+		get_tree().change_scene_to_packed(editor_scene)
+		print("Scene change initiated")
+	else:
+		print("ERROR: Failed to load level editor scene")
 
 func _on_goal_reached():
 	if is_level_complete:

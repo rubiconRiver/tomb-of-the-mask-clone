@@ -31,8 +31,25 @@ var camera: Camera2D
 var file_dialog: FileDialog
 var current_filename = ""
 
+# Click and drag support
+var is_dragging = false
+var last_placed_position = Vector2i(-1, -1)
+
+# Musical note guides
+var show_beat_guides = true
+var guide_origin = Vector2i(-1, -1)  # Where the guide starts
+var guide_destination = Vector2i(-1, -1)  # Where it ends
+var is_placing_guide = false
+const CELLS_PER_BEAT = 10  # At 1280 speed, 120 BPM
+const BEAT_GUIDE_COLORS = {
+	1: Color(0.3, 0.8, 0.3, 0.3),   # Quarter note - green
+	2: Color(0.3, 0.3, 0.8, 0.3),   # Half note - blue
+	4: Color(0.8, 0.3, 0.8, 0.3)    # Whole note - magenta
+}
+
 @onready var ui_layer = $UI
 @onready var instructions_panel = $UI/Instructions
+@onready var grid_node = $Grid
 
 func _ready():
 	# Override project's mobile viewport settings for level editor
@@ -71,8 +88,26 @@ func _ready():
 	setup_camera()
 	setup_file_dialog()
 	
-	# Load the big level by default
-	load_big_level()
+	# Make sure grid draws on top of tilemap
+	if grid_node:
+		grid_node.z_index = 10  # Draw on top of everything
+	
+	# Check if we're returning from testing a level
+	print("=== LEVEL EDITOR STARTING ===")
+	var backup = LevelEditorData.get_editor_backup()
+	if backup:
+		print("Found backup - restoring previous work")
+		restore_from_backup(backup)
+		LevelEditorData.clear_editor_backup()
+	else:
+		print("No backup found - loading default level")
+		# Load the big level by default
+		load_big_level()
+	
+	# Force initial grid draw
+	queue_redraw()
+	if grid_node:
+		grid_node.queue_redraw()
 	
 	print("Level Editor Ready!")
 	print("Keys 1-5: Tile types (6: Eraser) | Click: Place | Right-click: Erase")
@@ -172,26 +207,89 @@ func _input(event):
 			KEY_UP:
 				if camera:
 					camera.position.y -= GRID_SIZE
+					queue_redraw()
+					if grid_node:
+						grid_node.queue_redraw()
 			KEY_LEFT:
 				if camera:
 					camera.position.x -= GRID_SIZE
+					queue_redraw()
+					if grid_node:
+						grid_node.queue_redraw()
 			KEY_DOWN:
 				if camera:
 					camera.position.y += GRID_SIZE
+					queue_redraw()
+					if grid_node:
+						grid_node.queue_redraw()
 			KEY_RIGHT:
 				if camera:
 					camera.position.x += GRID_SIZE
+					queue_redraw()
+					if grid_node:
+						grid_node.queue_redraw()
 	
 	# Handle mouse input for tile placement
 	if event is InputEventMouseButton:
 		var grid_pos = world_to_grid(get_global_mouse_position())
 		
-		if is_valid_grid_position(grid_pos):
+		if event.button_index == MOUSE_BUTTON_LEFT:
 			if event.pressed:
-				if event.button_index == MOUSE_BUTTON_LEFT:
+				# Start dragging or place guide origin
+				if event.shift_pressed:
+					# Beat guide mode
+					guide_origin = grid_pos
+					is_placing_guide = true
+					queue_redraw()
+				else:
+					# Normal tile placement with drag support
+					is_dragging = true
+					last_placed_position = Vector2i(-1, -1)
+					if is_valid_grid_position(grid_pos):
+						place_tile(grid_pos, current_tile_type)
+						last_placed_position = grid_pos
+			else:
+				# Release - stop dragging or place guide destination
+				if is_placing_guide:
+					guide_destination = grid_pos
+					is_placing_guide = false
+					# Optionally place a wall at the destination
+					if is_valid_grid_position(grid_pos):
+						place_tile(grid_pos, TileType.WALL)
+					queue_redraw()
+				else:
+					is_dragging = false
+					
+		elif event.button_index == MOUSE_BUTTON_RIGHT:
+			if event.pressed:
+				# Right click to erase or clear guides
+				if event.shift_pressed:
+					# Clear beat guides
+					guide_origin = Vector2i(-1, -1)
+					guide_destination = Vector2i(-1, -1)
+					queue_redraw()
+				else:
+					# Start erase dragging
+					is_dragging = true
+					last_placed_position = Vector2i(-1, -1)
+					if is_valid_grid_position(grid_pos):
+						place_tile(grid_pos, TileType.EMPTY)
+						last_placed_position = grid_pos
+			else:
+				is_dragging = false
+	
+	# Handle mouse motion for dragging
+	elif event is InputEventMouseMotion:
+		if is_dragging:
+			var grid_pos = world_to_grid(get_global_mouse_position())
+			if is_valid_grid_position(grid_pos) and grid_pos != last_placed_position:
+				if Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT):
 					place_tile(grid_pos, current_tile_type)
-				elif event.button_index == MOUSE_BUTTON_RIGHT:
+				elif Input.is_mouse_button_pressed(MOUSE_BUTTON_RIGHT):
 					place_tile(grid_pos, TileType.EMPTY)
+				last_placed_position = grid_pos
+		elif is_placing_guide:
+			queue_redraw()  # Update the guide line as mouse moves
 
 func world_to_grid(world_pos: Vector2) -> Vector2i:
 	return Vector2i(int(world_pos.x / GRID_SIZE), int(world_pos.y / GRID_SIZE))
@@ -230,6 +328,45 @@ func update_current_tile_display():
 	if current_tile_label:
 		current_tile_label.text = "Current: " + get_tile_type_name(current_tile_type)
 
+func _draw():
+	# Draw beat guides
+	if show_beat_guides and guide_origin != Vector2i(-1, -1):
+		var start_pos = Vector2(guide_origin) * GRID_SIZE + Vector2(GRID_SIZE/2, GRID_SIZE/2)
+		var end_pos = Vector2(guide_destination) * GRID_SIZE + Vector2(GRID_SIZE/2, GRID_SIZE/2)
+		
+		if is_placing_guide:
+			# While placing, use mouse position
+			end_pos = get_global_mouse_position()
+		
+		# Draw the guide line
+		draw_line(start_pos, end_pos, Color(1.0, 1.0, 0.0, 0.8), 3.0)
+		
+		# Calculate distance and show beat markers
+		var distance = start_pos.distance_to(end_pos)
+		var cells = int(distance / GRID_SIZE)
+		var beats = float(cells) / CELLS_PER_BEAT
+		
+		# Draw beat markers along the line
+		for i in range(1, 5):  # Show up to 4 beats
+			var beat_distance = i * CELLS_PER_BEAT * GRID_SIZE
+			if beat_distance < distance:
+				var t = beat_distance / distance
+				var marker_pos = start_pos.lerp(end_pos, t)
+				var color = BEAT_GUIDE_COLORS.get(i, Color.WHITE)
+				draw_circle(marker_pos, 8, color)
+				draw_circle(marker_pos, 6, Color.BLACK)
+				
+				# Draw beat number
+				var font = ThemeDB.fallback_font
+				var text = str(i)
+				draw_string(font, marker_pos - Vector2(4, -4), text, HORIZONTAL_ALIGNMENT_CENTER, -1, 12, Color.WHITE)
+		
+		# Show distance info
+		var mid_point = start_pos.lerp(end_pos, 0.5)
+		var font = ThemeDB.fallback_font
+		var info_text = "%d cells (%.1f beats)" % [cells, beats]
+		draw_string(font, mid_point + Vector2(10, -10), info_text, HORIZONTAL_ALIGNMENT_LEFT, -1, 16, Color.YELLOW)
+
 func load_big_level():
 	print("Loading big level...")
 	# Get the big level template
@@ -264,6 +401,11 @@ func load_big_level():
 	
 	# Center camera on the loaded level
 	camera.position = Vector2(level_width * GRID_SIZE / 2, level_height * GRID_SIZE / 2)
+	
+	# Redraw to show grid
+	queue_redraw()
+	if grid_node:
+		grid_node.queue_redraw()
 
 func clear_level():
 	print("Clearing level...")
@@ -277,6 +419,11 @@ func clear_level():
 		for x in range(level_width):
 			if x == 0 or x == level_width - 1 or y == 0 or y == level_height - 1:
 				tilemap.set_cell(0, Vector2i(x, y), 0, Vector2i(TileType.WALL, 0))
+	
+	# Redraw to show grid
+	queue_redraw()
+	if grid_node:
+		grid_node.queue_redraw()
 
 func save_level():
 	print("Saving level...")
@@ -345,7 +492,8 @@ func save_level():
 		print("Failed to save level!")
 
 func load_into_game():
-	print("Loading level into main game...")
+	print("=== LOADING LEVEL INTO GAME ===")
+	print("Current level dimensions: ", level_width, "x", level_height)
 	
 	# Validate level has player spawn
 	var has_player_spawn = false
@@ -387,9 +535,28 @@ func load_into_game():
 			row.append(cell_type)
 		level_data.append(row)
 	
-	# Store level data in singleton
+	# Create backup of current tilemap state
+	var backup = {}
+	backup.width = level_width
+	backup.height = level_height
+	backup.tiles = []
+	
+	for y in range(level_height):
+		var row = []
+		for x in range(level_width):
+			var atlas_coords = tilemap.get_cell_atlas_coords(0, Vector2i(x, y))
+			if atlas_coords == Vector2i(-1, -1):
+				row.append(-1)  # Empty
+			else:
+				row.append(atlas_coords.x)  # Store tile type
+		backup.tiles.append(row)
+	
+	# Store backup and level data in singleton
+	print("Storing level backup with ", backup.tiles.size(), " rows")
+	LevelEditorData.set_editor_backup(backup)
 	LevelEditorData.set_custom_level(level_data)
 	LevelEditorData.set_launched_from_editor(true)
+	print("Set launched from editor flag = true")
 	
 	# Restore mobile viewport settings before switching to main game
 	get_window().content_scale_mode = Window.CONTENT_SCALE_MODE_VIEWPORT
@@ -397,9 +564,35 @@ func load_into_game():
 	get_window().size = Vector2i(720, 1560)
 	
 	# Switch to main scene with custom level
+	print("Switching to main game scene...")
 	var main_scene = preload("res://scenes/main.tscn")
 	get_tree().change_scene_to_packed(main_scene)
+	print("Scene change initiated - press M in game to return")
 
+
+func restore_from_backup(backup):
+	print("Restoring level from backup...")
+	print("Backup dimensions: ", backup.width, "x", backup.height)
+	print("Backup has ", backup.tiles.size(), " rows")
+	
+	# Update level dimensions
+	level_width = backup.width
+	level_height = backup.height
+	
+	# Clear existing tiles
+	tilemap.clear()
+	
+	# Restore tiles from backup
+	for y in range(backup.tiles.size()):
+		var row = backup.tiles[y]
+		for x in range(row.size()):
+			var tile_type = row[x]
+			if tile_type != -1:
+				tilemap.set_cell(0, Vector2i(x, y), 0, Vector2i(tile_type, 0))
+	
+	# Center camera on the restored level
+	camera.position = Vector2(level_width * GRID_SIZE / 2, level_height * GRID_SIZE / 2)
+	print("Level restored successfully")
 
 func new_level_dialog():
 	print("Select level size:")

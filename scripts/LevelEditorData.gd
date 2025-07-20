@@ -4,6 +4,7 @@ extends Node
 var custom_level_data = null
 var use_custom_level = false
 var launched_from_editor = false
+var editor_level_backup = null  # Store the tilemap state before testing
 
 func set_custom_level(level_data: Array):
 	custom_level_data = level_data
@@ -25,3 +26,12 @@ func set_launched_from_editor(value: bool):
 
 func is_launched_from_editor() -> bool:
 	return launched_from_editor
+
+func set_editor_backup(backup_data):
+	editor_level_backup = backup_data
+
+func get_editor_backup():
+	return editor_level_backup
+
+func clear_editor_backup():
+	editor_level_backup = null

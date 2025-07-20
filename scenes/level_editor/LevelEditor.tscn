@@ -1,6 +1,7 @@
-[gd_scene load_steps=3 format=3 uid="uid://t5cl84b1nyd8"]
+[gd_scene load_steps=4 format=3 uid="uid://t5cl84b1nyd8"]
 
 [ext_resource type="Script" uid="uid://cxrjxmyr60n3a" path="res://scripts/tools/LevelEditor.gd" id="1"]
+[ext_resource type="Script" uid="uid://by1b4nvcpa8sp" path="res://scripts/tools/GridOverlay.gd" id="2"]
 
 [sub_resource type="LabelSettings" id="1"]
 font_size = 24
@@ -9,6 +10,7 @@ font_size = 24
 script = ExtResource("1")
 
 [node name="Grid" type="Node2D" parent="."]
+script = ExtResource("2")
 
 [node name="UI" type="CanvasLayer" parent="."]
 
@@ -35,7 +37,10 @@ Tile Selection:
 
 Mouse Controls:
 - Left Click: Place tile
-- Right Click: Erase
+- Left Drag: Paint tiles
+- Right Click/Drag: Erase
+- Shift+Left Click: Start beat guide
+- Shift+Right Click: Clear guides
 
 Commands:
 - Ctrl+S: Save to test_levels.txt
@@ -46,9 +51,9 @@ Commands:
 Camera:
 - Arrow Keys: Move camera
 
-Tips:
-- Saves append with timestamp
-- Each level needs 1 spawn + 1 goal"
+Beat Guide:
+- Shows musical distances
+- 10 cells = 1 beat (120 BPM)"
 label_settings = SubResource("1")
 
 [node name="CurrentTile" type="Label" parent="UI"]
