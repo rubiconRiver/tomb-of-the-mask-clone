@@ -8,7 +8,7 @@ var style_score_manager_script = preload("res://scripts/ui/StyleScoreManager.gd"
 var timing_feedback_script = preload("res://scripts/ui/TimingFeedback.gd")
 var beat_timeline_script = preload("res://scripts/ui/BeatTimeline.gd")
 var beat_visualizer_script = preload("res://scripts/visual/BeatVisualizer.gd")
-var multiplier_audio_manager_script = preload("res://scripts/audio/MultiplierAudioManager.gd")
+var combo_music_system_script = preload("res://scripts/audio/ComboMusicSystem.gd")
 
 var player: Player
 var level_generator: LevelGenerator
@@ -18,7 +18,7 @@ var beat_indicator: Control
 var beat_timeline: BeatTimeline
 var style_score_manager: StyleScoreManager
 var beat_visualizer: BeatVisualizer
-var multiplier_audio_manager: MultiplierAudioManager
+var combo_music_system: ComboMusicSystem
 
 var score = 0  # Total points (coins × multiplier)
 var coins = 0  # Number of coins collected
@@ -85,7 +85,7 @@ func _ready():
 	setup_wall_hit_audio()
 	setup_beat_visualizer()
 	setup_multiplier_indicator()
-	setup_multiplier_audio()
+	setup_combo_music()
 	start_game()
 
 func setup_camera():
@@ -184,16 +184,15 @@ func setup_multiplier_indicator():
 	# Store reference for updates
 	set_meta("multiplier_indicator", multiplier_indicator)
 
-func setup_multiplier_audio():
-	print("[GameManager] Setting up multiplier audio system")
-	multiplier_audio_manager = multiplier_audio_manager_script.new()
-	add_child(multiplier_audio_manager)
+func setup_combo_music():
+	print("[GameManager] Setting up combo music system")
+	combo_music_system = combo_music_system_script.new()
+	add_child(combo_music_system)
 	
-	# Connect to existing signals
+	# Connect to combo changed signal
 	if style_score_manager:
-		style_score_manager.multiplier_changed.connect(multiplier_audio_manager.on_multiplier_changed)
-		style_score_manager.combo_changed.connect(multiplier_audio_manager.on_combo_changed)
-		print("[GameManager] Connected multiplier audio to style score manager")
+		style_score_manager.combo_changed.connect(_on_combo_changed_for_music)
+		print("[GameManager] Connected combo music to style score manager")
 
 func _process(delta):
 	if camera and player:
@@ -728,6 +727,10 @@ func _on_timing_calculated(quality: int, multiplier: float):
 
 func _on_combo_changed(new_combo: int):
 	update_ui()
+
+func _on_combo_changed_for_music(new_combo: int, multiplier_increased: bool):
+	if combo_music_system:
+		combo_music_system.play_combo_sound(new_combo, multiplier_increased)
 
 func _on_multiplier_changed(new_multiplier: int):
 	var multiplier_indicator = get_meta("multiplier_indicator", null)

@@ -6,11 +6,14 @@ extends Control
 @onready var animation_player = $AnimationPlayer
 
 const FLAME_COLORS = {
-	1: Color(0.5, 0.5, 0.5),  # Gray - no flame
-	2: Color(1.0, 0.5, 0.0),  # Orange - small flame
-	3: Color(1.0, 0.3, 0.0),  # Red-orange - medium flame
-	4: Color(1.0, 0.0, 0.0),  # Red - large flame
-	5: Color(0.0, 0.5, 1.0)   # Blue - max flame
+	1: Color(0.5, 0.5, 0.5),   # Gray - no flame
+	2: Color(1.0, 0.8, 0.0),   # Yellow - small flame
+	3: Color(1.0, 0.5, 0.0),   # Orange - growing flame
+	4: Color(1.0, 0.3, 0.0),   # Red-orange - medium flame
+	5: Color(1.0, 0.0, 0.0),   # Red - large flame
+	6: Color(0.8, 0.0, 0.8),   # Magenta - intense flame
+	7: Color(0.5, 0.0, 1.0),   # Purple - powerful flame
+	8: Color(0.0, 0.5, 1.0)    # Blue - max flame (octave!)
 }
 
 var current_multiplier = 1
@@ -37,10 +40,12 @@ func update_multiplier(new_multiplier: int):
 func update_display(multiplier: int):
 	if multiplier_label:
 		multiplier_label.text = str(multiplier) + "x"
-		multiplier_label.modulate = FLAME_COLORS[multiplier]
+		# Clamp to valid range
+		var clamped_multiplier = clamp(multiplier, 1, 8)
+		multiplier_label.modulate = FLAME_COLORS[clamped_multiplier]
 		
-		# Scale text based on multiplier
-		var scale = 1.0 + (multiplier - 1) * 0.15
+		# Scale text based on multiplier (slightly less scaling for 8 levels)
+		var scale = 1.0 + (clamped_multiplier - 1) * 0.1
 		multiplier_label.scale = Vector2(scale, scale)
 
 func play_increase_animation():

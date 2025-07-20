@@ -39,7 +39,7 @@ var on_beat_moves = 0
 
 # Multiplier system
 var current_multiplier = 1
-const MAX_MULTIPLIER = 5
+const MAX_MULTIPLIER = 8
 const MIN_MULTIPLIER = 1
 
 signal timing_calculated(quality: TimingQuality, multiplier: float)
