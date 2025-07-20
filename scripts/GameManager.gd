@@ -181,6 +181,11 @@ func _process(delta):
 	if camera and player:
 		camera.position = player.position
 		
+		# Update background shader with camera position
+		var background = get_node_or_null("Background")
+		if background and background.material:
+			background.material.set_shader_parameter("camera_position", camera.position)
+		
 	# Handle beat speed controls
 	if Input.is_action_just_pressed("ui_up"):
 		beat_interval = max(0.2, beat_interval - 0.05)
@@ -189,6 +194,8 @@ func _process(delta):
 		beat_interval = min(2.0, beat_interval + 0.05)
 		print("Beat interval: ", beat_interval)
 		
+	# Handle player speed adjustment with dedicated keys
+	
 	# Handle audio latency adjustment
 	if Input.is_action_just_pressed("ui_left"):
 		audio_latency_offset = max(-0.2, audio_latency_offset - 0.01)
@@ -669,6 +676,27 @@ func _on_multiplier_changed(new_multiplier: int):
 	var multiplier_indicator = get_meta("multiplier_indicator", null)
 	if multiplier_indicator:
 		multiplier_indicator.update_multiplier(new_multiplier)
+	
+	# Update background shader with new multiplier
+	var background = get_node_or_null("Background")
+	if background and background.material:
+		background.material.set_shader_parameter("multiplier", float(new_multiplier))
+
+func _unhandled_key_input(event):
+	if event.pressed and player:
+		match event.keycode:
+			KEY_R:
+				player.move_speed = min(2000, player.move_speed + 100)
+				print("Player move speed: ", player.move_speed)
+			KEY_T:
+				player.move_speed = max(100, player.move_speed - 100)
+				print("Player move speed: ", player.move_speed)
+			KEY_F:
+				player.move_speed = min(2000, player.move_speed + 10)
+				print("Player move speed: ", player.move_speed)
+			KEY_G:
+				player.move_speed = max(100, player.move_speed - 10)
+				print("Player move speed: ", player.move_speed)
 
 func update_latency_display():
 	if latency_label:

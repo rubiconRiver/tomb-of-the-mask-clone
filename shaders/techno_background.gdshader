@@ -7,16 +7,26 @@ uniform vec4 bg_color : source_color = vec4(0.0, 0.0, 0.1, 1.0);
 uniform float pulse_strength : hint_range(0.0, 1.0) = 0.3;
 uniform float wave_speed : hint_range(0.0, 5.0) = 1.0;
 uniform float wave_amplitude : hint_range(0.0, 20.0) = 5.0;
+uniform vec2 camera_position = vec2(0.0, 0.0);
+uniform float multiplier : hint_range(1.0, 5.0) = 1.0;
+uniform float parallax_factor : hint_range(0.0, 1.0) = 0.2;
 
 void fragment() {
     vec2 uv = FRAGCOORD.xy;
     
-    // Create grid lines
-    vec2 grid_uv = mod(uv, grid_size) / grid_size;
-    float grid_x = smoothstep(0.0, line_thickness / grid_size, grid_uv.x) * 
-                   smoothstep(0.0, line_thickness / grid_size, 1.0 - grid_uv.x);
-    float grid_y = smoothstep(0.0, line_thickness / grid_size, grid_uv.y) * 
-                   smoothstep(0.0, line_thickness / grid_size, 1.0 - grid_uv.y);
+    // Apply parallax effect
+    vec2 parallax_offset = camera_position * parallax_factor;
+    uv += parallax_offset;
+    
+    // Adjust grid size based on multiplier (subtle increase)
+    float dynamic_grid_size = grid_size + (multiplier - 1.0);
+    
+    // Create grid lines with dynamic size
+    vec2 grid_uv = mod(uv, dynamic_grid_size) / dynamic_grid_size;
+    float grid_x = smoothstep(0.0, line_thickness / dynamic_grid_size, grid_uv.x) * 
+                   smoothstep(0.0, line_thickness / dynamic_grid_size, 1.0 - grid_uv.x);
+    float grid_y = smoothstep(0.0, line_thickness / dynamic_grid_size, grid_uv.y) * 
+                   smoothstep(0.0, line_thickness / dynamic_grid_size, 1.0 - grid_uv.y);
     float grid = 1.0 - max(grid_x, grid_y);
     
     // Add wave distortion
