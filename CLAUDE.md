@@ -63,6 +63,41 @@ godot --export-release "iOS" tomb_of_mask.ipa
 - Check performance on lower-end devices
 - Verify swipe sensitivity feels good
 
+## iOS Build Instructions
+
+### First Time Setup
+```bash
+# Export iOS project (creates Xcode project) - ONLY DO THIS ONCE
+godot --path . --export-release "iOS" "../ios exports/TombOfTheMask.ipa"
+
+# The export creates an Xcode project at: ../ios exports/TombOfTheMask/
+# Initial setup:
+# 1. Open TombOfTheMask.xcodeproj in Xcode
+# 2. Select your development team in Signing & Capabilities
+# 3. Configure bundle identifier, app icons, etc.
+```
+
+### Updating Existing Build
+```bash
+# For subsequent updates, just export the .pck file:
+godot --path . --export-pack "iOS" "../ios exports/TombOfTheMask/TombOfTheMask.pck"
+
+# Then in Xcode:
+# 1. Replace the old .pck file with the new one
+# 2. Build and run (Cmd+R)
+```
+
+### Alternative: Direct PCK Export
+```bash
+# You can also export just the PCK to update game content:
+godot --path . --export-release "iOS" "../ios exports/TombOfTheMask/data.pck" --export-pack-only
+```
+
+### For App Store Release
+1. Update version/build number in Xcode
+2. Archive the project (Product > Archive)
+3. Distribute through App Store Connect
+
 ## Ad Integration Notes
 - Use Godot's AdMob plugin for initial implementation
 - Place interstitial ads carefully to not disrupt flow
