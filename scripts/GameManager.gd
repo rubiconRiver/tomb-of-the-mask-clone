@@ -665,10 +665,12 @@ func show_results_screen():
 		add_child(results_screen)
 	
 	var style_accuracy = 0.0
+	var timing_counts = {}
 	if style_score_manager:
 		style_accuracy = style_score_manager.get_accuracy()
+		timing_counts = style_score_manager.get_timing_counts()
 	
-	results_screen.show_results(level_complete_time, coins, total_coins_in_level, style_accuracy, current_level + 1)
+	results_screen.show_results(level_complete_time, coins, total_coins_in_level, style_accuracy, current_level + 1, timing_counts)
 
 func restart_level():
 	# Save current level before resetting

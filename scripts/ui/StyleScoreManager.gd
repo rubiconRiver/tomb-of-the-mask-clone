@@ -33,6 +33,8 @@ const TIMING_NAMES = {
 var combo_count = 0
 var total_moves = 0
 var perfect_moves = 0
+var great_moves = 0
+var good_moves = 0
 var on_beat_moves = 0
 
 signal timing_calculated(quality: TimingQuality, multiplier: float)
@@ -73,12 +75,17 @@ func register_move(beat_timer: float, beat_interval: float) -> Dictionary:
 	var quality = timing_result.quality
 	var multiplier = SCORE_MULTIPLIERS[quality]
 	
-	# Update combo
+	# Update combo and counts
 	if quality != TimingQuality.OFF_BEAT:
 		combo_count += 1
 		on_beat_moves += 1
-		if quality == TimingQuality.PERFECT:
-			perfect_moves += 1
+		match quality:
+			TimingQuality.PERFECT:
+				perfect_moves += 1
+			TimingQuality.GREAT:
+				great_moves += 1
+			TimingQuality.GOOD:
+				good_moves += 1
 	else:
 		combo_count = 0
 	
@@ -112,4 +119,17 @@ func reset_all():
 	combo_count = 0
 	total_moves = 0
 	perfect_moves = 0
+	great_moves = 0
+	good_moves = 0
 	on_beat_moves = 0
+
+func get_timing_counts() -> Dictionary:
+	return {
+		"perfect": perfect_moves,
+		"great": great_moves,
+		"good": good_moves,
+		"miss": total_moves - on_beat_moves
+	}
+
+func reset_score():
+	reset_all()
