@@ -194,3 +194,207 @@ static func play_samples_on_player(player: AudioStreamPlayer, audio_data: Packed
 			var end_idx = min(i + chunk_size, stereo_frames.size())
 			var chunk = stereo_frames.slice(i, end_idx)
 			playback.push_buffer(chunk)
+
+# Push audio samples directly to a playback buffer (for real-time generation)
+static func push_samples_to_playback(playback: AudioStreamGeneratorPlayback, audio_data: PackedFloat32Array, volume: float = 1.0):
+	# Convert to stereo frames and push
+	for sample in audio_data:
+		var frame = Vector2(sample, sample) * volume
+		playback.push_frame(frame)
+
+# ========== DRUM SOUNDS ==========
+
+# Kick drum - deep bass thump
+static func generate_kick_drum() -> PackedFloat32Array:
+	var duration = 0.15
+	var samples = int(SAMPLE_RATE * duration)
+	var audio_data = PackedFloat32Array()
+	
+	for i in samples:
+		var time = float(i) / SAMPLE_RATE
+		
+		# Main tone around 60 Hz with fast decay
+		var frequency = 60.0 * exp(-time * 35.0)  # Pitch drop effect
+		var main_tone = sin(2.0 * PI * frequency * time)
+		
+		# Add click attack
+		var click = sin(2.0 * PI * 1500.0 * time) * exp(-time * 100.0)
+		
+		# Envelope
+		var envelope = exp(-time * 20.0)
+		
+		var sample = (main_tone * 0.8 + click * 0.2) * envelope
+		audio_data.append(sample)
+	
+	return audio_data
+
+# Snare drum - noise burst with tonal component
+static func generate_snare_drum() -> PackedFloat32Array:
+	var duration = 0.1
+	var samples = int(SAMPLE_RATE * duration)
+	var audio_data = PackedFloat32Array()
+	
+	for i in samples:
+		var time = float(i) / SAMPLE_RATE
+		
+		# Snare drum component (noise burst)
+		var noise = (randf() * 2.0 - 1.0) * 0.7
+		
+		# Tonal component
+		var tone = sin(2.0 * PI * 200.0 * time) * 0.3
+		
+		# Mix with fast decay
+		var envelope = exp(-time * 50.0)
+		var sample = (noise + tone) * envelope
+		audio_data.append(sample)
+	
+	return audio_data
+
+# Hi-hat - high frequency noise burst
+static func generate_hihat_sound() -> PackedFloat32Array:
+	var duration = 0.05  # Very short for crisp hi-hat
+	var samples = int(SAMPLE_RATE * duration)
+	var audio_data = PackedFloat32Array()
+	
+	for i in samples:
+		var time = float(i) / SAMPLE_RATE
+		
+		# High-frequency noise
+		var noise = (randf() * 2.0 - 1.0)
+		
+		# Apply high-pass filter simulation (emphasize high frequencies)
+		var hp_noise = noise * 0.8
+		
+		# Very fast decay
+		var envelope = exp(-time * 100.0)
+		var sample = hp_noise * envelope * 0.5
+		audio_data.append(sample)
+	
+	return audio_data
+
+# Tom fill - descending toms
+static func generate_wall_hit_tom_fill() -> PackedFloat32Array:
+	var duration = 0.4  # Slightly longer for 3-note fill
+	var samples = int(SAMPLE_RATE * duration)
+	var audio_data = PackedFloat32Array()
+	
+	for i in samples:
+		var time = float(i) / SAMPLE_RATE
+		
+		# Three descending toms
+		var tom1 = 0.0
+		var tom2 = 0.0
+		var tom3 = 0.0
+		
+		# Tom 1: 0.0 - 0.13s (high tom)
+		if time < 0.13:
+			var t = time
+			var freq = 180.0 * exp(-t * 15.0)  # Pitch bend
+			tom1 = sin(2.0 * PI * freq * t) * exp(-t * 25.0)
+		
+		# Tom 2: 0.13 - 0.26s (mid tom)
+		elif time < 0.26:
+			var t = time - 0.13
+			var freq = 140.0 * exp(-t * 15.0)
+			tom2 = sin(2.0 * PI * freq * t) * exp(-t * 25.0)
+		
+		# Tom 3: 0.26 - 0.4s (low tom)
+		else:
+			var t = time - 0.26
+			var freq = 100.0 * exp(-t * 15.0)
+			tom3 = sin(2.0 * PI * freq * t) * exp(-t * 25.0)
+		
+		var sample = (tom1 + tom2 + tom3) * 0.7
+		audio_data.append(sample)
+	
+	return audio_data
+
+# ========== MELODIC SOUNDS ==========
+
+# Coin chime - beautiful melodic sound
+static func generate_coin_chime() -> PackedFloat32Array:
+	var duration = 0.2  # Shorter for 8th note frequency
+	var samples = int(SAMPLE_RATE * duration)
+	var audio_data = PackedFloat32Array()
+	
+	# Three beautiful coin chime variations - pleasing melodic intervals
+	var chime_sets = [
+		[1046.5, 1318.5, 1568.0],  # C6, E6, G6 (major triad - bright & happy)
+		[1174.7, 1318.5, 1568.0],  # D6, E6, G6 (sus2 harmony - dreamy)
+		[1046.5, 1244.5, 1568.0]   # C6, D#6, G6 (major with color tone - mystical)
+	]
+	
+	# Pick a random chime set
+	var chime = chime_sets[randi() % chime_sets.size()]
+	
+	for i in samples:
+		var time = float(i) / SAMPLE_RATE
+		var sample = 0.0
+		
+		# Combine all frequencies with different amplitudes
+		for j in range(chime.size()):
+			var freq = chime[j]
+			var amp = 1.0 / (j + 1)  # Higher frequencies quieter
+			sample += sin(2.0 * PI * freq * time) * amp
+		
+		# Envelope with fast attack and smooth decay
+		var attack = min(time * 200.0, 1.0)  # Fast attack
+		var decay = exp(-time * 8.0)  # Smooth decay
+		var envelope = attack * decay
+		
+		sample *= envelope * 0.15  # Overall volume
+		audio_data.append(sample)
+	
+	return audio_data
+
+# ========== AMBIENT SOUNDS ==========
+
+# Ambient guitar chord chunk (for continuous playback)
+static func generate_guitar_chord_chunk(time_position: float, chunk_size: int, sample_rate: float) -> PackedFloat32Array:
+	var audio_data = PackedFloat32Array()
+	
+	# Define a nice ambient chord (Cmaj7 - C, E, G, B)
+	var chord_frequencies = [261.63, 329.63, 392.00, 493.88]  # C4, E4, G4, B4
+	
+	for i in chunk_size:
+		var time = time_position + float(i) / sample_rate
+		var sample = 0.0
+		
+		# Mix all chord notes
+		for freq in chord_frequencies:
+			# Add slight vibrato for warmth
+			var vibrato = 1.0 + sin(2.0 * PI * 5.0 * time) * 0.005
+			sample += sin(2.0 * PI * freq * vibrato * time) * 0.25
+		
+		# Soft constant volume for continuous playback
+		sample *= 0.3
+		
+		audio_data.append(sample)
+	
+	return audio_data
+
+# Ambient guitar chord (one-shot)
+static func generate_guitar_chord(duration: float) -> PackedFloat32Array:
+	var samples = int(SAMPLE_RATE * duration)
+	var audio_data = PackedFloat32Array()
+	
+	# Define a nice ambient chord (Cmaj7 - C, E, G, B)
+	var chord_frequencies = [261.63, 329.63, 392.00, 493.88]  # C4, E4, G4, B4
+	
+	for i in samples:
+		var time = float(i) / SAMPLE_RATE
+		var sample = 0.0
+		
+		# Mix all chord notes
+		for freq in chord_frequencies:
+			# Add slight vibrato for warmth
+			var vibrato = 1.0 + sin(2.0 * PI * 5.0 * time) * 0.005
+			sample += sin(2.0 * PI * freq * vibrato * time) * 0.25
+		
+		# Soft envelope
+		var envelope = min(time * 2.0, 1.0) * (1.0 - time / duration)
+		sample *= envelope * 0.3
+		
+		audio_data.append(sample)
+	
+	return audio_data

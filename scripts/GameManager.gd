@@ -391,9 +391,11 @@ func play_beat_sound():
 	if playback:
 		# Play kick on beats 1 and 3, snare on beats 2 and 4
 		if beat_count % 4 == 0 or beat_count % 4 == 2:  # beats 1 and 3
-			generate_kick_drum(playback)
+			var kick = AudioGenerator.generate_kick_drum()
+			AudioGenerator.push_samples_to_playback(playback, kick, 0.5)
 		else:  # beats 2 and 4
-			generate_snare_drum(playback)
+			var snare = AudioGenerator.generate_snare_drum()
+			AudioGenerator.push_samples_to_playback(playback, snare, 0.6)
 
 func generate_kick_drum(playback: AudioStreamGeneratorPlayback):
 	var sample_rate = 44100
@@ -434,24 +436,9 @@ func play_hihat_sound():
 		
 	var playback = hihat_audio.get_stream_playback() as AudioStreamGeneratorPlayback
 	if playback:
-		generate_hihat_sound(playback)
+		var hihat = AudioGenerator.generate_hihat_sound()
+		AudioGenerator.push_samples_to_playback(playback, hihat, 0.4)
 
-func generate_hihat_sound(playback: AudioStreamGeneratorPlayback):
-	var sample_rate = 44100
-	var duration = 0.05  # Very short for crisp hi-hat
-	var frames = int(sample_rate * duration)
-	
-	for i in frames:
-		var time = float(i) / sample_rate
-		var envelope = exp(-time * 40.0)  # Very fast decay
-		
-		# Generate hi-hat with high-frequency noise and metallic shimmer
-		var noise = (randf() * 2.0 - 1.0) * 0.8
-		var metallic1 = sin(2.0 * PI * 8000.0 * time) * 0.3
-		var metallic2 = sin(2.0 * PI * 12000.0 * time) * 0.2
-		
-		var sample = (noise + metallic1 + metallic2) * envelope
-		playback.push_frame(Vector2(sample, sample) * 0.4)  # Quieter volume
 
 func start_guitar_chord():
 	if not guitar_audio or not guitar_audio.stream:
@@ -496,29 +483,12 @@ func update_guitar_stream(delta: float):
 	# Generate chunks as needed
 	while guitar_sample_timer >= chunk_duration:
 		guitar_sample_timer -= chunk_duration
-		generate_guitar_chunk(playback, samples_per_chunk, sample_rate)
-
-func generate_guitar_chunk(playback: AudioStreamGeneratorPlayback, chunk_size: int, sample_rate: float):
-	# Define a nice ambient chord (Cmaj7 - C, E, G, B)
-	var chord_frequencies = [261.63, 329.63, 392.00, 493.88]  # C4, E4, G4, B4
-	
-	for i in chunk_size:
-		var time = guitar_time_position
-		var envelope = 1.0 - exp(-time * 3.0)  # Slow attack
-		envelope *= exp(-time * 0.3)  # Very slow decay for sustain
-		
-		var chord_sample = 0.0
-		for freq in chord_frequencies:
-			# Simplified generation for better performance
-			var fundamental = sin(2.0 * PI * freq * time) * 0.7
-			var harmonic = sin(2.0 * PI * freq * 2.0 * time) * 0.2
-			chord_sample += (fundamental + harmonic) / 4.0
-		
-		var final_sample = chord_sample * envelope * 0.25  # Ambient volume
-		playback.push_frame(Vector2(final_sample, final_sample))
-		
+		# Use AudioGenerator for guitar chord
+		var guitar_chunk = AudioGenerator.generate_guitar_chord_chunk(guitar_time_position, samples_per_chunk, sample_rate)
+		AudioGenerator.push_samples_to_playback(playback, guitar_chunk, 0.25)
 		# Advance time position
-		guitar_time_position += 1.0 / sample_rate
+		guitar_time_position += samples_per_chunk / sample_rate
+
 
 func play_coin_chime():
 	if not coin_audio or not coin_audio.stream:
@@ -529,37 +499,8 @@ func play_coin_chime():
 		
 	var playback = coin_audio.get_stream_playback() as AudioStreamGeneratorPlayback
 	if playback:
-		generate_coin_chime(playback)
-
-func generate_coin_chime(playback: AudioStreamGeneratorPlayback):
-	var sample_rate = 44100
-	var duration = 0.2  # Shorter for 8th note frequency
-	var frames = int(sample_rate * duration)
-	
-	# Three beautiful coin chime variations - pleasing melodic intervals
-	var chime_sets = [
-		[1046.5, 1318.5, 1568.0],  # C6, E6, G6 (major triad - bright & happy)
-		[1174.7, 1318.5, 1568.0],  # D6, E6, G6 (sus2 harmony - dreamy)
-		[1046.5, 1244.5, 1568.0]   # C6, D#6, G6 (major with color tone - mystical)
-	]
-	
-	# Randomly choose one of the three chime sets
-	var chime_frequencies = chime_sets[randi() % chime_sets.size()]
-	
-	for i in frames:
-		var time = float(i) / sample_rate
-		var envelope = exp(-time * 12.0)  # Faster decay for crisp 8th note timing
-		
-		var chime_sample = 0.0
-		for freq in chime_frequencies:
-			# Add harmonics for bell-like quality
-			var fundamental = sin(2.0 * PI * freq * time) * 0.6
-			var harmonic2 = sin(2.0 * PI * freq * 2.0 * time) * 0.2
-			var harmonic3 = sin(2.0 * PI * freq * 3.0 * time) * 0.1
-			chime_sample += (fundamental + harmonic2 + harmonic3) / 3.0
-		
-		var final_sample = chime_sample * envelope * 0.35  # Slightly quieter for frequent use
-		playback.push_frame(Vector2(final_sample, final_sample))
+		var coin_chime = AudioGenerator.generate_coin_chime()
+		AudioGenerator.push_samples_to_playback(playback, coin_chime, 0.35)
 
 func play_wall_hit_tom_fill():
 	if not wall_hit_audio or not wall_hit_audio.stream:
@@ -570,42 +511,8 @@ func play_wall_hit_tom_fill():
 		
 	var playback = wall_hit_audio.get_stream_playback() as AudioStreamGeneratorPlayback
 	if playback:
-		generate_wall_hit_tom_fill(playback)
-
-func generate_wall_hit_tom_fill(playback: AudioStreamGeneratorPlayback):
-	var sample_rate = 44100
-	var duration = 0.4  # Slightly longer for 3-note fill
-	var frames = int(sample_rate * duration)
-	
-	for i in frames:
-		var time = float(i) / sample_rate
-		var envelope = exp(-time * 10.0)  # Moderate decay for punchy tom sequence
-		
-		# Three tom hits: du-du-DUH pattern (high-high-low)
-		var tom1_freq = 180.0  # High tom (du)
-		var tom2_freq = 160.0  # High tom (du) 
-		var tom3_freq = 80.0   # Low tom (DUH!)
-		
-		# Timing: tom1 (0-0.08s), tom2 (0.08-0.16s), tom3 (0.16-0.32s)
-		var tom_sample = 0.0
-		if time < 0.08:
-			# First tom (du) - crisp and high
-			tom_sample = sin(2.0 * PI * tom1_freq * time) * exp(-time * 30.0) * 0.8
-		elif time < 0.16:
-			# Second tom (du) - similar pitch, slight variation
-			var tom2_time = time - 0.08
-			tom_sample = sin(2.0 * PI * tom2_freq * tom2_time) * exp(-tom2_time * 30.0) * 0.8
-		elif time < 0.32:
-			# Third tom (DUH!) - deep and punchy
-			var tom3_time = time - 0.16
-			tom_sample = sin(2.0 * PI * tom3_freq * tom3_time) * exp(-tom3_time * 20.0) * 1.2  # Louder for emphasis
-		
-		# Add noise for realistic tom texture
-		var noise = (randf() * 2.0 - 1.0) * 0.25 * envelope
-		var final_sample = (tom_sample + noise) * envelope * 0.75
-		
-		playback.push_frame(Vector2(final_sample, final_sample))
-
+		var wall_hit = AudioGenerator.generate_wall_hit_tom_fill()
+		AudioGenerator.push_samples_to_playback(playback, wall_hit, 0.75)
 func _on_swipe_detected(direction: Vector2):
 	if not is_game_over and player and not player.is_moving:
 		# Start the guitar chord when movement begins
