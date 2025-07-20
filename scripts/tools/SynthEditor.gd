@@ -100,48 +100,55 @@ func _ready():
 	print("[SynthEditor] Ready - Press A in game to open")
 
 func setup_window():
-	# Create modal overlay
+	# Make this control fill the entire screen as modal overlay
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	modulate = Color(1, 1, 1, 1)  # Full opacity
 	mouse_filter = Control.MOUSE_FILTER_STOP  # Block input to game
+	z_index = 1000  # Ensure it's on top of everything
 	
-	# Add semi-transparent background
+	# Add semi-transparent background overlay
 	var overlay = ColorRect.new()
 	overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	overlay.color = Color(0, 0, 0, 0.7)
+	overlay.color = Color(0, 0, 0, 0.8)  # Darker for better contrast
+	overlay.mouse_filter = Control.MOUSE_FILTER_STOP
 	add_child(overlay)
 	
-	# Size and center the editor panel
-	var editor_width = 800
-	var editor_height = 600
+	# Create centered container for the editor panel
+	var center_container = CenterContainer.new()
+	center_container.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	center_container.mouse_filter = Control.MOUSE_FILTER_IGNORE  # Let clicks pass through to panel
+	add_child(center_container)
 	
+	# Create the main editor panel
 	background_panel = Panel.new()
-	background_panel.size = Vector2(editor_width, editor_height)
-	background_panel.position = (get_viewport().get_visible_rect().size - background_panel.size) / 2
-	add_child(background_panel)
+	background_panel.custom_minimum_size = Vector2(900, 700)  # Larger for better visibility
+	background_panel.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	background_panel.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	center_container.add_child(background_panel)
 	
-	# Add subtle border and styling
+	# Style the panel with clear visibility
 	var style_box = StyleBoxFlat.new()
-	style_box.bg_color = Color(0.15, 0.15, 0.2)
-	style_box.border_color = Color(0.4, 0.4, 0.5)
-	style_box.border_width_left = 2
-	style_box.border_width_right = 2
-	style_box.border_width_top = 2
-	style_box.border_width_bottom = 2
-	style_box.corner_radius_top_left = 8
-	style_box.corner_radius_top_right = 8
-	style_box.corner_radius_bottom_left = 8
-	style_box.corner_radius_bottom_right = 8
+	style_box.bg_color = Color(0.12, 0.12, 0.18)  # Darker background
+	style_box.border_color = Color(0.6, 0.6, 0.7)  # Brighter border
+	style_box.border_width_left = 3
+	style_box.border_width_right = 3
+	style_box.border_width_top = 3
+	style_box.border_width_bottom = 3
+	style_box.corner_radius_top_left = 12
+	style_box.corner_radius_top_right = 12
+	style_box.corner_radius_bottom_left = 12
+	style_box.corner_radius_bottom_right = 12
+	style_box.shadow_color = Color(0, 0, 0, 0.5)
+	style_box.shadow_size = 8
 	background_panel.add_theme_stylebox_override("panel", style_box)
 
 func setup_ui():
 	var main_vbox = VBoxContainer.new()
 	main_vbox.anchors_preset = Control.PRESET_FULL_RECT
-	main_vbox.offset_left = 20
-	main_vbox.offset_top = 20
-	main_vbox.offset_right = -20
-	main_vbox.offset_bottom = -20
-	main_vbox.add_theme_constant_override("separation", 15)
+	main_vbox.offset_left = 30
+	main_vbox.offset_top = 30
+	main_vbox.offset_right = -30
+	main_vbox.offset_bottom = -30
+	main_vbox.add_theme_constant_override("separation", 20)
 	background_panel.add_child(main_vbox)
 	
 	# Title and close button
@@ -150,14 +157,16 @@ func setup_ui():
 	
 	title_label = Label.new()
 	title_label.text = "🎛️ Synth Editor"
-	title_label.add_theme_font_size_override("font_size", 24)
+	title_label.add_theme_font_size_override("font_size", 28)
+	title_label.add_theme_color_override("font_color", Color(0.9, 0.9, 1.0))
 	title_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	header_container.add_child(title_label)
 	
 	close_button = Button.new()
 	close_button.text = "✕"
-	close_button.custom_minimum_size = Vector2(40, 40)
-	close_button.add_theme_font_size_override("font_size", 18)
+	close_button.custom_minimum_size = Vector2(50, 40)
+	close_button.add_theme_font_size_override("font_size", 20)
+	close_button.add_theme_color_override("font_color", Color(1.0, 0.8, 0.8))
 	close_button.pressed.connect(_on_close_pressed)
 	header_container.add_child(close_button)
 	
@@ -167,11 +176,13 @@ func setup_ui():
 	
 	var selector_label = Label.new()
 	selector_label.text = "Select Sound:"
-	selector_label.add_theme_font_size_override("font_size", 16)
+	selector_label.add_theme_font_size_override("font_size", 18)
+	selector_label.add_theme_color_override("font_color", Color(0.9, 0.9, 1.0))
 	selector_container.add_child(selector_label)
 	
 	sound_selector = OptionButton.new()
-	sound_selector.custom_minimum_size = Vector2(0, 40)
+	sound_selector.custom_minimum_size = Vector2(0, 45)
+	sound_selector.add_theme_font_size_override("font_size", 16)
 	for sound_type in sound_configs:
 		var config = sound_configs[sound_type]
 		sound_selector.add_item(config.name)
@@ -201,7 +212,8 @@ func setup_ui():
 	
 	var params_title = Label.new()
 	params_title.text = "Parameters"
-	params_title.add_theme_font_size_override("font_size", 18)
+	params_title.add_theme_font_size_override("font_size", 20)
+	params_title.add_theme_color_override("font_color", Color(0.9, 0.9, 1.0))
 	params_vbox.add_child(params_title)
 	
 	var scroll_container = ScrollContainer.new()
@@ -228,7 +240,8 @@ func setup_ui():
 	
 	var preview_title = Label.new()
 	preview_title.text = "Preview"
-	preview_title.add_theme_font_size_override("font_size", 18)
+	preview_title.add_theme_font_size_override("font_size", 20)
+	preview_title.add_theme_color_override("font_color", Color(0.9, 0.9, 1.0))
 	preview_vbox.add_child(preview_title)
 	
 	waveform_preview = preload("res://scripts/tools/MiniWaveform.gd").new()
@@ -242,15 +255,16 @@ func setup_ui():
 	
 	preview_button = Button.new()
 	preview_button.text = "▶ Preview Sound"
-	preview_button.custom_minimum_size = Vector2(0, 40)
-	preview_button.add_theme_font_size_override("font_size", 16)
+	preview_button.custom_minimum_size = Vector2(0, 50)
+	preview_button.add_theme_font_size_override("font_size", 18)
+	preview_button.add_theme_color_override("font_color", Color(0.9, 1.0, 0.9))
 	preview_button.pressed.connect(_on_preview_pressed)
 	bottom_container.add_child(preview_button)
 	
 	var help_label = Label.new()
 	help_label.text = "💡 Tip: Adjust sliders and click Preview to hear changes • Press ESC to close"
-	help_label.add_theme_font_size_override("font_size", 12)
-	help_label.modulate = Color(0.7, 0.7, 0.8)
+	help_label.add_theme_font_size_override("font_size", 14)
+	help_label.add_theme_color_override("font_color", Color(0.8, 0.8, 0.9))
 	help_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	bottom_container.add_child(help_label)
 
@@ -300,16 +314,17 @@ func create_parameter_control(param_name: String, param_config: Dictionary):
 	
 	var name_label = Label.new()
 	name_label.text = param_config.name
-	name_label.add_theme_font_size_override("font_size", 14)
+	name_label.add_theme_font_size_override("font_size", 16)
+	name_label.add_theme_color_override("font_color", Color(0.9, 0.9, 1.0))
 	name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	header_container.add_child(name_label)
 	
 	var value_label = Label.new()
 	value_label.text = format_value(sound_parameters[param_name], param_config.unit)
-	value_label.add_theme_font_size_override("font_size", 12)
-	value_label.modulate = Color(0.8, 0.8, 1.0)
+	value_label.add_theme_font_size_override("font_size", 14)
+	value_label.add_theme_color_override("font_color", Color(0.8, 1.0, 0.8))
 	value_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	value_label.custom_minimum_size = Vector2(80, 0)
+	value_label.custom_minimum_size = Vector2(100, 0)
 	header_container.add_child(value_label)
 	
 	# Slider control
@@ -318,7 +333,7 @@ func create_parameter_control(param_name: String, param_config: Dictionary):
 	slider.max_value = param_config.max
 	slider.value = sound_parameters[param_name]
 	slider.step = (param_config.max - param_config.min) / 100.0  # 100 steps
-	slider.custom_minimum_size = Vector2(0, 30)
+	slider.custom_minimum_size = Vector2(0, 35)
 	slider.value_changed.connect(_on_parameter_changed.bind(param_name, value_label, param_config.unit))
 	control_container.add_child(slider)
 	
