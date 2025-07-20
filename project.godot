@@ -19,6 +19,7 @@ config/icon="res://icon.svg"
 [autoload]
 
 LevelEditorData="*res://scripts/LevelEditorData.gd"
+AudioManager="*res://scripts/audio/AudioManager.gd"
 
 [display]
 

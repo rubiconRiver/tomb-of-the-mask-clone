@@ -63,7 +63,7 @@ func _process(delta):
 		current_pulse = max(0, current_pulse - delta * pulse_decay)
 		_update_all_materials()
 
-func trigger_beat():
+func trigger_beat(_beat_count: int):
 	current_pulse = 1.0
 	beat_pulse.emit()
 	_update_all_materials()
