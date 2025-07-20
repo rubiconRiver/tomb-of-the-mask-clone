@@ -242,6 +242,9 @@ func _input(event):
 					queue_redraw()
 					if grid_node:
 						grid_node.queue_redraw()
+			KEY_G:
+				if event.ctrl_pressed:
+					calculate_ghost_path()
 	
 	# Handle mouse input for tile placement
 	if event is InputEventMouseButton:
@@ -854,3 +857,41 @@ func new_level_dialog():
 	# Update camera position
 	if camera:
 		camera.position = Vector2(level_width * GRID_SIZE / 2, level_height * GRID_SIZE / 2)
+
+func calculate_ghost_path():
+	print("\n=== CALCULATING GHOST PATH ===")
+	
+	# Build current level template
+	var level_template = []
+	for y in range(level_height):
+		var row = ""
+		for x in range(level_width):
+			var grid_pos = Vector2i(x, y)
+			var cell_char = "."
+			
+			# Check for waypoint first
+			if grid_pos in waypoints:
+				cell_char = waypoints[grid_pos]
+			else:
+				# Check regular tiles
+				var atlas_coords = tilemap.get_cell_atlas_coords(0, grid_pos)
+				if atlas_coords != Vector2i(-1, -1):
+					match atlas_coords.x:
+						TileType.WALL:
+							cell_char = "#"
+						TileType.COIN:
+							cell_char = "C"
+						TileType.SPIKE:
+							cell_char = "S"
+						TileType.PLAYER_SPAWN:
+							cell_char = "P"
+						TileType.GOAL:
+							cell_char = "G"
+			row += cell_char
+		level_template.append(row)
+	
+	# Calculate the path
+	var calculator = load("res://scripts/tools/GhostPathCalculator.gd")
+	var result = calculator.calculate_ghost_path(level_template)
+	
+	print("\nPress Ctrl+G to recalculate ghost path")
