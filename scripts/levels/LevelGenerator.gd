@@ -34,15 +34,15 @@ func generate_level():
 	# Use hand-crafted levels instead of random generation
 	elif current_level == 0:
 		# Load Big Level
-		var template = LevelTemplates.get_big_level()
+		var template = LevelTemplates.get_garett_tutorial()
 		level_data = LevelTemplates.parse_template(template)
 	elif current_level == 1:
 		# Load Tutorial Level
 		var template = LevelTemplates.get_tutorial_level()
 		level_data = LevelTemplates.parse_template(template)
 	elif current_level == 2:
-		# Load Level 1
-		var template = LevelTemplates.get_level_1()
+		# Load Garett's Tutorial
+		var template = LevelTemplates.get_garett_tutorial()
 		level_data = LevelTemplates.parse_template(template)
 	else:
 		# Fall back to random generation for now

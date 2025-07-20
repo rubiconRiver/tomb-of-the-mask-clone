@@ -53,7 +53,7 @@ Camera:
 
 Beat Guide:
 - Shows musical distances
-- 10 cells = 1 beat (120 BPM)"
+- 8 cells = 1 beat (120 BPM)"
 label_settings = SubResource("1")
 
 [node name="CurrentTile" type="Label" parent="UI"]

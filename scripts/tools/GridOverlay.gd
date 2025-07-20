@@ -12,8 +12,8 @@ func _draw():
 		var color = Color(0.3, 0.3, 0.3, 0.3)  # Light gray
 		var thickness = 1.0
 		
-		if x % 10 == 0:
-			# Thicker line every 10 cells
+		if x % 8 == 0:
+			# Thicker line every 8 cells (1 beat)
 			color = Color(0.5, 0.5, 0.5, 0.5)
 			thickness = 2.0
 		
@@ -25,8 +25,8 @@ func _draw():
 		var color = Color(0.3, 0.3, 0.3, 0.3)  # Light gray
 		var thickness = 1.0
 		
-		if y % 10 == 0:
-			# Thicker line every 10 cells
+		if y % 8 == 0:
+			# Thicker line every 8 cells (1 beat)
 			color = Color(0.5, 0.5, 0.5, 0.5)
 			thickness = 2.0
 		

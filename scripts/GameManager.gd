@@ -20,7 +20,7 @@ var beat_visualizer: BeatVisualizer
 
 var score = 0  # Total points (coins × multiplier)
 var coins = 0  # Number of coins collected
-var current_level = 0
+var current_level = 2  # Start with Garett's tutorial
 var is_game_over = false
 var level_start_time = 0.0
 var level_complete_time = 0.0
@@ -257,7 +257,7 @@ func _process(delta):
 func start_game():
 	score = 0
 	coins = 0
-	current_level = 0
+	current_level = 2  # Start with Garett's tutorial
 	is_game_over = false
 	is_level_complete = false
 	level_start_time = Time.get_ticks_msec() / 1000.0
@@ -288,6 +288,9 @@ func setup_level():
 		
 	level_generator = level_generator_scene.instantiate()
 	add_child(level_generator)
+	
+	# Pass the current level to the generator
+	level_generator.current_level = current_level
 	
 	# Count total coins in the level
 	total_coins_in_level = 0

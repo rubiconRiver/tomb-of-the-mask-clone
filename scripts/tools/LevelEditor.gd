@@ -40,7 +40,7 @@ var show_beat_guides = true
 var guide_origin = Vector2i(-1, -1)  # Where the guide starts
 var guide_destination = Vector2i(-1, -1)  # Where it ends
 var is_placing_guide = false
-const CELLS_PER_BEAT = 10  # At 1280 speed, 120 BPM
+const CELLS_PER_BEAT = 8  # At 1024 speed, 120 BPM
 const BEAT_GUIDE_COLORS = {
 	1: Color(0.3, 0.8, 0.3, 0.3),   # Quarter note - green
 	2: Color(0.3, 0.3, 0.8, 0.3),   # Half note - blue
