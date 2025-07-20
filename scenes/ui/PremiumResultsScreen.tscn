@@ -1,0 +1,592 @@
+[gd_scene load_steps=7 format=3]
+
+[ext_resource type="PackedScene" path="res://scenes/ui/StarRating.tscn" id="1"]
+
+[sub_resource type="GDScript" id="2"]
+resource_name = "PremiumResultsScreen"
+script/source = "extends Control
+
+@onready var title_label = $AnimationContainer/TitleLabel
+@onready var panel = $AnimationContainer/ResultsPanel
+@onready var speed_container = $AnimationContainer/ResultsPanel/ContentContainer/StatsContainer/SpeedContainer
+@onready var coins_container = $AnimationContainer/ResultsPanel/ContentContainer/StatsContainer/CoinsContainer
+@onready var style_container = $AnimationContainer/ResultsPanel/ContentContainer/StatsContainer/StyleContainer
+
+@onready var speed_value = $AnimationContainer/ResultsPanel/ContentContainer/StatsContainer/SpeedContainer/ValueContainer/TimeValue
+@onready var coins_value = $AnimationContainer/ResultsPanel/ContentContainer/StatsContainer/CoinsContainer/ValueContainer/CoinsValue
+@onready var style_value = $AnimationContainer/ResultsPanel/ContentContainer/StatsContainer/StyleContainer/ValueContainer/StyleValue
+
+@onready var speed_stars = $AnimationContainer/ResultsPanel/ContentContainer/StatsContainer/SpeedContainer/StarRating
+@onready var coins_stars = $AnimationContainer/ResultsPanel/ContentContainer/StatsContainer/CoinsContainer/StarRating
+@onready var style_stars = $AnimationContainer/ResultsPanel/ContentContainer/StatsContainer/StyleContainer/StarRating
+
+@onready var total_score_container = $AnimationContainer/ResultsPanel/ContentContainer/TotalScoreContainer
+@onready var total_score_value = $AnimationContainer/ResultsPanel/ContentContainer/TotalScoreContainer/ScoreValue
+@onready var grade_badge = $AnimationContainer/ResultsPanel/ContentContainer/GradeBadge
+@onready var grade_label = $AnimationContainer/ResultsPanel/ContentContainer/GradeBadge/GradeLabel
+
+@onready var buttons_container = $AnimationContainer/ResultsPanel/ButtonsContainer
+@onready var retry_button = $AnimationContainer/ResultsPanel/ButtonsContainer/RetryButton
+@onready var next_button = $AnimationContainer/ResultsPanel/ButtonsContainer/NextButton
+@onready var menu_button = $AnimationContainer/ResultsPanel/ButtonsContainer/MenuButton
+
+var game_manager
+var level_time: float
+var coins_collected: int
+var total_coins: int
+var style_accuracy: float
+var level_num: int
+
+# Animation values
+var displayed_time: float = 0.0
+var displayed_coins: int = 0
+var displayed_style: float = 0.0
+var displayed_score: int = 0
+
+const SPEED_THRESHOLDS = {
+	1: [30, 20, 15],
+	2: [45, 30, 20],
+	3: [60, 40, 30]
+}
+
+const COIN_PERCENTAGES = [0.33, 0.66, 1.0]
+const STYLE_PERCENTAGES = [40, 70, 90]
+
+func _ready():
+	# Hide everything initially
+	modulate.a = 0.0
+	panel.scale = Vector2.ZERO
+	title_label.modulate.a = 0.0
+	
+	# Connect buttons
+	retry_button.pressed.connect(_on_retry_pressed)
+	next_button.pressed.connect(_on_next_pressed)
+	menu_button.pressed.connect(_on_menu_pressed)
+
+func show_results(time: float, coins: int, total: int, accuracy: float, level: int):
+	level_time = time
+	coins_collected = coins
+	total_coins = total
+	style_accuracy = accuracy
+	level_num = level
+	
+	# Calculate ratings
+	var speed_rating = calculate_speed_rating(time, level)
+	var coins_rating = calculate_coins_rating(coins, total)
+	var style_rating = calculate_style_rating(accuracy)
+	
+	# Start the animation sequence
+	animate_entrance()
+
+func animate_entrance():
+	# Fade in background
+	var tween = create_tween()
+	tween.tween_property(self, \"modulate:a\", 1.0, 0.3)
+	
+	# Animate title
+	await get_tree().create_timer(0.2).timeout
+	var title_tween = create_tween()
+	title_tween.set_ease(Tween.EASE_OUT)
+	title_tween.set_trans(Tween.TRANS_BACK)
+	title_tween.tween_property(title_label, \"modulate:a\", 1.0, 0.3)
+	title_tween.parallel().tween_property(title_label, \"scale\", Vector2(1.2, 1.2), 0.3)
+	title_tween.tween_property(title_label, \"scale\", Vector2.ONE, 0.2)
+	
+	# Animate panel
+	await get_tree().create_timer(0.3).timeout
+	var panel_tween = create_tween()
+	panel_tween.set_ease(Tween.EASE_OUT)
+	panel_tween.set_trans(Tween.TRANS_BACK)
+	panel_tween.tween_property(panel, \"scale\", Vector2.ONE, 0.5)
+	
+	# Start stat animations
+	await get_tree().create_timer(0.5).timeout
+	animate_stats()
+
+func animate_stats():
+	# Animate each stat container sliding in
+	var containers = [speed_container, coins_container, style_container]
+	
+	for i in containers.size():
+		var container = containers[i]
+		container.modulate.a = 0.0
+		container.position.x -= 100
+		
+		await get_tree().create_timer(0.2 * i).timeout
+		
+		var tween = create_tween()
+		tween.set_ease(Tween.EASE_OUT)
+		tween.set_trans(Tween.TRANS_CUBIC)
+		tween.tween_property(container, \"position:x\", container.position.x + 100, 0.3)
+		tween.parallel().tween_property(container, \"modulate:a\", 1.0, 0.3)
+	
+	# Start value animations after containers are in
+	await get_tree().create_timer(0.8).timeout
+	animate_values()
+
+func animate_values():
+	# Animate speed (time counting up)
+	var time_tween = create_tween()
+	time_tween.tween_method(update_time_display, 0.0, level_time, 1.0)
+	
+	# Animate coins (counting up)
+	await get_tree().create_timer(0.3).timeout
+	var coins_tween = create_tween()
+	coins_tween.tween_method(update_coins_display, 0, coins_collected, 0.8)
+	
+	# Animate style (percentage counting up)
+	await get_tree().create_timer(0.3).timeout
+	var style_tween = create_tween()
+	style_tween.tween_method(update_style_display, 0.0, style_accuracy, 0.8)
+	
+	# Wait for counters to finish
+	await get_tree().create_timer(1.2).timeout
+	
+	# Animate stars
+	animate_star_ratings()
+
+func update_time_display(value: float):
+	displayed_time = value
+	var minutes = int(value) / 60
+	var seconds = int(value) % 60
+	speed_value.text = \"%d:%02d\" % [minutes, seconds]
+
+func update_coins_display(value: int):
+	displayed_coins = value
+	coins_value.text = \"%d/%d\" % [value, total_coins]
+
+func update_style_display(value: float):
+	displayed_style = value
+	style_value.text = \"%d%%\" % int(value)
+
+func animate_star_ratings():
+	# Calculate ratings
+	var speed_rating = calculate_speed_rating(level_time, level_num)
+	var coins_rating = calculate_coins_rating(coins_collected, total_coins)
+	var style_rating = calculate_style_rating(style_accuracy)
+	
+	# Animate each star rating
+	speed_stars.set_rating(speed_rating, true)
+	await get_tree().create_timer(0.3).timeout
+	
+	coins_stars.set_rating(coins_rating, true)
+	await get_tree().create_timer(0.3).timeout
+	
+	style_stars.set_rating(style_rating, true)
+	
+	# Wait for stars to finish
+	await style_stars.animation_finished
+	
+	# Show total score and grade
+	animate_final_score(speed_rating, coins_rating, style_rating)
+
+func animate_final_score(speed_rating: int, coins_rating: int, style_rating: int):
+	# Calculate total score
+	var base_score = 1000
+	var speed_bonus = speed_rating * 300
+	var coins_bonus = coins_rating * 300
+	var style_bonus = style_rating * 400
+	var total_score = base_score + speed_bonus + coins_bonus + style_bonus
+	
+	# Animate score container appearing
+	total_score_container.modulate.a = 0.0
+	total_score_container.scale = Vector2(0.8, 0.8)
+	
+	var score_tween = create_tween()
+	score_tween.set_ease(Tween.EASE_OUT)
+	score_tween.set_trans(Tween.TRANS_BACK)
+	score_tween.tween_property(total_score_container, \"modulate:a\", 1.0, 0.3)
+	score_tween.parallel().tween_property(total_score_container, \"scale\", Vector2.ONE, 0.3)
+	
+	# Count up score
+	await get_tree().create_timer(0.3).timeout
+	var count_tween = create_tween()
+	count_tween.tween_method(update_score_display, 0, total_score, 1.2)
+	
+	# Show grade badge
+	await get_tree().create_timer(0.8).timeout
+	animate_grade_badge(speed_rating, coins_rating, style_rating)
+
+func update_score_display(value: int):
+	displayed_score = value
+	total_score_value.text = str(value)
+
+func animate_grade_badge(speed: int, coins: int, style: int):
+	var letter_grade = calculate_letter_grade(speed, coins, style)
+	grade_label.text = letter_grade
+	
+	# Set grade color
+	var grade_colors = {
+		\"S\": Color(1.0, 0.84, 0.0),  # Gold
+		\"A\": Color(0.0, 1.0, 0.0),   # Green
+		\"B\": Color(0.0, 0.7, 1.0),   # Blue
+		\"C\": Color(1.0, 0.5, 0.0),   # Orange
+		\"D\": Color(1.0, 0.0, 0.0)    # Red
+	}
+	
+	grade_badge.modulate = grade_colors.get(letter_grade, Color.WHITE)
+	grade_badge.modulate.a = 0.0
+	grade_badge.scale = Vector2(3.0, 3.0)
+	
+	var grade_tween = create_tween()
+	grade_tween.set_ease(Tween.EASE_OUT)
+	grade_tween.set_trans(Tween.TRANS_BACK)
+	grade_tween.tween_property(grade_badge, \"scale\", Vector2.ONE, 0.5)
+	grade_tween.parallel().tween_property(grade_badge, \"modulate:a\", 1.0, 0.3)
+	grade_tween.parallel().tween_property(grade_badge, \"rotation\", deg_to_rad(360), 0.5)
+	
+	# Show buttons
+	await get_tree().create_timer(0.5).timeout
+	animate_buttons()
+
+func animate_buttons():
+	buttons_container.modulate.a = 0.0
+	buttons_container.position.y += 50
+	
+	var buttons_tween = create_tween()
+	buttons_tween.set_ease(Tween.EASE_OUT)
+	buttons_tween.set_trans(Tween.TRANS_CUBIC)
+	buttons_tween.tween_property(buttons_container, \"position:y\", buttons_container.position.y - 50, 0.3)
+	buttons_tween.parallel().tween_property(buttons_container, \"modulate:a\", 1.0, 0.3)
+
+func calculate_speed_rating(time: float, level: int) -> int:
+	var thresholds = SPEED_THRESHOLDS.get(level, [60, 40, 30])
+	if time <= thresholds[2]:
+		return 3
+	elif time <= thresholds[1]:
+		return 2
+	elif time <= thresholds[0]:
+		return 1
+	else:
+		return 0
+
+func calculate_coins_rating(collected: int, total: int) -> int:
+	if total == 0:
+		return 0
+	var percentage = float(collected) / float(total)
+	for i in range(2, -1, -1):
+		if percentage >= COIN_PERCENTAGES[i]:
+			return i + 1
+	return 0
+
+func calculate_style_rating(accuracy: float) -> int:
+	for i in range(2, -1, -1):
+		if accuracy >= STYLE_PERCENTAGES[i]:
+			return i + 1
+	return 0
+
+func calculate_letter_grade(speed: int, coins: int, style: int) -> String:
+	var total_stars = speed + coins + style
+	var average = float(total_stars) / 3.0
+	
+	if average >= 2.7:
+		return \"S\"
+	elif average >= 2.3:
+		return \"A\"
+	elif average >= 1.7:
+		return \"B\"
+	elif average >= 1.0:
+		return \"C\"
+	else:
+		return \"D\"
+
+func _on_retry_pressed():
+	if game_manager:
+		game_manager.restart_level()
+	queue_free()
+
+func _on_next_pressed():
+	if game_manager:
+		game_manager.next_level()
+	queue_free()
+
+func _on_menu_pressed():
+	if game_manager:
+		game_manager.return_to_menu()
+	queue_free()
+"
+
+[sub_resource type="StyleBoxFlat" id="3"]
+bg_color = Color(0.1, 0.1, 0.1, 0.95)
+corner_radius_top_left = 20
+corner_radius_top_right = 20
+corner_radius_bottom_right = 20
+corner_radius_bottom_left = 20
+shadow_color = Color(0, 0, 0, 0.3)
+shadow_size = 10
+shadow_offset = Vector2(0, 5)
+
+[sub_resource type="StyleBoxFlat" id="4"]
+bg_color = Color(0.15, 0.15, 0.15, 1)
+corner_radius_top_left = 15
+corner_radius_top_right = 15
+corner_radius_bottom_right = 15
+corner_radius_bottom_left = 15
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.3, 0.3, 0.3, 1)
+
+[sub_resource type="StyleBoxFlat" id="5"]
+bg_color = Color(0.2, 0.5, 1.0, 1)
+corner_radius_top_left = 50
+corner_radius_top_right = 50
+corner_radius_bottom_right = 50
+corner_radius_bottom_left = 50
+
+[sub_resource type="StyleBoxFlat" id="6"]
+bg_color = Color(0.2, 0.7, 0.2, 1)
+corner_radius_top_left = 10
+corner_radius_top_right = 10
+corner_radius_bottom_right = 10
+corner_radius_bottom_left = 10
+
+[node name="PremiumResultsScreen" type="Control"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+script = SubResource("2")
+
+[node name="Background" type="ColorRect" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+color = Color(0, 0, 0, 0.8)
+
+[node name="AnimationContainer" type="Control" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+
+[node name="TitleLabel" type="Label" parent="AnimationContainer"]
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -200.0
+offset_top = 100.0
+offset_right = 200.0
+offset_bottom = 180.0
+text = "LEVEL COMPLETE!"
+theme_override_font_sizes/font_size = 48
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 0.5)
+theme_override_constants/shadow_offset_x = 3
+theme_override_constants/shadow_offset_y = 3
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="ResultsPanel" type="Panel" parent="AnimationContainer"]
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -300.0
+offset_top = -400.0
+offset_right = 300.0
+offset_bottom = 400.0
+theme_override_styles/panel = SubResource("3")
+
+[node name="ContentContainer" type="VBoxContainer" parent="AnimationContainer/ResultsPanel"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 40.0
+offset_top = 40.0
+offset_right = -40.0
+offset_bottom = -180.0
+theme_override_constants/separation = 30
+
+[node name="StatsContainer" type="VBoxContainer" parent="AnimationContainer/ResultsPanel/ContentContainer"]
+layout_mode = 2
+theme_override_constants/separation = 25
+
+[node name="SpeedContainer" type="Panel" parent="AnimationContainer/ResultsPanel/ContentContainer/StatsContainer"]
+custom_minimum_size = Vector2(0, 100)
+layout_mode = 2
+theme_override_styles/panel = SubResource("4")
+
+[node name="Label" type="Label" parent="AnimationContainer/ResultsPanel/ContentContainer/StatsContainer/SpeedContainer"]
+offset_left = 20.0
+offset_top = 15.0
+offset_right = 120.0
+offset_bottom = 45.0
+text = "SPEED"
+theme_override_font_sizes/font_size = 24
+theme_override_colors/font_color = Color(0.7, 0.7, 0.7, 1)
+
+[node name="ValueContainer" type="HBoxContainer" parent="AnimationContainer/ResultsPanel/ContentContainer/StatsContainer/SpeedContainer"]
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -200.0
+offset_top = 15.0
+offset_right = -20.0
+offset_bottom = 45.0
+alignment = 2
+
+[node name="TimeValue" type="Label" parent="AnimationContainer/ResultsPanel/ContentContainer/StatsContainer/SpeedContainer/ValueContainer"]
+layout_mode = 2
+text = "0:00"
+theme_override_font_sizes/font_size = 28
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+
+[node name="StarRating" parent="AnimationContainer/ResultsPanel/ContentContainer/StatsContainer/SpeedContainer" instance=ExtResource("1")]
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -106.0
+offset_top = -50.0
+offset_right = 106.0
+offset_bottom = -20.0
+
+[node name="CoinsContainer" type="Panel" parent="AnimationContainer/ResultsPanel/ContentContainer/StatsContainer"]
+custom_minimum_size = Vector2(0, 100)
+layout_mode = 2
+theme_override_styles/panel = SubResource("4")
+
+[node name="Label" type="Label" parent="AnimationContainer/ResultsPanel/ContentContainer/StatsContainer/CoinsContainer"]
+offset_left = 20.0
+offset_top = 15.0
+offset_right = 120.0
+offset_bottom = 45.0
+text = "COINS"
+theme_override_font_sizes/font_size = 24
+theme_override_colors/font_color = Color(0.7, 0.7, 0.7, 1)
+
+[node name="ValueContainer" type="HBoxContainer" parent="AnimationContainer/ResultsPanel/ContentContainer/StatsContainer/CoinsContainer"]
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -200.0
+offset_top = 15.0
+offset_right = -20.0
+offset_bottom = 45.0
+alignment = 2
+
+[node name="CoinsValue" type="Label" parent="AnimationContainer/ResultsPanel/ContentContainer/StatsContainer/CoinsContainer/ValueContainer"]
+layout_mode = 2
+text = "0/0"
+theme_override_font_sizes/font_size = 28
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+
+[node name="StarRating" parent="AnimationContainer/ResultsPanel/ContentContainer/StatsContainer/CoinsContainer" instance=ExtResource("1")]
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -106.0
+offset_top = -50.0
+offset_right = 106.0
+offset_bottom = -20.0
+
+[node name="StyleContainer" type="Panel" parent="AnimationContainer/ResultsPanel/ContentContainer/StatsContainer"]
+custom_minimum_size = Vector2(0, 100)
+layout_mode = 2
+theme_override_styles/panel = SubResource("4")
+
+[node name="Label" type="Label" parent="AnimationContainer/ResultsPanel/ContentContainer/StatsContainer/StyleContainer"]
+offset_left = 20.0
+offset_top = 15.0
+offset_right = 120.0
+offset_bottom = 45.0
+text = "STYLE"
+theme_override_font_sizes/font_size = 24
+theme_override_colors/font_color = Color(0.7, 0.7, 0.7, 1)
+
+[node name="ValueContainer" type="HBoxContainer" parent="AnimationContainer/ResultsPanel/ContentContainer/StatsContainer/StyleContainer"]
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -200.0
+offset_top = 15.0
+offset_right = -20.0
+offset_bottom = 45.0
+alignment = 2
+
+[node name="StyleValue" type="Label" parent="AnimationContainer/ResultsPanel/ContentContainer/StatsContainer/StyleContainer/ValueContainer"]
+layout_mode = 2
+text = "0%"
+theme_override_font_sizes/font_size = 28
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+
+[node name="StarRating" parent="AnimationContainer/ResultsPanel/ContentContainer/StatsContainer/StyleContainer" instance=ExtResource("1")]
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -106.0
+offset_top = -50.0
+offset_right = 106.0
+offset_bottom = -20.0
+
+[node name="HSeparator" type="HSeparator" parent="AnimationContainer/ResultsPanel/ContentContainer"]
+layout_mode = 2
+theme_override_constants/separation = 20
+
+[node name="TotalScoreContainer" type="HBoxContainer" parent="AnimationContainer/ResultsPanel/ContentContainer"]
+layout_mode = 2
+alignment = 1
+
+[node name="ScoreLabel" type="Label" parent="AnimationContainer/ResultsPanel/ContentContainer/TotalScoreContainer"]
+layout_mode = 2
+text = "TOTAL SCORE: "
+theme_override_font_sizes/font_size = 32
+theme_override_colors/font_color = Color(0.8, 0.8, 0.8, 1)
+
+[node name="ScoreValue" type="Label" parent="AnimationContainer/ResultsPanel/ContentContainer/TotalScoreContainer"]
+layout_mode = 2
+text = "0"
+theme_override_font_sizes/font_size = 42
+theme_override_colors/font_color = Color(1, 0.84, 0, 1)
+
+[node name="GradeBadge" type="Panel" parent="AnimationContainer/ResultsPanel/ContentContainer"]
+custom_minimum_size = Vector2(100, 100)
+layout_mode = 2
+size_flags_horizontal = 4
+theme_override_styles/panel = SubResource("5")
+
+[node name="GradeLabel" type="Label" parent="AnimationContainer/ResultsPanel/ContentContainer/GradeBadge"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+text = "S"
+theme_override_font_sizes/font_size = 64
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="ButtonsContainer" type="HBoxContainer" parent="AnimationContainer/ResultsPanel"]
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -250.0
+offset_top = -140.0
+offset_right = 250.0
+offset_bottom = -40.0
+theme_override_constants/separation = 20
+alignment = 1
+
+[node name="RetryButton" type="Button" parent="AnimationContainer/ResultsPanel/ButtonsContainer"]
+custom_minimum_size = Vector2(150, 80)
+layout_mode = 2
+text = "RETRY"
+theme_override_font_sizes/font_size = 28
+
+[node name="NextButton" type="Button" parent="AnimationContainer/ResultsPanel/ButtonsContainer"]
+custom_minimum_size = Vector2(150, 80)
+layout_mode = 2
+text = "NEXT"
+theme_override_font_sizes/font_size = 28
+theme_override_styles/normal = SubResource("6")
+
+[node name="MenuButton" type="Button" parent="AnimationContainer/ResultsPanel/ButtonsContainer"]
+custom_minimum_size = Vector2(150, 80)
+layout_mode = 2
+text = "MENU"
+theme_override_font_sizes/font_size = 28

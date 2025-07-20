@@ -259,6 +259,15 @@ func setup_level():
 		
 	level_generator = level_generator_scene.instantiate()
 	add_child(level_generator)
+	
+	# Count total coins in the level
+	total_coins_in_level = 0
+	var level_data = level_generator.get_level_data()
+	if level_data:
+		for row in level_data:
+			for cell in row:
+				if cell == LevelGenerator.CellType.COIN:
+					total_coins_in_level += 1
 
 func spawn_player():
 	if player:
@@ -642,7 +651,7 @@ func update_latency_display():
 		latency_label.text = "Latency: " + str(int(audio_latency_offset * 1000)) + "ms"
 
 func show_results_screen():
-	var results_scene = preload("res://scenes/ui/ResultsScreen.tscn")
+	var results_scene = preload("res://scenes/ui/PremiumResultsScreen.tscn")
 	var results_screen = results_scene.instantiate()
 	
 	# Pass the game_manager reference before adding to tree
