@@ -38,6 +38,10 @@ var guitar_sample_timer = 0.0
 var guitar_time_position = 0.0
 var guitar_is_playing = false
 
+# 4th beat mandatory move tracking
+var last_4th_beat_move = -1  # Last beat where we successfully moved
+var last_move_quality = StyleScoreManager.TimingQuality.OFF_BEAT
+
 # Beat-synchronized audio queue
 var pending_coin_chimes = 0
 var pending_wall_hits = 0
@@ -265,6 +269,8 @@ func start_game():
 	pending_wall_hits = 0
 	pending_coin_chimes_8th = 0
 	pending_wall_hits_8th = 0
+	last_4th_beat_move = -1
+	last_move_quality = StyleScoreManager.TimingQuality.OFF_BEAT
 	
 	if game_over_panel:
 		game_over_panel.visible = false
@@ -311,6 +317,19 @@ func spawn_player():
 
 func _on_beat():
 	emit_signal("beat_occurred")
+	
+	# Check if this is a 4th beat and we haven't moved
+	if beat_count % 4 == 0 and beat_count > 0:
+		# Check if we've made a successful move since the last 4th beat
+		var beats_since_move = beat_count - last_4th_beat_move
+		if beats_since_move >= 4:
+			# No successful move in 4 beats - decrease multiplier
+			print("Missed 4th beat requirement! Last move was ", beats_since_move, " beats ago")
+			if style_score_manager and style_score_manager.current_multiplier > style_score_manager.MIN_MULTIPLIER:
+				style_score_manager.current_multiplier -= 1
+				style_score_manager.emit_signal("multiplier_changed", style_score_manager.current_multiplier)
+				style_score_manager.combo_count = 0
+				style_score_manager.emit_signal("combo_changed", 0)
 	
 	# Play any pending beat-synchronized audio effects
 	if pending_coin_chimes > 0:
@@ -562,6 +581,11 @@ func _on_swipe_detected(direction: Vector2):
 		
 		# Calculate timing and score
 		var timing_result = style_score_manager.register_move(beat_timer, beat_interval)
+		
+		# Track successful moves for 4th beat requirement
+		if timing_result.timing == StyleScoreManager.TimingQuality.PERFECT or timing_result.timing == StyleScoreManager.TimingQuality.GREAT:
+			last_4th_beat_move = beat_count
+			last_move_quality = timing_result.timing
 		
 		# Debug info
 		var timing_text = timing_result.name

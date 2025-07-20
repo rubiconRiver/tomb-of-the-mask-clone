@@ -81,26 +81,39 @@ func register_move(beat_timer: float, beat_interval: float) -> Dictionary:
 	var quality = timing_result.quality
 	var multiplier = SCORE_MULTIPLIERS[quality]
 	
-	# Update combo and counts
-	if quality != TimingQuality.OFF_BEAT:
+	# Update combo and counts based on timing quality
+	if quality == TimingQuality.PERFECT or quality == TimingQuality.GREAT:
+		# PERFECT/GREAT: Increase combo and multiplier
 		combo_count += 1
 		on_beat_moves += 1
+		
 		match quality:
 			TimingQuality.PERFECT:
 				perfect_moves += 1
 			TimingQuality.GREAT:
 				great_moves += 1
-			TimingQuality.GOOD:
-				good_moves += 1
 		
-		# Increase multiplier on beat (cap at MAX_MULTIPLIER)
+		# Increase multiplier (cap at MAX_MULTIPLIER)
 		if current_multiplier < MAX_MULTIPLIER:
 			current_multiplier += 1
 			emit_signal("multiplier_changed", current_multiplier)
-	else:
+			
+	elif quality == TimingQuality.GOOD:
+		# GOOD: Count as on-beat but decrease multiplier
+		good_moves += 1
+		on_beat_moves += 1
+		combo_count = 0  # Reset combo
+		
+		# Decrease multiplier
+		if current_multiplier > MIN_MULTIPLIER:
+			current_multiplier -= 1
+			emit_signal("multiplier_changed", current_multiplier)
+			
+	else:  # OFF_BEAT
+		# OFF_BEAT: Reset combo and decrease multiplier
 		combo_count = 0
 		
-		# Decrease multiplier on miss (floor at MIN_MULTIPLIER)
+		# Decrease multiplier
 		if current_multiplier > MIN_MULTIPLIER:
 			current_multiplier -= 1
 			emit_signal("multiplier_changed", current_multiplier)
