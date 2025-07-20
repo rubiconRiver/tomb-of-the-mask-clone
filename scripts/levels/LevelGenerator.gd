@@ -33,8 +33,8 @@ func generate_level():
 		LevelEditorData.clear_custom_level()  # Use it once, then clear
 	# Use hand-crafted levels instead of random generation
 	elif current_level == 0:
-		# Load Big Level
-		var template = LevelTemplates.get_garett_tutorial()
+		# Load Test Notes Level
+		var template = LevelTemplates.get_test_notes()
 		level_data = LevelTemplates.parse_template(template)
 	elif current_level == 1:
 		# Load Tutorial Level

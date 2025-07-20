@@ -110,8 +110,8 @@ func _ready():
 		LevelEditorData.clear_editor_backup()
 	else:
 		print("No backup found - loading default level")
-		# Load the big level by default
-		load_big_level()
+		# Load the test notes level by default
+		load_test_notes()
 	
 	# Force initial grid draw
 	queue_redraw()
@@ -490,6 +490,58 @@ func draw_dotted_line(start: Vector2, end: Vector2, color: Color, width: float, 
 		
 		current_distance += dash_length
 		draw_dash = not draw_dash
+
+func load_test_notes():
+	print("Loading test notes level...")
+	# Get the test notes template
+	var template = LevelTemplates.get_test_notes()
+	
+	# Update level dimensions
+	level_height = template.size()
+	if level_height > 0:
+		level_width = template[0].length()
+	
+	# Clear existing tiles
+	tilemap.clear()
+	
+	# Clear waypoints
+	waypoints.clear()
+	waypoint_order.clear()
+	next_waypoint_letter = 'a'
+	
+	# Populate tilemap from template
+	for y in range(level_height):
+		var row = template[y]
+		for x in range(row.length()):
+			var cell = row[x]
+			match cell:
+				'#':
+					tilemap.set_cell(0, Vector2i(x, y), 0, Vector2i(TileType.WALL, 0))
+				'C':
+					tilemap.set_cell(0, Vector2i(x, y), 0, Vector2i(TileType.COIN, 0))
+				'S':
+					tilemap.set_cell(0, Vector2i(x, y), 0, Vector2i(TileType.SPIKE, 0))
+				'P':
+					tilemap.set_cell(0, Vector2i(x, y), 0, Vector2i(TileType.PLAYER_SPAWN, 0))
+				'G':
+					tilemap.set_cell(0, Vector2i(x, y), 0, Vector2i(TileType.GOAL, 0))
+				'.':
+					tilemap.set_cell(0, Vector2i(x, y), -1)  # Empty
+				_:
+					# Check if it's a lowercase letter (waypoint)
+					if cell >= 'a' and cell <= 'z':
+						add_waypoint(Vector2i(x, y))
+						tilemap.set_cell(0, Vector2i(x, y), 0, Vector2i(TileType.WAYPOINT, 0))
+					else:
+						tilemap.set_cell(0, Vector2i(x, y), -1)  # Default to empty
+	
+	# Center camera on the loaded level
+	camera.position = Vector2(level_width * GRID_SIZE / 2, level_height * GRID_SIZE / 2)
+	
+	# Redraw to show grid
+	queue_redraw()
+	if grid_node:
+		grid_node.queue_redraw()
 
 func load_big_level():
 	print("Loading big level...")
