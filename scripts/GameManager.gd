@@ -8,6 +8,7 @@ var style_score_manager_script = preload("res://scripts/ui/StyleScoreManager.gd"
 var timing_feedback_script = preload("res://scripts/ui/TimingFeedback.gd")
 var beat_timeline_script = preload("res://scripts/ui/BeatTimeline.gd")
 var beat_visualizer_script = preload("res://scripts/visual/BeatVisualizer.gd")
+var timing_monitor_script = preload("res://scripts/ui/TimingMonitor.gd")
 # Combo music now handled by AudioManager
 
 var player: Player
@@ -24,6 +25,7 @@ var score = 0  # Total points (coins × multiplier)
 var coins = 0  # Number of coins collected
 var current_level = 2  # Start with Garett's tutorial
 var is_game_over = false
+var game_started = false
 var level_start_time = 0.0
 var level_complete_time = 0.0
 var is_level_complete = false
@@ -68,6 +70,7 @@ func _ready():
 	setup_beat_timeline()
 	setup_beat_visualizer()
 	setup_multiplier_indicator()
+	setup_timing_monitor()
 	
 	# Connect to AudioManager signals
 	AudioManager.beat_occurred.connect(_on_beat)
@@ -112,6 +115,13 @@ func setup_multiplier_indicator():
 		
 	# Store reference for updates
 	set_meta("multiplier_indicator", multiplier_indicator)
+
+func setup_timing_monitor():
+	var timing_monitor = timing_monitor_script.new()
+	timing_monitor.position = Vector2(20, 200)  # Below beat indicator
+	
+	if ui_layer:
+		ui_layer.add_child(timing_monitor)
 
 func _process(delta):
 	if camera and player:
@@ -158,8 +168,9 @@ func start_game():
 	coins = 0
 	current_level = 2  # Start with Garett's tutorial
 	is_game_over = false
+	game_started = false  # Will be set to true after GO message
 	is_level_complete = false
-	level_start_time = Time.get_ticks_msec() / 1000.0
+	level_start_time = 0.0  # Will be set when game actually starts
 	pending_coin_chimes = 0
 	pending_wall_hits = 0
 	pending_coin_chimes_8th = 0
@@ -177,6 +188,9 @@ func start_game():
 	spawn_player()
 	update_ui()
 	update_latency_display()
+	
+	# Show GO message and start game after delay
+	show_go_message()
 
 func setup_level():
 	if level_generator:
@@ -278,40 +292,42 @@ func _on_eighth_note():
 
 # Old audio functions removed - now handled by AudioManager
 func _on_swipe_detected(direction: Vector2):
-	if not is_game_over and player and not player.is_moving:
-		# Start the guitar chord when movement begins
-		AudioManager.start_ambient_guitar()
-		
-		# Calculate timing and score
-		var timing_result = style_score_manager.register_move(AudioManager.get_beat_progress(), AudioManager.beat_interval)
-		
-		# Track successful moves for 4th beat requirement
-		if timing_result.timing == StyleScoreManager.TimingQuality.PERFECT or timing_result.timing == StyleScoreManager.TimingQuality.GREAT:
-			last_4th_beat_move = AudioManager.get_current_beat()
-			last_move_quality = timing_result.timing
-		
-		# Debug info
-		var timing_text = timing_result.name
-		if timing_result.timing == StyleScoreManager.TimingQuality.OFF_BEAT and timing_result.distance < 0.5:
-			timing_text = "too early" if timing_result.is_early else "too late"
-		
-		print("Move timing: ", timing_result.name, " Combo: ", timing_result.combo, 
-			  " Distance: ", int(timing_result.distance * 1000), "ms",
-			  " (", timing_text, ")")
-		
-		# Apply score multiplier
-		var base_score = 1
-		score += int(base_score * timing_result.multiplier)
-		update_ui()
-		
-		# Store timing info for visual feedback
-		set_meta("last_timing", timing_result)
-		
-		player.move(direction)
+	if not game_started or is_game_over or not player or player.is_moving:
+		return
+	
+	# Start the guitar chord when movement begins
+	# AudioManager.start_ambient_guitar()  # DISABLED FOR TESTING
+	
+	# Calculate timing and score
+	var timing_result = style_score_manager.register_move(AudioManager.get_beat_progress(), AudioManager.beat_interval)
+	
+	# Track successful moves for 4th beat requirement
+	if timing_result.timing == StyleScoreManager.TimingQuality.PERFECT or timing_result.timing == StyleScoreManager.TimingQuality.GREAT:
+		last_4th_beat_move = AudioManager.get_current_beat()
+		last_move_quality = timing_result.timing
+	
+	# Debug info
+	var timing_text = timing_result.name
+	if timing_result.timing == StyleScoreManager.TimingQuality.OFF_BEAT and timing_result.distance < 0.5:
+		timing_text = "too early" if timing_result.is_early else "too late"
+	
+	print("Move timing: ", timing_result.name, " Combo: ", timing_result.combo, 
+		  " Distance: ", int(timing_result.distance * 1000), "ms",
+		  " (", timing_text, ")")
+	
+	# Apply score multiplier
+	var base_score = 1
+	score += int(base_score * timing_result.multiplier)
+	update_ui()
+	
+	# Store timing info for visual feedback
+	set_meta("last_timing", timing_result)
+	
+	player.move(direction)
 
 func _on_player_died():
 	# Stop the guitar chord when player dies
-	AudioManager.stop_ambient_guitar()
+	# AudioManager.stop_ambient_guitar()  # DISABLED FOR TESTING
 	is_game_over = true
 	if game_over_panel:
 		game_over_panel.visible = true
@@ -332,8 +348,9 @@ func _on_coin_collected():
 
 func _on_player_moved():
 	# Stop the guitar chord when movement ends
-	AudioManager.stop_ambient_guitar()
+	# AudioManager.stop_ambient_guitar()  # DISABLED FOR TESTING
 	# Score is now handled by timing system in _on_swipe_detected
+	pass
 
 func _on_player_hit_wall():
 	# Queue wall hit tom fill to play on next 8th note (much more responsive!)
@@ -522,7 +539,7 @@ func _on_goal_reached():
 	level_complete_time = (Time.get_ticks_msec() / 1000.0) - level_start_time
 	
 	# Stop the guitar if playing
-	AudioManager.stop_ambient_guitar()
+	# AudioManager.stop_ambient_guitar()  # DISABLED FOR TESTING
 	
 	print("Level completed! Time: ", level_complete_time, " seconds")
 	print("Coins collected: ", coins)
@@ -530,3 +547,33 @@ func _on_goal_reached():
 	
 	# Show results screen
 	show_results_screen()
+
+func show_go_message():
+	# Create GO label
+	var go_label = Label.new()
+	go_label.text = "GO!"
+	go_label.add_theme_font_size_override("font_size", 72)
+	go_label.add_theme_color_override("font_color", Color(1, 1, 1))
+	go_label.add_theme_color_override("font_shadow_color", Color(0, 0, 0))
+	go_label.add_theme_constant_override("shadow_offset_x", 4)
+	go_label.add_theme_constant_override("shadow_offset_y", 4)
+	
+	# Center it on screen
+	go_label.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
+	
+	if ui_layer:
+		ui_layer.add_child(go_label)
+	
+	# After 1 second, remove GO and start the game
+	await get_tree().create_timer(1.0).timeout
+	
+	go_label.queue_free()
+	
+	# NOW we start everything in sync
+	game_started = true
+	level_start_time = Time.get_ticks_msec() / 1000.0
+	print("[GameManager] Game started at: ", level_start_time)
+	
+	# Start beat tracking
+	print("[GameManager] Starting beat tracking")
+	AudioManager.start_beat_tracking()

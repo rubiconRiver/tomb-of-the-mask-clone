@@ -11,6 +11,7 @@ var grid_position = Vector2i.ZERO
 var trail_effect: TrailEffect
 var player_visual: Node2D
 var last_timing_quality = -1
+var movement_ray: RayCast2D
 
 @onready var area = $Area2D
 
@@ -124,43 +125,13 @@ func move(direction: Vector2):
 	move_direction = direction.normalized()
 	is_moving = true
 	
-	var ray = RayCast2D.new()
-	add_child(ray)
-	ray.position = Vector2.ZERO
-	ray.target_position = move_direction * 10000
-	ray.force_raycast_update()
-	
-	if ray.is_colliding():
-		var collision_point = ray.get_collision_point()
-		var distance_to_wall = position.distance_to(collision_point)
-		
-		# NEVER REMOVE - Critical for debugging movement glitches
-		print("Wall collision detected at: ", collision_point)
-		print("Distance to wall: ", distance_to_wall, " pixels")
-		
-		# Calculate cells to wall - account for player radius (32 pixels = half cell)
-		var adjusted_distance = distance_to_wall - 32  # Player radius
-		var cells_to_wall = max(0, int(adjusted_distance / GRID_SIZE))
-		
-		# NEVER REMOVE - Critical for debugging movement glitches
-		print("Cells to wall (adjusted): ", cells_to_wall)
-		
-		target_position = position + move_direction * cells_to_wall * GRID_SIZE
-		target_position = target_position.snapped(Vector2(GRID_SIZE, GRID_SIZE))
-		
-		# NEVER REMOVE - Critical for debugging movement glitches
-		print("Calculated target: ", target_position, " Grid: ", Vector2i(target_position / GRID_SIZE))
-	else:
-		target_position = position + move_direction * 10000
-		target_position = target_position.snapped(Vector2(GRID_SIZE, GRID_SIZE))
-		
-		# NEVER REMOVE - Critical for debugging movement glitches
-		print("No wall found, moving max distance to: ", target_position)
+	# Just set a far target and let collision detection handle walls
+	target_position = position + move_direction * 10000
+	target_position = target_position.snapped(Vector2(GRID_SIZE, GRID_SIZE))
 	
 	# NEVER REMOVE - Critical for debugging movement glitches
+	print("Target position: ", target_position, " Grid: ", Vector2i(target_position / GRID_SIZE))
 	print("=== MOVE SETUP COMPLETE [", move_id, "] ===")
-		
-	ray.queue_free()
 
 func snap_to_grid():
 	position = position.snapped(Vector2(GRID_SIZE, GRID_SIZE))

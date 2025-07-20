@@ -22,6 +22,10 @@ func _ready():
 		mixer = audio_manager.mixer
 	if not mixer:
 		push_error("[AmbientSystem] Could not find AudioMixer")
+		return
+		
+	# Pre-create the guitar player and stream once
+	_setup_guitar_player()
 
 func _process(delta):
 	if is_playing and guitar_playback:
@@ -29,34 +33,36 @@ func _process(delta):
 		while guitar_playback.can_push_buffer(CHUNK_SIZE):
 			var chunk = SoundBank.generate_ambient_guitar_chunk(guitar_time_position, CHUNK_SIZE)
 			
-			# Convert to stereo with limiting
+			# Convert to stereo with simple hard clipping
 			var stereo_frames = PackedVector2Array()
 			for sample in chunk:
-				var limited = SoundBank.soft_clip(sample * 0.8)
-				stereo_frames.append(Vector2(limited, limited))
+				var clamped = clamp(sample * 0.8, -1.0, 1.0)
+				stereo_frames.append(Vector2(clamped, clamped))
 			
 			guitar_playback.push_buffer(stereo_frames)
 			guitar_time_position += float(CHUNK_SIZE) / SAMPLE_RATE
 
-func start_guitar():
-	if is_playing:
-		return
-	
+func _setup_guitar_player():
 	guitar_player = mixer.get_ambient_player()
 	if not guitar_player:
+		push_error("[AmbientSystem] Could not get ambient player")
 		return
 	
-	# Setup stream
+	# Create stream once
 	var stream = AudioStreamGenerator.new()
 	stream.mix_rate = SAMPLE_RATE
 	stream.buffer_length = 1.0
 	
 	guitar_player.stream = stream
 	guitar_player.volume_db = 0.0
-	guitar_player.play()
+
+func start_guitar():
+	if is_playing or not guitar_player:
+		return
 	
+	# Just start playing the existing stream
+	guitar_player.play()
 	guitar_playback = guitar_player.get_stream_playback() as AudioStreamGeneratorPlayback
-	guitar_time_position = 0.0
 	is_playing = true
 
 func stop_guitar():

@@ -13,12 +13,15 @@ func _ready():
 
 func _process(delta):
 	# Update trail points
+	var needs_redraw = false
 	for i in range(trail_points.size() - 1, -1, -1):
 		trail_points[i].lifetime -= delta
 		if trail_points[i].lifetime <= 0:
 			trail_points.remove_at(i)
+			needs_redraw = true
 	
-	queue_redraw()
+	if needs_redraw:
+		queue_redraw()
 
 func add_point(pos: Vector2):
 	trail_points.append({
@@ -29,6 +32,9 @@ func add_point(pos: Vector2):
 	# Limit trail length
 	if trail_points.size() > max_points:
 		trail_points.pop_front()
+	
+	# Redraw when new point added
+	queue_redraw()
 
 func _draw():
 	if trail_points.size() < 2:
@@ -56,12 +62,11 @@ func _draw():
 		
 		draw_line(local_start, local_end, color1, width1)
 		
-		# Add glow effect
-		for j in range(3):
-			var glow_width = width1 * (1.5 + j * 0.5)
-			var glow_alpha = alpha1 * 0.2 / (j + 1)
-			var glow_color = Color(trail_color.r, trail_color.g, trail_color.b, glow_alpha)
-			draw_line(local_start, local_end, glow_color, glow_width)
+		# Add single glow effect (reduced from 3 passes)
+		var glow_width = width1 * 2.0
+		var glow_alpha = alpha1 * 0.2
+		var glow_color = Color(trail_color.r, trail_color.g, trail_color.b, glow_alpha)
+		draw_line(local_start, local_end, glow_color, glow_width)
 
 func set_trail_color(color: Color):
 	trail_color = color

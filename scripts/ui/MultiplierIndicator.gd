@@ -2,8 +2,6 @@ class_name MultiplierIndicator
 extends Control
 
 @onready var multiplier_label = $MultiplierLabel
-@onready var flame_container = $FlameContainer
-@onready var animation_player = $AnimationPlayer
 
 const FLAME_COLORS = {
 	1: Color(0.5, 0.5, 0.5),   # Gray - no flame
@@ -49,23 +47,17 @@ func update_display(multiplier: int):
 		multiplier_label.scale = Vector2(scale, scale)
 
 func play_increase_animation():
-	if animation_player and animation_player.has_animation("multiplier_increase"):
-		animation_player.play("multiplier_increase")
-	else:
-		# Simple pulse effect
-		var tween = create_tween()
-		tween.set_ease(Tween.EASE_OUT)
-		tween.set_trans(Tween.TRANS_ELASTIC)
-		tween.tween_property(multiplier_label, "scale", Vector2(1.3, 1.3), 0.2)
-		tween.tween_property(multiplier_label, "scale", multiplier_label.scale, 0.3)
+	# Simple pulse effect
+	var tween = create_tween()
+	tween.set_ease(Tween.EASE_OUT)
+	tween.set_trans(Tween.TRANS_ELASTIC)
+	tween.tween_property(multiplier_label, "scale", Vector2(1.3, 1.3), 0.2)
+	tween.tween_property(multiplier_label, "scale", multiplier_label.scale, 0.3)
 
 func play_decrease_animation():
-	if animation_player and animation_player.has_animation("multiplier_decrease"):
-		animation_player.play("multiplier_decrease")
-	else:
-		# Simple shake effect
-		var tween = create_tween()
-		var original_pos = multiplier_label.position
-		tween.tween_property(multiplier_label, "position", original_pos + Vector2(5, 0), 0.05)
-		tween.tween_property(multiplier_label, "position", original_pos - Vector2(5, 0), 0.05)
-		tween.tween_property(multiplier_label, "position", original_pos, 0.05)
+	# Simple shake effect
+	var tween = create_tween()
+	var original_pos = multiplier_label.position
+	tween.tween_property(multiplier_label, "position", original_pos + Vector2(5, 0), 0.05)
+	tween.tween_property(multiplier_label, "position", original_pos - Vector2(5, 0), 0.05)
+	tween.tween_property(multiplier_label, "position", original_pos, 0.05)
