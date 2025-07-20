@@ -161,15 +161,15 @@ func build_level():
 	
 	# Use actual level dimensions from level_data
 	var level_height = level_data.size()
-	var level_width = 0
-	if level_height > 0:
-		level_width = level_data[0].size()
 	
 	for y in range(level_height):
-		for x in range(level_width):
+		var row = level_data[y]
+		var row_width = row.size()
+		
+		for x in range(row_width):
 			var world_pos = Vector2(x * GRID_SIZE, y * GRID_SIZE)
 			
-			match level_data[y][x]:
+			match row[x]:
 				CellType.WALL:
 					var wall = wall_scene.instantiate()
 					wall.position = world_pos

@@ -70,6 +70,10 @@ func _ready():
 	setup_ui()
 	setup_camera()
 	setup_file_dialog()
+	
+	# Load the big level by default
+	load_big_level()
+	
 	print("Level Editor Ready!")
 	print("Keys 1-5: Tile types (6: Eraser) | Click: Place | Right-click: Erase")
 	print("Ctrl+S: Save | L: Load into game | C: Clear | N: Change size")
@@ -226,6 +230,41 @@ func update_current_tile_display():
 	if current_tile_label:
 		current_tile_label.text = "Current: " + get_tile_type_name(current_tile_type)
 
+func load_big_level():
+	print("Loading big level...")
+	# Get the big level template
+	var template = LevelTemplates.get_big_level()
+	
+	# Update level dimensions
+	level_height = template.size()
+	if level_height > 0:
+		level_width = template[0].length()
+	
+	# Clear existing tiles
+	tilemap.clear()
+	
+	# Populate tilemap from template
+	for y in range(level_height):
+		var row = template[y]
+		for x in range(row.length()):
+			var cell = row[x]
+			match cell:
+				'#':
+					tilemap.set_cell(0, Vector2i(x, y), 0, Vector2i(TileType.WALL, 0))
+				'C':
+					tilemap.set_cell(0, Vector2i(x, y), 0, Vector2i(TileType.COIN, 0))
+				'S':
+					tilemap.set_cell(0, Vector2i(x, y), 0, Vector2i(TileType.SPIKE, 0))
+				'P':
+					tilemap.set_cell(0, Vector2i(x, y), 0, Vector2i(TileType.PLAYER_SPAWN, 0))
+				'G':
+					tilemap.set_cell(0, Vector2i(x, y), 0, Vector2i(TileType.GOAL, 0))
+				'.':
+					tilemap.set_cell(0, Vector2i(x, y), -1)  # Empty
+	
+	# Center camera on the loaded level
+	camera.position = Vector2(level_width * GRID_SIZE / 2, level_height * GRID_SIZE / 2)
+
 func clear_level():
 	print("Clearing level...")
 	# Clear all tiles
@@ -350,6 +389,7 @@ func load_into_game():
 	
 	# Store level data in singleton
 	LevelEditorData.set_custom_level(level_data)
+	LevelEditorData.set_launched_from_editor(true)
 	
 	# Restore mobile viewport settings before switching to main game
 	get_window().content_scale_mode = Window.CONTENT_SCALE_MODE_VIEWPORT

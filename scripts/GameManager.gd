@@ -200,10 +200,10 @@ func _process(delta):
 		print("Audio latency offset: ", audio_latency_offset * 1000, "ms")
 		
 	
-	# Return to level editor with E key
-	if Input.is_action_just_pressed("ui_select"):  # Usually Enter/Space
-		var editor_scene = preload("res://scenes/level_editor/LevelEditor.tscn")
-		get_tree().change_scene_to_packed(editor_scene)
+	# Return to level editor with L key when launched from editor
+	if Input.is_key_pressed(KEY_L) and LevelEditorData.is_launched_from_editor():
+		return_to_level_editor()
+		return  # Prevent further processing this frame
 		
 	beat_timer += delta
 	hihat_timer += delta
@@ -727,6 +727,21 @@ func next_level():
 func return_to_menu():
 	# For now, just restart the game
 	start_game()
+
+func return_to_level_editor():
+	print("Returning to level editor...")
+	
+	# Clear the launched from editor flag
+	LevelEditorData.set_launched_from_editor(false)
+	
+	# Reset viewport settings for editor
+	get_window().content_scale_mode = Window.CONTENT_SCALE_MODE_DISABLED
+	get_window().content_scale_aspect = Window.CONTENT_SCALE_ASPECT_IGNORE
+	get_window().size = Vector2i(2200, 1400)
+	
+	# Switch back to level editor
+	var editor_scene = preload("res://scenes/level_editor/LevelEditor.tscn")
+	get_tree().change_scene_to_packed(editor_scene)
 
 func _on_goal_reached():
 	if is_level_complete:

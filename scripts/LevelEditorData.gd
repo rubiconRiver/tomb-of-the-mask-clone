@@ -3,6 +3,7 @@ extends Node
 # Singleton to store custom level data from the level editor
 var custom_level_data = null
 var use_custom_level = false
+var launched_from_editor = false
 
 func set_custom_level(level_data: Array):
 	custom_level_data = level_data
@@ -18,3 +19,9 @@ func clear_custom_level():
 
 func should_use_custom_level() -> bool:
 	return use_custom_level and custom_level_data != null
+
+func set_launched_from_editor(value: bool):
+	launched_from_editor = value
+
+func is_launched_from_editor() -> bool:
+	return launched_from_editor
