@@ -21,7 +21,8 @@ enum TileType {
 	COIN = 1,
 	SPIKE = 2,
 	PLAYER_SPAWN = 3,
-	GOAL = 4
+	GOAL = 4,
+	WAYPOINT = 5  # For path visualization
 }
 
 var current_tile_type = TileType.WALL
@@ -50,6 +51,11 @@ const BEAT_GUIDE_COLORS = {
 @onready var ui_layer = $UI
 @onready var instructions_panel = $UI/Instructions
 @onready var grid_node = $Grid
+
+# Waypoint system
+var waypoints = {}  # Dictionary of grid_pos -> letter
+var waypoint_order = []  # Array of grid positions in order
+var next_waypoint_letter = 'a'  # Start with 'a'
 
 func _ready():
 	# Override project's mobile viewport settings for level editor
@@ -88,9 +94,12 @@ func _ready():
 	setup_camera()
 	setup_file_dialog()
 	
-	# Make sure grid draws on top of tilemap
+	# Set up drawing order
 	if grid_node:
-		grid_node.z_index = 10  # Draw on top of everything
+		grid_node.z_index = 1  # Grid lines behind waypoint labels
+	
+	# Make sure level editor draws on top for waypoints
+	z_index = 10  # Draw waypoints on top of everything
 	
 	# Check if we're returning from testing a level
 	print("=== LEVEL EDITOR STARTING ===")
@@ -137,7 +146,7 @@ func setup_tilemap():
 	var atlas_source = TileSetAtlasSource.new()
 	
 	# Create a simple texture with colored squares
-	var image = Image.create(320, 64, false, Image.FORMAT_RGB8)
+	var image = Image.create(384, 64, false, Image.FORMAT_RGBA8)  # Added alpha channel and extended width
 	# Wall (gray)
 	image.fill_rect(Rect2i(0, 0, 64, 64), Color(0.5, 0.5, 0.5))
 	# Coin (yellow)
@@ -148,6 +157,8 @@ func setup_tilemap():
 	image.fill_rect(Rect2i(192, 0, 64, 64), Color(0.2, 1.0, 0.2))
 	# Goal (blue)
 	image.fill_rect(Rect2i(256, 0, 64, 64), Color(0.2, 0.2, 1.0))
+	# Waypoint (brown with transparency for editor visibility)
+	image.fill_rect(Rect2i(320, 0, 64, 64), Color(0.6, 0.4, 0.2, 0.7))
 	
 	var texture = ImageTexture.new()
 	texture.set_image(image)
@@ -155,7 +166,7 @@ func setup_tilemap():
 	atlas_source.texture_region_size = Vector2i(64, 64)
 	
 	# Set up tiles (excluding EMPTY which is -1)
-	for i in range(5):  # Wall(0), Coin(1), Spike(2), PlayerSpawn(3), Goal(4)
+	for i in range(6):  # Wall(0), Coin(1), Spike(2), PlayerSpawn(3), Goal(4), Waypoint(5)
 		atlas_source.create_tile(Vector2i(i, 0))
 		var tile_data = atlas_source.get_tile_data(Vector2i(i, 0), 0)
 	
@@ -193,6 +204,9 @@ func _input(event):
 				update_current_tile_display()
 			KEY_6:
 				current_tile_type = TileType.EMPTY
+				update_current_tile_display()
+			KEY_9:
+				current_tile_type = TileType.WAYPOINT
 				update_current_tile_display()
 			KEY_S:
 				if event.ctrl_pressed:
@@ -299,11 +313,32 @@ func is_valid_grid_position(grid_pos: Vector2i) -> bool:
 
 func place_tile(grid_pos: Vector2i, tile_type: TileType):
 	if tile_type == TileType.EMPTY:
-		# Erase tile
+		# Erase tile - also remove waypoint if present
 		tilemap.set_cell(0, grid_pos, -1)
+		if grid_pos in waypoints:
+			remove_waypoint(grid_pos)
+	elif tile_type == TileType.WAYPOINT:
+		# Handle waypoint placement
+		if grid_pos in waypoints:
+			# Already has a waypoint, remove it
+			var letter = waypoints[grid_pos]
+			remove_waypoint(grid_pos)
+			tilemap.set_cell(0, grid_pos, -1)  # Remove the tile
+			print("Removed waypoint '", letter, "' at ", grid_pos)
+			return
+		else:
+			# Store the letter before adding (for correct logging)
+			var letter_to_place = next_waypoint_letter
+			# Add new waypoint with next letter
+			add_waypoint(grid_pos)
+			tilemap.set_cell(0, grid_pos, 0, Vector2i(TileType.WAYPOINT, 0))  # Place waypoint tile
+			print("Placed waypoint '", letter_to_place, "' at ", grid_pos)
+			return
 	else:
-		# Place tile
+		# Place regular tile - remove waypoint if present
 		tilemap.set_cell(0, grid_pos, 0, Vector2i(tile_type, 0))
+		if grid_pos in waypoints:
+			remove_waypoint(grid_pos)
 	
 	print("Placed ", get_tile_type_name(tile_type), " at ", grid_pos)
 
@@ -321,6 +356,8 @@ func get_tile_type_name(tile_type: TileType) -> String:
 			return "Goal"
 		TileType.EMPTY:
 			return "Empty"
+		TileType.WAYPOINT:
+			return "Waypoint (" + str(next_waypoint_letter) + ")"
 		_:
 			return "Unknown"
 
@@ -328,7 +365,78 @@ func update_current_tile_display():
 	if current_tile_label:
 		current_tile_label.text = "Current: " + get_tile_type_name(current_tile_type)
 
+func add_waypoint(grid_pos: Vector2i):
+	# Only allow up to 26 waypoints (a-z)
+	if waypoint_order.size() >= 26:
+		print("Maximum waypoints reached (26)")
+		return
+		
+	# Add waypoint with current letter
+	waypoints[grid_pos] = next_waypoint_letter
+	waypoint_order.append(grid_pos)
+	
+	# Advance to next letter
+	var next_char_code = next_waypoint_letter.unicode_at(0) + 1
+	if next_char_code <= 'z'.unicode_at(0):
+		next_waypoint_letter = char(next_char_code)
+	
+	update_current_tile_display()
+	queue_redraw()
+
+func remove_waypoint(grid_pos: Vector2i):
+	if not grid_pos in waypoints:
+		return
+		
+	var letter = waypoints[grid_pos]
+	var index = waypoint_order.find(grid_pos)
+	
+	# Only allow removing the most recent waypoint
+	if index == waypoint_order.size() - 1:
+		waypoints.erase(grid_pos)
+		waypoint_order.remove_at(index)
+		
+		# Roll back to previous letter
+		if waypoint_order.size() == 0:
+			next_waypoint_letter = 'a'
+		else:
+			# Get the last waypoint's letter and advance from there
+			var last_pos = waypoint_order[-1]
+			var last_letter = waypoints[last_pos]
+			var next_char_code = last_letter.unicode_at(0) + 1
+			if next_char_code <= 'z'.unicode_at(0):
+				next_waypoint_letter = char(next_char_code)
+			else:
+				next_waypoint_letter = 'z'  # Cap at 'z'
+		
+		update_current_tile_display()
+		queue_redraw()
+	else:
+		print("Can only remove the most recent waypoint (currently '%s')" % [waypoints[waypoint_order[-1]]])
+
 func _draw():
+	# Draw waypoint path
+	if waypoint_order.size() > 0:
+		# Draw path lines between waypoints
+		for i in range(waypoint_order.size() - 1):
+			var start_pos = Vector2(waypoint_order[i]) * GRID_SIZE + Vector2(GRID_SIZE/2, GRID_SIZE/2)
+			var end_pos = Vector2(waypoint_order[i + 1]) * GRID_SIZE + Vector2(GRID_SIZE/2, GRID_SIZE/2)
+			
+			# Draw dotted line in brown to match waypoint color
+			draw_dotted_line(start_pos, end_pos, Color(0.6, 0.4, 0.2, 0.8), 3.0, 10.0)
+		
+		# Draw waypoint markers with letters
+		var font = ThemeDB.fallback_font
+		for pos in waypoint_order:
+			var world_pos = Vector2(pos) * GRID_SIZE + Vector2(GRID_SIZE/2, GRID_SIZE/2)
+			var letter = waypoints[pos]
+			
+			# Draw white background circle for letter visibility
+			draw_circle(world_pos, 20, Color(1.0, 1.0, 1.0, 0.9))  # White background
+			draw_circle(world_pos, 18, Color(0.0, 0.0, 0.0, 1.0))  # Black border
+			
+			# Draw letter with larger size in white
+			draw_string(font, world_pos - Vector2(8, -8), letter, HORIZONTAL_ALIGNMENT_CENTER, -1, 32, Color.WHITE)
+	
 	# Draw beat guides
 	if show_beat_guides and guide_origin != Vector2i(-1, -1):
 		var start_pos = Vector2(guide_origin) * GRID_SIZE + Vector2(GRID_SIZE/2, GRID_SIZE/2)
@@ -367,6 +475,22 @@ func _draw():
 		var info_text = "%d cells (%.1f beats)" % [cells, beats]
 		draw_string(font, mid_point + Vector2(10, -10), info_text, HORIZONTAL_ALIGNMENT_LEFT, -1, 16, Color.YELLOW)
 
+func draw_dotted_line(start: Vector2, end: Vector2, color: Color, width: float, dash_length: float):
+	var direction = (end - start).normalized()
+	var distance = start.distance_to(end)
+	var current_distance = 0.0
+	var draw_dash = true
+	
+	while current_distance < distance:
+		var segment_start = start + direction * current_distance
+		var segment_end = start + direction * min(current_distance + dash_length, distance)
+		
+		if draw_dash:
+			draw_line(segment_start, segment_end, color, width)
+		
+		current_distance += dash_length
+		draw_dash = not draw_dash
+
 func load_big_level():
 	print("Loading big level...")
 	# Get the big level template
@@ -379,6 +503,11 @@ func load_big_level():
 	
 	# Clear existing tiles
 	tilemap.clear()
+	
+	# Clear waypoints
+	waypoints.clear()
+	waypoint_order.clear()
+	next_waypoint_letter = 'a'
 	
 	# Populate tilemap from template
 	for y in range(level_height):
@@ -398,6 +527,12 @@ func load_big_level():
 					tilemap.set_cell(0, Vector2i(x, y), 0, Vector2i(TileType.GOAL, 0))
 				'.':
 					tilemap.set_cell(0, Vector2i(x, y), -1)  # Empty
+				_:
+					# Check if it's a lowercase letter (waypoint)
+					if cell >= 'a' and cell <= 'z':
+						add_waypoint(Vector2i(x, y))
+					else:
+						tilemap.set_cell(0, Vector2i(x, y), -1)  # Default to empty
 	
 	# Center camera on the loaded level
 	camera.position = Vector2(level_width * GRID_SIZE / 2, level_height * GRID_SIZE / 2)
@@ -409,6 +544,11 @@ func load_big_level():
 
 func clear_level():
 	print("Clearing level...")
+	# Clear waypoints
+	waypoints.clear()
+	waypoint_order.clear()
+	next_waypoint_letter = 'a'
+	
 	# Clear all tiles
 	for y in range(level_height):
 		for x in range(level_width):
@@ -433,21 +573,30 @@ func save_level():
 	for y in range(level_height):
 		var row = ""
 		for x in range(level_width):
-			var atlas_coords = tilemap.get_cell_atlas_coords(0, Vector2i(x, y))
+			var grid_pos = Vector2i(x, y)
 			var cell_char = "."
 			
-			if atlas_coords != Vector2i(-1, -1):
-				match atlas_coords.x:
-					TileType.WALL:
-						cell_char = "#"
-					TileType.COIN:
-						cell_char = "C"
-					TileType.SPIKE:
-						cell_char = "S"
-					TileType.PLAYER_SPAWN:
-						cell_char = "P"
-					TileType.GOAL:
-						cell_char = "G"
+			# Check for waypoint first
+			if grid_pos in waypoints:
+				cell_char = waypoints[grid_pos]
+			else:
+				# Check regular tiles
+				var atlas_coords = tilemap.get_cell_atlas_coords(0, grid_pos)
+				if atlas_coords != Vector2i(-1, -1):
+					match atlas_coords.x:
+						TileType.WALL:
+							cell_char = "#"
+						TileType.COIN:
+							cell_char = "C"
+						TileType.SPIKE:
+							cell_char = "S"
+						TileType.PLAYER_SPAWN:
+							cell_char = "P"
+						TileType.GOAL:
+							cell_char = "G"
+						TileType.WAYPOINT:
+							# This shouldn't happen since we check waypoints first
+							cell_char = "."
 		
 			row += cell_char
 		level_template.append(row)
@@ -474,6 +623,11 @@ func save_level():
 		file.store_line("# Level created: " + timestamp)
 		file.store_line("# Size: %dx%d" % [level_width, level_height])
 		file.store_line("# Description: [Add description here]")
+		if waypoint_order.size() > 0:
+			var path_str = ""
+			for pos in waypoint_order:
+				path_str += waypoints[pos] + " "
+			file.store_line("# Perfect path: " + path_str.strip_edges())
 		file.store_line("")
 		
 		# Write level data
@@ -486,6 +640,11 @@ func save_level():
 		
 		# Also print to console for easy copying
 		print("Level template (copy this to LevelTemplates.gd):")
+		if waypoint_order.size() > 0:
+			var path_str = ""
+			for pos in waypoint_order:
+				path_str += waypoints[pos] + "->"
+			print("# Perfect path: ", path_str.trim_suffix("->"))
 		for i in range(level_template.size()):
 			print('		"', level_template[i], '",  # Row ', i)
 	else:
@@ -531,6 +690,9 @@ func load_into_game():
 						cell_type = LevelGenerator.CellType.PLAYER_SPAWN
 					TileType.GOAL:
 						cell_type = LevelGenerator.CellType.GOAL
+					TileType.WAYPOINT:
+						# Waypoints are invisible in game
+						cell_type = LevelGenerator.CellType.EMPTY
 			
 			row.append(cell_type)
 		level_data.append(row)
@@ -540,6 +702,9 @@ func load_into_game():
 	backup.width = level_width
 	backup.height = level_height
 	backup.tiles = []
+	backup.waypoints = waypoints.duplicate()
+	backup.waypoint_order = waypoint_order.duplicate()
+	backup.next_waypoint_letter = next_waypoint_letter
 	
 	for y in range(level_height):
 		var row = []
@@ -581,6 +746,17 @@ func restore_from_backup(backup):
 	
 	# Clear existing tiles
 	tilemap.clear()
+	
+	# Restore waypoints if they exist
+	if backup.has("waypoints"):
+		waypoints = backup.waypoints.duplicate()
+		waypoint_order = backup.waypoint_order.duplicate()
+		next_waypoint_letter = backup.get("next_waypoint_letter", 'a')
+		print("Restored ", waypoint_order.size(), " waypoints")
+	else:
+		waypoints.clear()
+		waypoint_order.clear()
+		next_waypoint_letter = 'a'
 	
 	# Restore tiles from backup
 	for y in range(backup.tiles.size()):

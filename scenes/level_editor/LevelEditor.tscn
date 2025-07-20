@@ -34,6 +34,7 @@ Tile Selection:
 4 - Player Spawn (Green)
 5 - Goal (Blue)
 6 - Eraser
+9 - Waypoint (Path)
 
 Mouse Controls:
 - Left Click: Place tile
@@ -51,9 +52,10 @@ Commands:
 Camera:
 - Arrow Keys: Move camera
 
-Beat Guide:
-- Shows musical distances
-- 8 cells = 1 beat (120 BPM)"
+Waypoints:
+- Auto-increments (a-z)
+- Delete only most recent
+- Shows perfect path"
 label_settings = SubResource("1")
 
 [node name="CurrentTile" type="Label" parent="UI"]
