@@ -296,7 +296,7 @@ func _on_swipe_detected(direction: Vector2):
 		return
 	
 	# Start the guitar chord when movement begins
-	# AudioManager.start_ambient_guitar()  # DISABLED FOR TESTING
+	AudioManager.start_ambient_guitar()
 	
 	# Calculate timing and score
 	var timing_result = style_score_manager.register_move(AudioManager.get_beat_progress(), AudioManager.beat_interval)
@@ -327,7 +327,7 @@ func _on_swipe_detected(direction: Vector2):
 
 func _on_player_died():
 	# Stop the guitar chord when player dies
-	# AudioManager.stop_ambient_guitar()  # DISABLED FOR TESTING
+	AudioManager.stop_ambient_guitar()
 	is_game_over = true
 	if game_over_panel:
 		game_over_panel.visible = true
@@ -348,7 +348,7 @@ func _on_coin_collected():
 
 func _on_player_moved():
 	# Stop the guitar chord when movement ends
-	# AudioManager.stop_ambient_guitar()  # DISABLED FOR TESTING
+	AudioManager.stop_ambient_guitar()
 	# Score is now handled by timing system in _on_swipe_detected
 	pass
 
@@ -539,7 +539,7 @@ func _on_goal_reached():
 	level_complete_time = (Time.get_ticks_msec() / 1000.0) - level_start_time
 	
 	# Stop the guitar if playing
-	# AudioManager.stop_ambient_guitar()  # DISABLED FOR TESTING
+	AudioManager.stop_ambient_guitar()
 	
 	print("Level completed! Time: ", level_complete_time, " seconds")
 	print("Coins collected: ", coins)

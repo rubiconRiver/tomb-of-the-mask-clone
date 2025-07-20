@@ -6,8 +6,8 @@ extends Node
 
 var mixer: AudioMixer
 var guitar_player: AudioStreamPlayer
-var guitar_playback: AudioStreamGeneratorPlayback
-var guitar_time_position = 0.0
+var guitar_loop: PackedFloat32Array
+var guitar_position = 0
 var is_playing = false
 
 const CHUNK_SIZE = 1024
@@ -26,21 +26,27 @@ func _ready():
 		
 	# Pre-create the guitar player and stream once
 	_setup_guitar_player()
+	
+	# Load the pre-generated guitar loop
+	guitar_loop = SoundBank.get_guitar_loop()
+	if guitar_loop.size() == 0:
+		push_error("[AmbientSystem] Failed to load guitar loop")
 
 func _process(delta):
-	if is_playing and guitar_playback:
-		# Keep the buffer filled
+	if is_playing and guitar_playback and guitar_loop.size() > 0:
+		# Keep the buffer filled with pre-generated audio
 		while guitar_playback.can_push_buffer(CHUNK_SIZE):
-			var chunk = SoundBank.generate_ambient_guitar_chunk(guitar_time_position, CHUNK_SIZE)
-			
-			# Convert to stereo with simple hard clipping
+			# Get next chunk from pre-generated loop
 			var stereo_frames = PackedVector2Array()
-			for sample in chunk:
+			
+			for i in CHUNK_SIZE:
+				# Loop the audio if we reach the end
+				var sample = guitar_loop[guitar_position % guitar_loop.size()]
 				var clamped = clamp(sample * 0.8, -1.0, 1.0)
 				stereo_frames.append(Vector2(clamped, clamped))
+				guitar_position += 1
 			
 			guitar_playback.push_buffer(stereo_frames)
-			guitar_time_position += float(CHUNK_SIZE) / SAMPLE_RATE
 
 func _setup_guitar_player():
 	guitar_player = mixer.get_ambient_player()
@@ -57,8 +63,11 @@ func _setup_guitar_player():
 	guitar_player.volume_db = 0.0
 
 func start_guitar():
-	if is_playing or not guitar_player:
+	if is_playing or not guitar_player or guitar_loop.size() == 0:
 		return
+	
+	# Reset position for clean start
+	guitar_position = 0
 	
 	# Just start playing the existing stream
 	guitar_player.play()

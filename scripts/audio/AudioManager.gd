@@ -138,12 +138,11 @@ func play_game_over():
 	sfx_bank.play_game_over()
 
 # === AMBIENT INTERFACE ===
-# Ambient guitar removed for performance optimization
-# func start_ambient_guitar():
-# 	ambient_system.start_guitar()
+func start_ambient_guitar():
+	ambient_system.start_guitar()
 
-# func stop_ambient_guitar():
-# 	ambient_system.stop_guitar()
+func stop_ambient_guitar():
+	ambient_system.stop_guitar()
 
 # === UTILITY FUNCTIONS ===
 func set_master_volume(volume_db: float):

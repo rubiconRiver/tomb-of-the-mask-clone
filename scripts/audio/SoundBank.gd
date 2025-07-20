@@ -24,6 +24,7 @@ static func initialize():
 	_cache_drum_sounds()
 	_cache_sfx_sounds()
 	_cache_melodic_sounds()
+	_cache_ambient_sounds()
 	
 	_initialized = true
 	print("[SoundBank] Cached ", cached_sounds.size(), " sounds")
@@ -384,7 +385,36 @@ static func generate_octave_celebration() -> PackedFloat32Array:
 # AMBIENT SOUNDS (Background atmosphere)
 # ============================================
 
-# Ambient guitar chord - for continuous playback
+static func _cache_ambient_sounds():
+	# Pre-generate guitar loop - 2 seconds should be enough for seamless looping
+	cached_sounds["guitar_loop"] = generate_ambient_guitar_loop(2.0)
+
+static func get_guitar_loop() -> PackedFloat32Array:
+	return cached_sounds.get("guitar_loop", PackedFloat32Array())
+
+# Generate a seamless guitar loop for specified duration
+static func generate_ambient_guitar_loop(duration: float) -> PackedFloat32Array:
+	var samples = int(SAMPLE_RATE * duration)
+	var audio_data = PackedFloat32Array()
+	
+	# Cmaj7 chord for peaceful ambience
+	var chord_frequencies = [261.63, 329.63, 392.00, 493.88]  # C4, E4, G4, B4
+	
+	for i in samples:
+		var time = float(i) / SAMPLE_RATE
+		var sample = 0.0
+		
+		for freq in chord_frequencies:
+			# Slight vibrato for warmth
+			var vibrato = 1.0 + sin(2.0 * PI * 5.0 * time) * 0.005
+			sample += sin(2.0 * PI * freq * vibrato * time) * 0.25
+		
+		sample *= 0.3  # Ambient volume
+		audio_data.append(sample)
+	
+	return audio_data
+
+# Ambient guitar chord - for continuous playback (DEPRECATED - use cached version)
 static func generate_ambient_guitar_chunk(time_position: float, chunk_size: int) -> PackedFloat32Array:
 	var audio_data = PackedFloat32Array()
 	
