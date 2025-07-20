@@ -4,7 +4,7 @@ extends Node
 enum TimingQuality {
 	PERFECT,
 	GREAT,
-	GOOD,
+	GOOD,      # Treated as OFF_BEAT for combo/multiplier purposes
 	OFF_BEAT
 }
 
@@ -43,7 +43,7 @@ const MAX_MULTIPLIER = 5
 const MIN_MULTIPLIER = 1
 
 signal timing_calculated(quality: TimingQuality, multiplier: float)
-signal combo_changed(new_combo: int)
+signal combo_changed(new_combo: int, multiplier_increased: bool)
 signal multiplier_changed(new_multiplier: int)
 
 func calculate_timing(beat_timer: float, beat_interval: float) -> Dictionary:
@@ -83,7 +83,7 @@ func register_move(beat_timer: float, beat_interval: float) -> Dictionary:
 	
 	# Update combo and counts based on timing quality
 	if quality == TimingQuality.PERFECT or quality == TimingQuality.GREAT:
-		# PERFECT/GREAT: Increase combo and multiplier
+		# PERFECT/GREAT: Increase combo
 		combo_count += 1
 		on_beat_moves += 1
 		
@@ -93,33 +93,35 @@ func register_move(beat_timer: float, beat_interval: float) -> Dictionary:
 			TimingQuality.GREAT:
 				great_moves += 1
 		
-		# Increase multiplier (cap at MAX_MULTIPLIER)
-		if current_multiplier < MAX_MULTIPLIER:
-			current_multiplier += 1
+		# Multiplier only increases when combo catches up, never decreases on hit
+		# This allows rebuilding combo without losing multiplier progress
+		var multiplier_increased = false
+		if combo_count > current_multiplier and current_multiplier < MAX_MULTIPLIER:
+			current_multiplier = min(combo_count, MAX_MULTIPLIER)
+			multiplier_increased = true
 			emit_signal("multiplier_changed", current_multiplier)
-			
-	elif quality == TimingQuality.GOOD:
-		# GOOD: Count as on-beat but decrease multiplier
-		good_moves += 1
-		on_beat_moves += 1
-		combo_count = 0  # Reset combo
 		
-		# Decrease multiplier
-		if current_multiplier > MIN_MULTIPLIER:
-			current_multiplier -= 1
-			emit_signal("multiplier_changed", current_multiplier)
+		# Emit combo changed with multiplier increase info
+		emit_signal("combo_changed", combo_count, multiplier_increased)
 			
-	else:  # OFF_BEAT
-		# OFF_BEAT: Reset combo and decrease multiplier
+	else:  # GOOD or OFF_BEAT - treat all as off-beat
+		# Reset combo and decrease multiplier by 1
 		combo_count = 0
 		
-		# Decrease multiplier
+		# Track the move type
+		if quality == TimingQuality.GOOD:
+			good_moves += 1
+			on_beat_moves += 1  # Still counts for accuracy
+		
+		# Decrease multiplier by 1 (minimum 1)
 		if current_multiplier > MIN_MULTIPLIER:
 			current_multiplier -= 1
 			emit_signal("multiplier_changed", current_multiplier)
+		
+		# Combo reset doesn't increase multiplier
+		emit_signal("combo_changed", combo_count, false)
 	
 	emit_signal("timing_calculated", quality, multiplier)
-	emit_signal("combo_changed", combo_count)
 	
 	return {
 		"timing": quality,

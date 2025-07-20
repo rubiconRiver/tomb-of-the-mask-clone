@@ -8,6 +8,7 @@ var style_score_manager_script = preload("res://scripts/ui/StyleScoreManager.gd"
 var timing_feedback_script = preload("res://scripts/ui/TimingFeedback.gd")
 var beat_timeline_script = preload("res://scripts/ui/BeatTimeline.gd")
 var beat_visualizer_script = preload("res://scripts/visual/BeatVisualizer.gd")
+var multiplier_audio_manager_script = preload("res://scripts/audio/MultiplierAudioManager.gd")
 
 var player: Player
 var level_generator: LevelGenerator
@@ -17,6 +18,7 @@ var beat_indicator: Control
 var beat_timeline: BeatTimeline
 var style_score_manager: StyleScoreManager
 var beat_visualizer: BeatVisualizer
+var multiplier_audio_manager: MultiplierAudioManager
 
 var score = 0  # Total points (coins × multiplier)
 var coins = 0  # Number of coins collected
@@ -83,6 +85,7 @@ func _ready():
 	setup_wall_hit_audio()
 	setup_beat_visualizer()
 	setup_multiplier_indicator()
+	setup_multiplier_audio()
 	start_game()
 
 func setup_camera():
@@ -180,6 +183,17 @@ func setup_multiplier_indicator():
 		
 	# Store reference for updates
 	set_meta("multiplier_indicator", multiplier_indicator)
+
+func setup_multiplier_audio():
+	print("[GameManager] Setting up multiplier audio system")
+	multiplier_audio_manager = multiplier_audio_manager_script.new()
+	add_child(multiplier_audio_manager)
+	
+	# Connect to existing signals
+	if style_score_manager:
+		style_score_manager.multiplier_changed.connect(multiplier_audio_manager.on_multiplier_changed)
+		style_score_manager.combo_changed.connect(multiplier_audio_manager.on_combo_changed)
+		print("[GameManager] Connected multiplier audio to style score manager")
 
 func _process(delta):
 	if camera and player:
@@ -341,7 +355,7 @@ func _on_beat():
 				style_score_manager.current_multiplier -= 1
 				style_score_manager.emit_signal("multiplier_changed", style_score_manager.current_multiplier)
 				style_score_manager.combo_count = 0
-				style_score_manager.emit_signal("combo_changed", 0)
+				style_score_manager.emit_signal("combo_changed", 0, false)
 	
 	# Play any pending beat-synchronized audio effects
 	if pending_coin_chimes > 0:
