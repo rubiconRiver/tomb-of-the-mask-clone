@@ -35,14 +35,36 @@ var current_filename = ""
 @onready var instructions_panel = $UI/Instructions
 
 func _ready():
+	# Override project's mobile viewport settings for level editor
+	get_window().content_scale_mode = Window.CONTENT_SCALE_MODE_DISABLED
+	get_window().content_scale_aspect = Window.CONTENT_SCALE_ASPECT_IGNORE
+	
+	# MacBook Pro 14" has 3024x1964 resolution
+	# 80% would be roughly 2400x1570, but let's leave room for dock/menu bar
+	var editor_width = 2200
+	var editor_height = 1400
+	
+	get_window().size = Vector2i(editor_width, editor_height)
+	
 	# Set a good window size for level editing
 	if OS.has_feature("editor"):
 		# Running in editor
 		pass
 	else:
-		# Running standalone - set window size
-		get_window().size = Vector2i(1200, 800)
-		get_window().position = Vector2i(100, 100)
+		# Running standalone - set window size and center it
+		get_window().size = Vector2i(editor_width, editor_height)
+		# Center the window
+		var screen_size = DisplayServer.screen_get_size()
+		var window_pos = (screen_size - Vector2i(editor_width, editor_height)) / 2
+		get_window().position = window_pos
+	
+	# Add a background to prevent black edges
+	var background = ColorRect.new()
+	background.color = Color(0.15, 0.15, 0.15)  # Dark gray background
+	background.size = Vector2(5000, 5000)  # Large enough to cover camera movement
+	background.position = Vector2(-1000, -1000)  # Center it
+	add_child(background)
+	move_child(background, 0)  # Put it behind everything
 	
 	setup_tilemap()
 	setup_ui()
@@ -328,6 +350,11 @@ func load_into_game():
 	
 	# Store level data in singleton
 	LevelEditorData.set_custom_level(level_data)
+	
+	# Restore mobile viewport settings before switching to main game
+	get_window().content_scale_mode = Window.CONTENT_SCALE_MODE_VIEWPORT
+	get_window().content_scale_aspect = Window.CONTENT_SCALE_ASPECT_KEEP
+	get_window().size = Vector2i(720, 1560)
 	
 	# Switch to main scene with custom level
 	var main_scene = preload("res://scenes/main.tscn")
