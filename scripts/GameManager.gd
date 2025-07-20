@@ -485,7 +485,7 @@ func update_guitar_stream(delta: float):
 		guitar_sample_timer -= chunk_duration
 		# Use AudioGenerator for guitar chord
 		var guitar_chunk = AudioGenerator.generate_guitar_chord_chunk(guitar_time_position, samples_per_chunk, sample_rate)
-		AudioGenerator.push_samples_to_playback(playback, guitar_chunk, 0.25)
+		AudioGenerator.push_samples_to_playback(playback, guitar_chunk, 1.0)
 		# Advance time position
 		guitar_time_position += samples_per_chunk / sample_rate
 
@@ -500,7 +500,7 @@ func play_coin_chime():
 	var playback = coin_audio.get_stream_playback() as AudioStreamGeneratorPlayback
 	if playback:
 		var coin_chime = AudioGenerator.generate_coin_chime()
-		AudioGenerator.push_samples_to_playback(playback, coin_chime, 0.35)
+		AudioGenerator.push_samples_to_playback(playback, coin_chime, 1.0)
 
 func play_wall_hit_tom_fill():
 	if not wall_hit_audio or not wall_hit_audio.stream:
@@ -512,7 +512,7 @@ func play_wall_hit_tom_fill():
 	var playback = wall_hit_audio.get_stream_playback() as AudioStreamGeneratorPlayback
 	if playback:
 		var wall_hit = AudioGenerator.generate_wall_hit_tom_fill()
-		AudioGenerator.push_samples_to_playback(playback, wall_hit, 0.75)
+		AudioGenerator.push_samples_to_playback(playback, wall_hit, 1.0)
 func _on_swipe_detected(direction: Vector2):
 	if not is_game_over and player and not player.is_moving:
 		# Start the guitar chord when movement begins

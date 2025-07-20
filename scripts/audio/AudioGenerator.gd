@@ -212,16 +212,14 @@ static func generate_kick_drum() -> PackedFloat32Array:
 	
 	for i in samples:
 		var time = float(i) / SAMPLE_RATE
+		var envelope = exp(-time * 20.0)
 		
 		# Main tone around 60 Hz with fast decay
 		var frequency = 60.0 * exp(-time * 35.0)  # Pitch drop effect
 		var main_tone = sin(2.0 * PI * frequency * time)
 		
-		# Add click attack
+		# Add click attack for punch
 		var click = sin(2.0 * PI * 1500.0 * time) * exp(-time * 100.0)
-		
-		# Envelope
-		var envelope = exp(-time * 20.0)
 		
 		var sample = (main_tone * 0.8 + click * 0.2) * envelope
 		audio_data.append(sample)
@@ -236,6 +234,7 @@ static func generate_snare_drum() -> PackedFloat32Array:
 	
 	for i in samples:
 		var time = float(i) / SAMPLE_RATE
+		var envelope = exp(-time * 25.0)
 		
 		# Snare drum component (noise burst)
 		var noise = (randf() * 2.0 - 1.0) * 0.7
@@ -243,8 +242,6 @@ static func generate_snare_drum() -> PackedFloat32Array:
 		# Tonal component
 		var tone = sin(2.0 * PI * 200.0 * time) * 0.3
 		
-		# Mix with fast decay
-		var envelope = exp(-time * 50.0)
 		var sample = (noise + tone) * envelope
 		audio_data.append(sample)
 	
@@ -258,16 +255,14 @@ static func generate_hihat_sound() -> PackedFloat32Array:
 	
 	for i in samples:
 		var time = float(i) / SAMPLE_RATE
+		var envelope = exp(-time * 40.0)  # Very fast decay
 		
-		# High-frequency noise
-		var noise = (randf() * 2.0 - 1.0)
+		# Generate hi-hat with high-frequency noise and metallic shimmer
+		var noise = (randf() * 2.0 - 1.0) * 0.8
+		var metallic1 = sin(2.0 * PI * 8000.0 * time) * 0.3
+		var metallic2 = sin(2.0 * PI * 12000.0 * time) * 0.2
 		
-		# Apply high-pass filter simulation (emphasize high frequencies)
-		var hp_noise = noise * 0.8
-		
-		# Very fast decay
-		var envelope = exp(-time * 100.0)
-		var sample = hp_noise * envelope * 0.5
+		var sample = (noise + metallic1 + metallic2) * envelope
 		audio_data.append(sample)
 	
 	return audio_data
@@ -280,32 +275,31 @@ static func generate_wall_hit_tom_fill() -> PackedFloat32Array:
 	
 	for i in samples:
 		var time = float(i) / SAMPLE_RATE
+		var envelope = exp(-time * 10.0)  # Moderate decay for punchy tom sequence
 		
-		# Three descending toms
-		var tom1 = 0.0
-		var tom2 = 0.0
-		var tom3 = 0.0
+		# Three tom hits: du-du-DUH pattern (high-high-low)
+		var tom1_freq = 180.0  # High tom (du)
+		var tom2_freq = 160.0  # High tom (du) 
+		var tom3_freq = 80.0   # Low tom (DUH!)
 		
-		# Tom 1: 0.0 - 0.13s (high tom)
-		if time < 0.13:
-			var t = time
-			var freq = 180.0 * exp(-t * 15.0)  # Pitch bend
-			tom1 = sin(2.0 * PI * freq * t) * exp(-t * 25.0)
+		# Timing: tom1 (0-0.08s), tom2 (0.08-0.16s), tom3 (0.16-0.32s)
+		var tom_sample = 0.0
+		if time < 0.08:
+			# First tom (du) - crisp and high
+			tom_sample = sin(2.0 * PI * tom1_freq * time) * exp(-time * 30.0) * 0.8
+		elif time < 0.16:
+			# Second tom (du) - similar pitch, slight variation
+			var tom2_time = time - 0.08
+			tom_sample = sin(2.0 * PI * tom2_freq * tom2_time) * exp(-tom2_time * 30.0) * 0.8
+		elif time < 0.32:
+			# Third tom (DUH!) - deep and punchy
+			var tom3_time = time - 0.16
+			tom_sample = sin(2.0 * PI * tom3_freq * tom3_time) * exp(-tom3_time * 20.0) * 1.2  # Louder for emphasis
 		
-		# Tom 2: 0.13 - 0.26s (mid tom)
-		elif time < 0.26:
-			var t = time - 0.13
-			var freq = 140.0 * exp(-t * 15.0)
-			tom2 = sin(2.0 * PI * freq * t) * exp(-t * 25.0)
-		
-		# Tom 3: 0.26 - 0.4s (low tom)
-		else:
-			var t = time - 0.26
-			var freq = 100.0 * exp(-t * 15.0)
-			tom3 = sin(2.0 * PI * freq * t) * exp(-t * 25.0)
-		
-		var sample = (tom1 + tom2 + tom3) * 0.7
-		audio_data.append(sample)
+		# Add noise for realistic tom texture
+		var noise = (randf() * 2.0 - 1.0) * 0.25 * envelope
+		var final_sample = (tom_sample + noise) * envelope * 0.75
+		audio_data.append(final_sample)
 	
 	return audio_data
 
@@ -324,26 +318,23 @@ static func generate_coin_chime() -> PackedFloat32Array:
 		[1046.5, 1244.5, 1568.0]   # C6, D#6, G6 (major with color tone - mystical)
 	]
 	
-	# Pick a random chime set
-	var chime = chime_sets[randi() % chime_sets.size()]
+	# Randomly choose one of the three chime sets
+	var chime_frequencies = chime_sets[randi() % chime_sets.size()]
 	
 	for i in samples:
 		var time = float(i) / SAMPLE_RATE
-		var sample = 0.0
+		var envelope = exp(-time * 12.0)  # Faster decay for crisp 8th note timing
 		
-		# Combine all frequencies with different amplitudes
-		for j in range(chime.size()):
-			var freq = chime[j]
-			var amp = 1.0 / (j + 1)  # Higher frequencies quieter
-			sample += sin(2.0 * PI * freq * time) * amp
+		var chime_sample = 0.0
+		for freq in chime_frequencies:
+			# Add harmonics for bell-like quality
+			var fundamental = sin(2.0 * PI * freq * time) * 0.6
+			var harmonic2 = sin(2.0 * PI * freq * 2.0 * time) * 0.2
+			var harmonic3 = sin(2.0 * PI * freq * 3.0 * time) * 0.1
+			chime_sample += (fundamental + harmonic2 + harmonic3) / 3.0
 		
-		# Envelope with fast attack and smooth decay
-		var attack = min(time * 200.0, 1.0)  # Fast attack
-		var decay = exp(-time * 8.0)  # Smooth decay
-		var envelope = attack * decay
-		
-		sample *= envelope * 0.15  # Overall volume
-		audio_data.append(sample)
+		var final_sample = chime_sample * envelope * 0.35  # Slightly quieter for frequent use
+		audio_data.append(final_sample)
 	
 	return audio_data
 
