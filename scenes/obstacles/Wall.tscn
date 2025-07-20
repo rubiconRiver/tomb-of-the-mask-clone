@@ -1,16 +1,14 @@
 [gd_scene load_steps=3 format=3 uid="uid://b1234wall"]
 
+[ext_resource type="Script" uid="uid://bavdpvwofa3u7" path="res://scripts/obstacles/Wall.gd" id="1_wall"]
+
 [sub_resource type="RectangleShape2D" id="1"]
 size = Vector2(64, 64)
 
-[sub_resource type="PlaceholderTexture2D" id="2"]
-size = Vector2(64, 64)
-
 [node name="Wall" type="StaticBody2D" groups=["walls"]]
+script = ExtResource("1_wall")
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
 shape = SubResource("1")
 
 [node name="Sprite2D" type="Sprite2D" parent="."]
-texture = SubResource("2")
-modulate = Color(0.3, 0.3, 0.3, 1)

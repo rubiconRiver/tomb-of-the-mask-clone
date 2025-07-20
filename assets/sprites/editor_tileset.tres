@@ -1,0 +1,21 @@
+[gd_resource type="TileSet" format=3]
+
+[sub_resource type="ImageTexture" id="ImageTexture_1"]
+
+[sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_1"]
+texture = SubResource("ImageTexture_1")
+texture_region_size = Vector2i(64, 64)
+0:0/0 = 0
+0:0/0/custom_data_0 = "wall"
+1:0/0 = 0  
+1:0/0/custom_data_0 = "coin"
+2:0/0 = 0
+2:0/0/custom_data_0 = "spike"
+3:0/0 = 0
+3:0/0/custom_data_0 = "player"
+
+[resource]
+tile_size = Vector2i(64, 64)
+custom_data_layers_0/name = "type"
+custom_data_layers_0/type = 4
+sources/0 = SubResource("TileSetAtlasSource_1")

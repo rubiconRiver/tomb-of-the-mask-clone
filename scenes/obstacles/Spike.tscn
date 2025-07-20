@@ -1,9 +1,8 @@
 [gd_scene load_steps=3 format=3 uid="uid://b1234spike"]
 
-[sub_resource type="RectangleShape2D" id="1"]
-size = Vector2(32, 32)
+[ext_resource type="Texture2D" uid="uid://drwgihu665k28" path="res://assets/sprites/spike.svg" id="1_spike"]
 
-[sub_resource type="PlaceholderTexture2D" id="2"]
+[sub_resource type="RectangleShape2D" id="1"]
 size = Vector2(32, 32)
 
 [node name="Spike" type="Area2D" groups=["hazards"]]
@@ -12,5 +11,5 @@ size = Vector2(32, 32)
 shape = SubResource("1")
 
 [node name="Sprite2D" type="Sprite2D" parent="."]
-texture = SubResource("2")
 modulate = Color(1, 0, 0, 1)
+texture = ExtResource("1_spike")

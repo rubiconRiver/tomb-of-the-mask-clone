@@ -1,0 +1,67 @@
+[gd_scene load_steps=4 format=3 uid="uid://t5cl84b1nyd8"]
+
+[ext_resource type="Script" uid="uid://cxrjxmyr60n3a" path="res://scripts/tools/LevelEditor.gd" id="1"]
+[ext_resource type="Script" uid="uid://by1b4nvcpa8sp" path="res://scripts/tools/GridOverlay.gd" id="2"]
+
+[sub_resource type="LabelSettings" id="1"]
+font_size = 24
+
+[node name="LevelEditor" type="Node2D"]
+script = ExtResource("1")
+
+[node name="Grid" type="Node2D" parent="."]
+script = ExtResource("2")
+
+[node name="UI" type="CanvasLayer" parent="."]
+
+[node name="Instructions" type="Panel" parent="UI"]
+modulate = Color(1, 1, 1, 0.9)
+offset_right = 250.0
+offset_bottom = 400.0
+
+[node name="Label" type="Label" parent="UI/Instructions"]
+layout_mode = 0
+offset_left = 10.0
+offset_top = 10.0
+offset_right = 240.0
+offset_bottom = 390.0
+text = "LEVEL EDITOR
+
+Tile Selection:
+1 - Wall (Gray)
+2 - Coin (Yellow) 
+3 - Spike (Red)
+4 - Player Spawn (Green)
+5 - Goal (Blue)
+6 - Eraser
+9 - Waypoint (Path)
+
+Mouse Controls:
+- Left Click: Place tile
+- Left Drag: Paint tiles
+- Right Click/Drag: Erase
+- Shift+Left Click: Start beat guide
+- Shift+Right Click: Clear guides
+
+Commands:
+- Ctrl+S: Save to test_levels.txt
+- L: Test in main game
+- C: Clear all
+- N: Change level size
+
+Camera:
+- Arrow Keys: Move camera
+
+Waypoints:
+- Auto-increments (a-z)
+- Delete only most recent
+- Shows perfect path"
+label_settings = SubResource("1")
+
+[node name="CurrentTile" type="Label" parent="UI"]
+offset_left = 260.0
+offset_top = 10.0
+offset_right = 460.0
+offset_bottom = 50.0
+text = "Current: Wall"
+label_settings = SubResource("1")
