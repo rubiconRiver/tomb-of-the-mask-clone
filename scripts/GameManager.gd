@@ -18,14 +18,15 @@ var beat_timeline: BeatTimeline
 var style_score_manager: StyleScoreManager
 var beat_visualizer: BeatVisualizer
 
-var score = 0
-var coins = 0
+var score = 0  # Total points (coins × multiplier)
+var coins = 0  # Number of coins collected
 var current_level = 0
 var is_game_over = false
 var level_start_time = 0.0
 var level_complete_time = 0.0
 var is_level_complete = false
 var total_coins_in_level = 0
+var perfect_score = 0  # Perfect score for current level
 
 var beat_timer = 0.0
 var beat_interval = 0.5
@@ -66,6 +67,7 @@ func _ready():
 	add_child(style_score_manager)
 	style_score_manager.timing_calculated.connect(_on_timing_calculated)
 	style_score_manager.combo_changed.connect(_on_combo_changed)
+	style_score_manager.multiplier_changed.connect(_on_multiplier_changed)
 	
 	setup_camera()
 	setup_beat_indicator()
@@ -76,6 +78,7 @@ func _ready():
 	setup_coin_audio()
 	setup_wall_hit_audio()
 	setup_beat_visualizer()
+	setup_multiplier_indicator()
 	start_game()
 
 func setup_camera():
@@ -162,6 +165,17 @@ func setup_beat_visualizer():
 	beat_visualizer = beat_visualizer_script.new()
 	add_child(beat_visualizer)
 	beat_occurred.connect(beat_visualizer.trigger_beat)
+
+func setup_multiplier_indicator():
+	var multiplier_indicator_scene = preload("res://scenes/ui/MultiplierIndicator.tscn")
+	var multiplier_indicator = multiplier_indicator_scene.instantiate()
+	
+	# It's already positioned in the scene file
+	if ui_layer:
+		ui_layer.add_child(multiplier_indicator)
+		
+	# Store reference for updates
+	set_meta("multiplier_indicator", multiplier_indicator)
 
 func _process(delta):
 	if camera and player:
@@ -570,13 +584,18 @@ func _on_player_died():
 		game_over_panel.visible = true
 
 func _on_coin_collected():
+	# Increment coin count
 	coins += 1
-	score += 10
+	
+	# Add to score based on current multiplier
+	var multiplier = style_score_manager.get_current_multiplier()
+	score += 10 * multiplier  # Base value 10 × multiplier
+	
 	update_ui()
 	
 	# Queue coin chime to play on next 8th note (much more responsive!)
 	pending_coin_chimes_8th += 1
-	print("Coin collected - chime queued for next 8th note")
+	print("Coin collected (", multiplier, "x) - Score: ", score)
 
 func _on_player_moved():
 	# Stop the guitar chord when movement ends
@@ -645,6 +664,11 @@ func _on_timing_calculated(quality: int, multiplier: float):
 
 func _on_combo_changed(new_combo: int):
 	update_ui()
+
+func _on_multiplier_changed(new_multiplier: int):
+	var multiplier_indicator = get_meta("multiplier_indicator", null)
+	if multiplier_indicator:
+		multiplier_indicator.update_multiplier(new_multiplier)
 
 func update_latency_display():
 	if latency_label:

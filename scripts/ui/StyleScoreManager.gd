@@ -37,8 +37,14 @@ var great_moves = 0
 var good_moves = 0
 var on_beat_moves = 0
 
+# Multiplier system
+var current_multiplier = 1
+const MAX_MULTIPLIER = 5
+const MIN_MULTIPLIER = 1
+
 signal timing_calculated(quality: TimingQuality, multiplier: float)
 signal combo_changed(new_combo: int)
+signal multiplier_changed(new_multiplier: int)
 
 func calculate_timing(beat_timer: float, beat_interval: float) -> Dictionary:
 	# Calculate time to nearest beat
@@ -86,8 +92,18 @@ func register_move(beat_timer: float, beat_interval: float) -> Dictionary:
 				great_moves += 1
 			TimingQuality.GOOD:
 				good_moves += 1
+		
+		# Increase multiplier on beat (cap at MAX_MULTIPLIER)
+		if current_multiplier < MAX_MULTIPLIER:
+			current_multiplier += 1
+			emit_signal("multiplier_changed", current_multiplier)
 	else:
 		combo_count = 0
+		
+		# Decrease multiplier on miss (floor at MIN_MULTIPLIER)
+		if current_multiplier > MIN_MULTIPLIER:
+			current_multiplier -= 1
+			emit_signal("multiplier_changed", current_multiplier)
 	
 	emit_signal("timing_calculated", quality, multiplier)
 	emit_signal("combo_changed", combo_count)
@@ -111,6 +127,9 @@ func get_perfect_percentage() -> float:
 		return 0.0
 	return float(perfect_moves) / float(total_moves) * 100.0
 
+func get_current_multiplier() -> int:
+	return current_multiplier
+
 func reset_combo():
 	combo_count = 0
 	emit_signal("combo_changed", 0)
@@ -122,6 +141,8 @@ func reset_all():
 	great_moves = 0
 	good_moves = 0
 	on_beat_moves = 0
+	current_multiplier = 1
+	emit_signal("multiplier_changed", current_multiplier)
 
 func get_timing_counts() -> Dictionary:
 	return {
