@@ -12,6 +12,7 @@ var trail_effect: TrailEffect
 var player_visual: Node2D
 var last_timing_quality = -1
 var movement_ray: RayCast2D
+var buffered_direction = Vector2.ZERO  # For input buffering in fast sections
 
 # Input buffering system
 var buffered_input: Vector2 = Vector2.ZERO
@@ -94,6 +95,14 @@ func _physics_process(delta):
 		if trail_effect:
 			trail_effect.add_point(global_position)
 		
+		# Log position relative to beat every 0.25 seconds for debugging
+		if not has_meta("last_beat_log") or Time.get_ticks_msec() - get_meta("last_beat_log") > 250:
+			set_meta("last_beat_log", Time.get_ticks_msec())
+			var grid_pos = Vector2i(position / GRID_SIZE)
+			var beat_progress = AudioManager.get_beat_progress() if AudioManager else 0.0
+			var current_beat = AudioManager.get_current_beat() if AudioManager else 0
+			print("[MOVEMENT] Grid pos: ", grid_pos, " | Beat: ", current_beat % 4 + 1, " | Beat progress: ", snapped(beat_progress, 0.01))
+		
 		# NEVER REMOVE - Critical for debugging movement glitches
 		var distance_to_target = position.distance_to(target_position)
 		if distance_to_target > 100:  # Only log when far from target to reduce spam
@@ -101,8 +110,15 @@ func _physics_process(delta):
 		
 		if distance_to_target <= 5.0:
 			# NEVER REMOVE - Critical for debugging movement glitches
+			var current_beat = AudioManager.get_current_beat() if AudioManager else 0
+			var beat_progress = AudioManager.get_beat_progress() if AudioManager else 0.0
+			var start_grid = Vector2i(get_meta("move_start_pos", position) / GRID_SIZE)
+			var end_grid = Vector2i(target_position / GRID_SIZE)
+			var blocks_traveled = abs(end_grid.x - start_grid.x) + abs(end_grid.y - start_grid.y)
 			print("=== MOVEMENT COMPLETE ===")
-			print("Final position: ", target_position, " Grid: ", Vector2i(target_position / GRID_SIZE))
+			print("Final position: ", target_position, " Grid: ", end_grid)
+			print("Blocks traveled: ", blocks_traveled)
+			print("Ended on Beat ", current_beat % 4 + 1, " (progress: ", snapped(beat_progress, 0.01), ")")
 			print("Distance error: ", distance_to_target, " pixels")
 			
 			position = target_position
@@ -125,14 +141,25 @@ func _physics_process(delta):
 			
 			emit_signal("moved")
 			
+			# Check for buffered input
+			if buffered_direction != Vector2.ZERO:
+				var next_direction = buffered_direction
+				buffered_direction = Vector2.ZERO
+				print("Executing buffered move: ", next_direction)
+				move(next_direction)
+			
 		for i in get_slide_collision_count():
 			var collision = get_slide_collision(i)
 			var collider = collision.get_collider()
 			
 			if collider.is_in_group("walls"):
 				# NEVER REMOVE - Critical for debugging movement glitches
+				var current_beat = AudioManager.get_current_beat() if AudioManager else 0
+				var beat_progress = AudioManager.get_beat_progress() if AudioManager else 0.0
+				var start_grid = Vector2i(get_meta("move_start_pos", position) / GRID_SIZE)
 				print("=== WALL HIT DURING MOVEMENT ===")
 				print("Hit wall at position: ", position)
+				print("Ended on Beat ", current_beat % 4 + 1, " (progress: ", snapped(beat_progress, 0.01), ")")
 				print("Original target was: ", target_position)
 				print("Collision point: ", collision.get_position())
 				
@@ -162,11 +189,22 @@ func _physics_process(delta):
 				current_momentum = max(current_momentum - momentum_decay * 2.0, 0.8)
 				
 				# NEVER REMOVE - Critical for debugging movement glitches
-				print("Corrected to grid position: ", corrected_position, " Grid: ", Vector2i(corrected_position / GRID_SIZE))
+				var end_grid = Vector2i(corrected_position / GRID_SIZE)
+				var blocks_traveled = abs(end_grid.x - start_grid.x) + abs(end_grid.y - start_grid.y)
+				print("Corrected to grid position: ", corrected_position, " Grid: ", end_grid)
+				print("Blocks traveled: ", blocks_traveled)
 				validate_position()
 				
 				emit_signal("hit_wall")
 				emit_signal("moved")
+				
+				# Check for buffered input after hitting wall
+				if buffered_direction != Vector2.ZERO:
+					var next_direction = buffered_direction
+					buffered_direction = Vector2.ZERO
+					print("Executing buffered move after wall hit: ", next_direction)
+					move(next_direction)
+				
 				break
 			elif collider.is_in_group("hazards"):
 				die()
@@ -181,12 +219,18 @@ func move(direction: Vector2):
 	
 	# NEVER REMOVE - Critical for debugging movement glitches
 	var move_id = Time.get_ticks_msec()
+	var current_beat = AudioManager.get_current_beat() if AudioManager else 0
+	var beat_progress = AudioManager.get_beat_progress() if AudioManager else 0.0
 	print("=== MOVE START [", move_id, "] ===")
 	print("Start position: ", position, " Grid: ", Vector2i(position / GRID_SIZE))
 	print("Direction: ", direction)
+	print("Starting on Beat ", current_beat % 4 + 1, " (progress: ", snapped(beat_progress, 0.01), ")")
 		
 	move_direction = direction.normalized()
 	is_moving = true
+	
+	# Store start position for tracking blocks traveled
+	set_meta("move_start_pos", position)
 	
 	# Just set a far target and let collision detection handle walls
 	target_position = position + move_direction * 10000

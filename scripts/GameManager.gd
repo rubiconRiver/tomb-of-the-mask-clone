@@ -303,7 +303,13 @@ func _on_eighth_note():
 
 # Old audio functions removed - now handled by AudioManager
 func _on_swipe_detected(direction: Vector2):
-	if not game_started or is_game_over or not player or player.is_moving:
+	if not game_started or is_game_over or not player:
+		return
+	
+	# If player is already moving, buffer the input
+	if player.is_moving:
+		player.buffered_direction = direction
+		print("Buffered swipe: ", direction)
 		return
 	
 	# Start the guitar chord when movement begins
