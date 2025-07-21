@@ -28,6 +28,7 @@ var latency_compensator: LatencyCompensator
 var audio_analyzer: AudioAnalyzer
 var beat_indicator_ui: BeatIndicatorUI
 var background_elements: BackgroundReactiveElements
+var grid_star_effect: GridStarEffect
 
 var score = 0  # Total points (coins × multiplier)
 var coins = 0  # Number of coins collected
@@ -631,6 +632,12 @@ func initialize_effect_systems():
 	background_elements = BackgroundReactiveElements.new()
 	add_child(background_elements)
 	background_elements.z_index = -5  # Behind game elements
+	
+	# Initialize Grid Star Effect
+	var grid_star_script = preload("res://scripts/effects/GridStarEffect.gd")
+	grid_star_effect = grid_star_script.new()
+	add_child(grid_star_effect)
+	grid_star_effect.z_index = -3  # Behind game but in front of background
 
 func setup_screen_shake_camera():
 	if player and player.get_node_or_null("Camera2D"):
