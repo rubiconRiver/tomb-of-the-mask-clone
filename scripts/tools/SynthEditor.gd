@@ -29,9 +29,9 @@ var sound_types = {
 			"sustain": {"min": 0.0, "max": 1.0, "default": 0.3, "step": 0.05, "label": "Sustain Level"},
 			"release": {"min": 0.01, "max": 2.0, "default": 0.2, "step": 0.01, "label": "Release (s)"},
 			# Effects
-			"distortion": {"min": 0.0, "max": 0.8, "default": 0.0, "step": 0.05, "label": "Distortion"},
-			"chorus_depth": {"min": 0.0, "max": 0.3, "default": 0.0, "step": 0.01, "label": "Chorus Depth"},
-			"reverb": {"min": 0.0, "max": 0.5, "default": 0.0, "step": 0.05, "label": "Reverb"},
+			"distortion": {"min": 0.0, "max": 0.8, "default": 0.1, "step": 0.05, "label": "Distortion"},
+			"chorus_depth": {"min": 0.0, "max": 0.3, "default": 0.05, "step": 0.01, "label": "Chorus Depth"},
+			"reverb": {"min": 0.0, "max": 0.5, "default": 0.1, "step": 0.05, "label": "Reverb"},
 			# General
 			"amplitude": {"min": 0.1, "max": 2.0, "default": 0.8, "step": 0.05, "label": "Volume"},
 			"duration": {"min": 0.05, "max": 2.0, "default": 0.15, "step": 0.01, "label": "Duration (s)"}
@@ -53,8 +53,8 @@ var sound_types = {
 			"filter_freq": {"min": 500.0, "max": 8000.0, "default": 3000.0, "step": 100.0, "label": "Filter Cutoff (Hz)"},
 			"filter_res": {"min": 0.1, "max": 4.0, "default": 1.0, "step": 0.1, "label": "Filter Resonance"},
 			# Effects
-			"distortion": {"min": 0.0, "max": 0.6, "default": 0.1, "step": 0.05, "label": "Distortion"},
-			"reverb": {"min": 0.0, "max": 0.4, "default": 0.05, "step": 0.05, "label": "Reverb"},
+			"distortion": {"min": 0.0, "max": 0.6, "default": 0.15, "step": 0.05, "label": "Distortion"},
+			"reverb": {"min": 0.0, "max": 0.4, "default": 0.1, "step": 0.05, "label": "Reverb"},
 			"amplitude": {"min": 0.1, "max": 1.5, "default": 0.8, "step": 0.05, "label": "Volume"}
 		}
 	},
@@ -93,9 +93,9 @@ var sound_types = {
 			"sustain": {"min": 0.0, "max": 0.8, "default": 0.3, "step": 0.05, "label": "Sustain Level"},
 			"release": {"min": 0.1, "max": 5.0, "default": 1.0, "step": 0.1, "label": "Release (s)"},
 			# Effects
-			"chorus_depth": {"min": 0.0, "max": 0.4, "default": 0.05, "step": 0.01, "label": "Chorus Depth"},
+			"chorus_depth": {"min": 0.0, "max": 0.4, "default": 0.1, "step": 0.01, "label": "Chorus Depth"},
 			"chorus_rate": {"min": 0.1, "max": 8.0, "default": 2.5, "step": 0.1, "label": "Chorus Rate (Hz)"},
-			"reverb": {"min": 0.0, "max": 0.8, "default": 0.3, "step": 0.05, "label": "Reverb"},
+			"reverb": {"min": 0.0, "max": 0.8, "default": 0.4, "step": 0.05, "label": "Reverb"},
 			"amplitude": {"min": 0.1, "max": 1.0, "default": 0.6, "step": 0.05, "label": "Volume"}
 		}
 	},
@@ -350,15 +350,17 @@ func create_parameter_control(param_name: String, config: Dictionary):
 	# Value label with better formatting
 	var value_label = Label.new()
 	var value = slider.value
-	# Format based on parameter type
-	if param_name.ends_with("_type"):
-		value_label.text = str(int(value))
+	# Format based on parameter type and value range
+	var formatted_value: String
+	if param_name.ends_with("_type") or param_name == "osc_type" or param_name == "chord_type" or param_name == "noise_type" or param_name == "voices":
+		formatted_value = str(int(value))
 	elif value >= 1000:
-		value_label.text = str(int(value))
+		formatted_value = str(int(value))
 	elif value >= 1:
-		value_label.text = "%.1f" % value
+		formatted_value = "%.2f" % value
 	else:
-		value_label.text = "%.3f" % value
+		formatted_value = "%.3f" % value
+	value_label.text = formatted_value
 	value_label.custom_minimum_size = Vector2(80, 0)
 	value_label.add_theme_color_override("font_color", Color(0.9, 0.9, 1.0))
 	param_hbox.add_child(value_label)
@@ -376,21 +378,24 @@ func _on_sound_type_changed(index: int):
 	update_waveform_preview()
 
 func _on_parameter_changed(param_name: String, value: float):
-	# Update value label with proper formatting
+	# Update value label with proper formatting (same logic as create_parameter_control)
 	if param_name in parameter_labels:
 		var formatted_value: String
-		if param_name.ends_with("_type"):
+		if param_name.ends_with("_type") or param_name == "osc_type" or param_name == "chord_type" or param_name == "noise_type" or param_name == "voices":
 			formatted_value = str(int(value))
 		elif value >= 1000:
 			formatted_value = str(int(value))
 		elif value >= 1:
-			formatted_value = "%.1f" % value
+			formatted_value = "%.2f" % value
 		else:
 			formatted_value = "%.3f" % value
 		parameter_labels[param_name].text = formatted_value
 	
-	# Update waveform preview
+	# Update waveform preview in real-time
 	update_waveform_preview()
+	
+	# Debug output to verify parameter changes
+	print("Parameter changed: ", param_name, " = ", value)
 
 func _on_preview_pressed():
 	play_current_sound()
@@ -466,34 +471,85 @@ func apply_adsr_envelope(time: float, duration: float, attack: float, decay: flo
 func apply_distortion(sample: float, amount: float) -> float:
 	if amount <= 0.0:
 		return sample
-	var drive = 1.0 + amount * 10.0
+	
+	# More aggressive distortion with multiple stages
+	var drive = 1.0 + amount * 15.0  # Increased drive range
 	var distorted = sample * drive
-	return tanh(distorted) / drive * (1.0 + amount * 0.5)
+	
+	# Soft clipping with asymmetric saturation
+	if distorted > 1.0:
+		distorted = 1.0 - exp(-(distorted - 1.0))
+	elif distorted < -1.0:
+		distorted = -1.0 + exp((distorted + 1.0))
+	else:
+		distorted = tanh(distorted * 2.0) * 0.5
+	
+	# Add harmonic saturation
+	var harmonics = sin(distorted * PI) * amount * 0.3
+	return (distorted + harmonics) * (1.0 + amount * 0.8)
 
 func apply_chorus(sample: float, time: float, depth: float, rate: float, voices: int = 3) -> float:
 	if depth <= 0.0:
 		return sample
 	
-	var chorus_sample = sample
-	for v in range(1, voices + 1):
-		var delay_time = 0.01 + depth * 0.02 * sin(2.0 * PI * rate * time + v * PI / voices)
-		var delayed_sample = sample * 0.7  # Simplified delay
-		chorus_sample += delayed_sample * (depth / voices)
+	var chorus_sample = sample * 0.7  # Reduce dry signal
+	
+	# Create multiple delayed and modulated voices
+	for v in range(voices):
+		var voice_rate = rate * (1.0 + v * 0.2)  # Slightly different rates
+		var lfo = sin(2.0 * PI * voice_rate * time + v * PI / voices)
+		var delay_time = 0.005 + depth * 0.015 * lfo
+		
+		# Simulate pitch modulation from delay time changes
+		var pitch_mod = 1.0 + lfo * depth * 0.02
+		var delayed_sample = sample * pitch_mod * 0.8
+		
+		# Pan each voice slightly for stereo width effect
+		var pan = sin(v * PI / voices) * depth
+		chorus_sample += delayed_sample * (0.3 + depth * 0.5) / voices
 	
 	return chorus_sample
 
 func apply_reverb(sample: float, amount: float) -> float:
 	if amount <= 0.0:
 		return sample
-	# Simplified reverb simulation
-	var reverb_tail = sample * amount * 0.3
-	return sample + reverb_tail
+	
+	# Multi-tap reverb simulation with different decay times
+	var reverb_sample = sample * (1.0 - amount * 0.5)  # Reduce dry signal
+	
+	# Early reflections (short delays)
+	var early1 = sample * 0.6 * amount
+	var early2 = sample * 0.4 * amount  
+	var early3 = sample * 0.3 * amount
+	
+	# Late reflections (longer, more diffuse)
+	var late1 = sample * 0.2 * amount
+	var late2 = sample * 0.15 * amount
+	var late3 = sample * 0.1 * amount
+	
+	# Add modulation to prevent metallic sound
+	var modulation = sin(sample * 50.0) * amount * 0.1
+	
+	# Combine all reflections
+	reverb_sample += (early1 + early2 + early3 + late1 + late2 + late3 + modulation)
+	
+	return reverb_sample
 
 func apply_filter(sample: float, frequency: float, resonance: float, sample_rate: float) -> float:
-	# Simplified lowpass filter simulation
-	var cutoff = min(frequency / sample_rate * 2.0, 0.99)
-	var filtered = sample * cutoff + sample * (1.0 - cutoff) * resonance * 0.1
-	return filtered
+	# More aggressive lowpass filter with resonance
+	var cutoff = clamp(frequency / sample_rate * 2.0, 0.01, 0.99)
+	
+	# Simulate frequency-dependent attenuation
+	var high_freq_content = abs(sample) * (1.0 - cutoff)
+	var low_freq_content = sample * cutoff
+	
+	# Add resonance boost at cutoff frequency
+	var resonance_boost = sin(sample * PI * cutoff) * resonance * 0.3
+	
+	# Combine filtered signal with resonance
+	var filtered = low_freq_content + resonance_boost - high_freq_content * 0.5
+	
+	return clamp(filtered, -1.0, 1.0)
 
 func generate_advanced_kick_drum(params: Dictionary) -> PackedFloat32Array:
 	var frequency = params.get("frequency", 60.0)
