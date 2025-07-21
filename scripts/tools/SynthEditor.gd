@@ -14,66 +14,134 @@ var mini_waveform: Control
 var parameter_sliders = {}
 var parameter_labels = {}
 
-# Sound definitions with comprehensive parameters for each sound type
+# Professional sound definitions with comprehensive synthesizer controls
 var sound_types = {
 	"Kick Drum": {
-		"function": "generate_custom_kick",
+		"function": "generate_advanced_kick",
 		"parameters": {
-			"frequency": {"min": 30.0, "max": 120.0, "default": 60.0, "step": 1.0, "label": "Base Frequency (Hz)"},
-			"pitch_decay": {"min": 10.0, "max": 50.0, "default": 35.0, "step": 1.0, "label": "Pitch Decay Speed"},
-			"amplitude": {"min": 0.1, "max": 1.0, "default": 0.8, "step": 0.05, "label": "Volume"},
-			"click_amount": {"min": 0.0, "max": 0.5, "default": 0.2, "step": 0.05, "label": "Click Attack"},
-			"duration": {"min": 0.05, "max": 0.5, "default": 0.15, "step": 0.01, "label": "Duration (s)"}
+			# Oscillator
+			"frequency": {"min": 20.0, "max": 200.0, "default": 60.0, "step": 1.0, "label": "Base Frequency (Hz)"},
+			"osc_type": {"min": 0, "max": 4, "default": 0, "step": 1, "label": "Oscillator (0=Sine 1=Sq 2=Saw 3=Tri 4=Noise)"},
+			"pitch_decay": {"min": 5.0, "max": 100.0, "default": 35.0, "step": 1.0, "label": "Pitch Decay Speed"},
+			# Envelope (ADSR)
+			"attack": {"min": 0.001, "max": 0.1, "default": 0.01, "step": 0.001, "label": "Attack (s)"},
+			"decay": {"min": 0.01, "max": 1.0, "default": 0.1, "step": 0.01, "label": "Decay (s)"},
+			"sustain": {"min": 0.0, "max": 1.0, "default": 0.3, "step": 0.05, "label": "Sustain Level"},
+			"release": {"min": 0.01, "max": 2.0, "default": 0.2, "step": 0.01, "label": "Release (s)"},
+			# Effects
+			"distortion": {"min": 0.0, "max": 0.8, "default": 0.0, "step": 0.05, "label": "Distortion"},
+			"chorus_depth": {"min": 0.0, "max": 0.3, "default": 0.0, "step": 0.01, "label": "Chorus Depth"},
+			"reverb": {"min": 0.0, "max": 0.5, "default": 0.0, "step": 0.05, "label": "Reverb"},
+			# General
+			"amplitude": {"min": 0.1, "max": 2.0, "default": 0.8, "step": 0.05, "label": "Volume"},
+			"duration": {"min": 0.05, "max": 2.0, "default": 0.15, "step": 0.01, "label": "Duration (s)"}
 		}
 	},
 	"Snare Drum": {
-		"function": "generate_custom_snare",
+		"function": "generate_advanced_snare",
 		"parameters": {
-			"tone_freq": {"min": 150.0, "max": 400.0, "default": 200.0, "step": 5.0, "label": "Tone Frequency (Hz)"},
-			"noise_amount": {"min": 0.3, "max": 0.9, "default": 0.7, "step": 0.05, "label": "Noise Amount"},
-			"tone_amount": {"min": 0.1, "max": 0.5, "default": 0.3, "step": 0.05, "label": "Tone Amount"},
-			"decay_speed": {"min": 15.0, "max": 40.0, "default": 25.0, "step": 1.0, "label": "Decay Speed"},
-			"duration": {"min": 0.05, "max": 0.3, "default": 0.1, "step": 0.01, "label": "Duration (s)"}
+			# Oscillator  
+			"tone_freq": {"min": 80.0, "max": 800.0, "default": 200.0, "step": 5.0, "label": "Tone Frequency (Hz)"},
+			"osc_type": {"min": 0, "max": 4, "default": 0, "step": 1, "label": "Tone Oscillator (0=Sin 1=Sq 2=Saw 3=Tri 4=Noise)"},
+			"noise_mix": {"min": 0.0, "max": 1.0, "default": 0.7, "step": 0.05, "label": "Noise/Tone Mix"},
+			# Envelope
+			"attack": {"min": 0.001, "max": 0.05, "default": 0.005, "step": 0.001, "label": "Attack (s)"},
+			"decay": {"min": 0.01, "max": 0.5, "default": 0.08, "step": 0.01, "label": "Decay (s)"},
+			"sustain": {"min": 0.0, "max": 0.8, "default": 0.2, "step": 0.05, "label": "Sustain Level"},
+			"release": {"min": 0.01, "max": 0.5, "default": 0.1, "step": 0.01, "label": "Release (s)"},
+			# Filter
+			"filter_freq": {"min": 500.0, "max": 8000.0, "default": 3000.0, "step": 100.0, "label": "Filter Cutoff (Hz)"},
+			"filter_res": {"min": 0.1, "max": 4.0, "default": 1.0, "step": 0.1, "label": "Filter Resonance"},
+			# Effects
+			"distortion": {"min": 0.0, "max": 0.6, "default": 0.1, "step": 0.05, "label": "Distortion"},
+			"reverb": {"min": 0.0, "max": 0.4, "default": 0.05, "step": 0.05, "label": "Reverb"},
+			"amplitude": {"min": 0.1, "max": 1.5, "default": 0.8, "step": 0.05, "label": "Volume"}
 		}
 	},
 	"Hi-Hat": {
-		"function": "generate_custom_hihat",
+		"function": "generate_advanced_hihat",
 		"parameters": {
-			"brightness": {"min": 6000.0, "max": 15000.0, "default": 8000.0, "step": 100.0, "label": "Brightness (Hz)"},
-			"metallic": {"min": 8000.0, "max": 16000.0, "default": 12000.0, "step": 100.0, "label": "Metallic Freq (Hz)"},
-			"noise_amount": {"min": 0.5, "max": 1.0, "default": 0.8, "step": 0.05, "label": "Noise Amount"},
-			"decay_speed": {"min": 30.0, "max": 80.0, "default": 40.0, "step": 2.0, "label": "Decay Speed"},
-			"duration": {"min": 0.02, "max": 0.2, "default": 0.05, "step": 0.01, "label": "Duration (s)"}
+			# Oscillator
+			"base_freq": {"min": 4000.0, "max": 20000.0, "default": 8000.0, "step": 100.0, "label": "Base Frequency (Hz)"},
+			"noise_type": {"min": 0, "max": 2, "default": 0, "step": 1, "label": "Noise Type (0=White 1=Pink 2=Brown)"},
+			"metallic_mix": {"min": 0.0, "max": 1.0, "default": 0.4, "step": 0.05, "label": "Metallic/Noise Mix"},
+			# Envelope
+			"attack": {"min": 0.001, "max": 0.02, "default": 0.002, "step": 0.001, "label": "Attack (s)"},
+			"decay": {"min": 0.005, "max": 0.2, "default": 0.03, "step": 0.005, "label": "Decay (s)"},
+			"sustain": {"min": 0.0, "max": 0.3, "default": 0.0, "step": 0.05, "label": "Sustain Level"},
+			"release": {"min": 0.005, "max": 0.1, "default": 0.02, "step": 0.005, "label": "Release (s)"},
+			# Filter
+			"filter_freq": {"min": 6000.0, "max": 20000.0, "default": 12000.0, "step": 200.0, "label": "Filter Cutoff (Hz)"},
+			"filter_res": {"min": 0.1, "max": 8.0, "default": 2.0, "step": 0.2, "label": "Filter Resonance"},
+			# Effects
+			"chorus_rate": {"min": 0.0, "max": 10.0, "default": 0.0, "step": 0.5, "label": "Chorus Rate (Hz)"},
+			"reverb": {"min": 0.0, "max": 0.3, "default": 0.0, "step": 0.02, "label": "Reverb"},
+			"amplitude": {"min": 0.1, "max": 1.2, "default": 0.6, "step": 0.05, "label": "Volume"}
 		}
 	},
 	"Coin Chime": {
-		"function": "generate_custom_chime",
+		"function": "generate_advanced_chime",
 		"parameters": {
-			"root_freq": {"min": 800.0, "max": 1400.0, "default": 1046.5, "step": 10.0, "label": "Root Note (Hz)"},
-			"chord_type": {"min": 0, "max": 2, "default": 0, "step": 1, "label": "Chord Type"},
-			"harmonics": {"min": 0.0, "max": 0.5, "default": 0.2, "step": 0.05, "label": "Harmonic Content"},
-			"decay_speed": {"min": 8.0, "max": 20.0, "default": 12.0, "step": 1.0, "label": "Decay Speed"},
-			"duration": {"min": 0.1, "max": 0.5, "default": 0.2, "step": 0.05, "label": "Duration (s)"}
+			# Oscillator
+			"root_freq": {"min": 200.0, "max": 4000.0, "default": 1046.5, "step": 10.0, "label": "Root Note (Hz)"},
+			"osc_type": {"min": 0, "max": 3, "default": 0, "step": 1, "label": "Oscillator (0=Sine 1=Square 2=Saw 3=Triangle)"},
+			"chord_type": {"min": 0, "max": 5, "default": 0, "step": 1, "label": "Chord (0=Maj 1=Min 2=Sus2 3=Sus4 4=Dim 5=Aug)"},
+			"harmonics": {"min": 0.0, "max": 1.0, "default": 0.3, "step": 0.05, "label": "Harmonic Content"},
+			# Envelope
+			"attack": {"min": 0.001, "max": 0.2, "default": 0.01, "step": 0.001, "label": "Attack (s)"},
+			"decay": {"min": 0.1, "max": 3.0, "default": 0.8, "step": 0.05, "label": "Decay (s)"},
+			"sustain": {"min": 0.0, "max": 0.8, "default": 0.3, "step": 0.05, "label": "Sustain Level"},
+			"release": {"min": 0.1, "max": 5.0, "default": 1.0, "step": 0.1, "label": "Release (s)"},
+			# Effects
+			"chorus_depth": {"min": 0.0, "max": 0.4, "default": 0.05, "step": 0.01, "label": "Chorus Depth"},
+			"chorus_rate": {"min": 0.1, "max": 8.0, "default": 2.5, "step": 0.1, "label": "Chorus Rate (Hz)"},
+			"reverb": {"min": 0.0, "max": 0.8, "default": 0.3, "step": 0.05, "label": "Reverb"},
+			"amplitude": {"min": 0.1, "max": 1.0, "default": 0.6, "step": 0.05, "label": "Volume"}
 		}
 	},
 	"Wall Hit (Tom Fill)": {
-		"function": "generate_custom_tom_fill",
+		"function": "generate_advanced_tom_fill",
 		"parameters": {
-			"tom1_freq": {"min": 120.0, "max": 250.0, "default": 180.0, "step": 5.0, "label": "High Tom (Hz)"},
-			"tom2_freq": {"min": 100.0, "max": 200.0, "default": 160.0, "step": 5.0, "label": "Mid Tom (Hz)"},
-			"tom3_freq": {"min": 60.0, "max": 120.0, "default": 80.0, "step": 2.0, "label": "Low Tom (Hz)"},
-			"noise_amount": {"min": 0.1, "max": 0.4, "default": 0.25, "step": 0.05, "label": "Noise Texture"},
-			"duration": {"min": 0.2, "max": 0.8, "default": 0.4, "step": 0.05, "label": "Duration (s)"}
+			# Oscillators for 3 toms
+			"tom1_freq": {"min": 80.0, "max": 400.0, "default": 180.0, "step": 5.0, "label": "High Tom (Hz)"},
+			"tom2_freq": {"min": 60.0, "max": 300.0, "default": 140.0, "step": 5.0, "label": "Mid Tom (Hz)"},
+			"tom3_freq": {"min": 40.0, "max": 200.0, "default": 80.0, "step": 2.0, "label": "Low Tom (Hz)"},
+			"osc_type": {"min": 0, "max": 4, "default": 0, "step": 1, "label": "Tom Oscillator (0=Sin 1=Sq 2=Saw 3=Tri 4=Noise)"},
+			"noise_mix": {"min": 0.0, "max": 0.8, "default": 0.25, "step": 0.05, "label": "Noise/Tone Mix"},
+			# Envelope
+			"attack": {"min": 0.001, "max": 0.05, "default": 0.005, "step": 0.001, "label": "Attack (s)"},
+			"decay": {"min": 0.05, "max": 0.5, "default": 0.15, "step": 0.01, "label": "Decay (s)"},
+			"sustain": {"min": 0.0, "max": 0.6, "default": 0.2, "step": 0.05, "label": "Sustain Level"},
+			"release": {"min": 0.05, "max": 1.0, "default": 0.2, "step": 0.01, "label": "Release (s)"},
+			# Effects
+			"distortion": {"min": 0.0, "max": 0.5, "default": 0.05, "step": 0.05, "label": "Distortion"},
+			"reverb": {"min": 0.0, "max": 0.6, "default": 0.15, "step": 0.05, "label": "Reverb"},
+			"duration": {"min": 0.2, "max": 2.0, "default": 0.6, "step": 0.05, "label": "Total Duration (s)"},
+			"amplitude": {"min": 0.1, "max": 1.5, "default": 0.9, "step": 0.05, "label": "Volume"}
 		}
 	},
 	"Guitar Chord": {
-		"function": "generate_custom_guitar",
+		"function": "generate_advanced_guitar",
 		"parameters": {
-			"root_freq": {"min": 200.0, "max": 400.0, "default": 261.63, "step": 5.0, "label": "Root Note (Hz)"},
-			"chord_type": {"min": 0, "max": 3, "default": 0, "step": 1, "label": "Chord Type"},
-			"vibrato_rate": {"min": 3.0, "max": 8.0, "default": 5.0, "step": 0.5, "label": "Vibrato Rate (Hz)"},
-			"vibrato_depth": {"min": 0.0, "max": 0.02, "default": 0.005, "step": 0.001, "label": "Vibrato Depth"},
-			"duration": {"min": 0.5, "max": 3.0, "default": 1.0, "step": 0.1, "label": "Duration (s)"}
+			# Oscillator
+			"root_freq": {"min": 80.0, "max": 800.0, "default": 261.63, "step": 5.0, "label": "Root Note (Hz)"},
+			"osc_type": {"min": 0, "max": 3, "default": 0, "step": 1, "label": "Oscillator (0=Sine 1=Square 2=Saw 3=Triangle)"},
+			"chord_type": {"min": 0, "max": 7, "default": 0, "step": 1, "label": "Chord (0=Maj7 1=m7 2=7 3=Maj 4=m 5=dim 6=aug 7=sus)"},
+			"voices": {"min": 2, "max": 6, "default": 4, "step": 1, "label": "Number of Voices"},
+			# Envelope
+			"attack": {"min": 0.01, "max": 1.0, "default": 0.1, "step": 0.01, "label": "Attack (s)"},
+			"decay": {"min": 0.1, "max": 2.0, "default": 0.3, "step": 0.05, "label": "Decay (s)"},
+			"sustain": {"min": 0.3, "max": 1.0, "default": 0.7, "step": 0.05, "label": "Sustain Level"},
+			"release": {"min": 0.2, "max": 5.0, "default": 1.0, "step": 0.1, "label": "Release (s)"},
+			# Modulation
+			"vibrato_rate": {"min": 0.0, "max": 10.0, "default": 5.0, "step": 0.2, "label": "Vibrato Rate (Hz)"},
+			"vibrato_depth": {"min": 0.0, "max": 0.05, "default": 0.005, "step": 0.001, "label": "Vibrato Depth"},
+			# Effects
+			"chorus_depth": {"min": 0.0, "max": 0.6, "default": 0.2, "step": 0.02, "label": "Chorus Depth"},
+			"chorus_rate": {"min": 0.1, "max": 5.0, "default": 1.5, "step": 0.1, "label": "Chorus Rate (Hz)"},
+			"reverb": {"min": 0.0, "max": 0.8, "default": 0.4, "step": 0.05, "label": "Reverb"},
+			"duration": {"min": 0.5, "max": 8.0, "default": 2.0, "step": 0.1, "label": "Duration (s)"},
+			"amplitude": {"min": 0.1, "max": 1.0, "default": 0.5, "step": 0.05, "label": "Volume"}
 		}
 	}
 }
@@ -346,31 +414,99 @@ func generate_current_sound() -> PackedFloat32Array:
 		if param_name in parameter_sliders:
 			param_values[param_name] = parameter_sliders[param_name].value
 	
-	# Generate sound based on type with custom parameters
+	# Generate sound based on type with advanced parameters
 	match function_name:
-		"generate_custom_kick":
-			return generate_custom_kick_drum(param_values)
-		"generate_custom_snare":
-			return generate_custom_snare_drum(param_values)
-		"generate_custom_hihat":
-			return generate_custom_hihat(param_values)
-		"generate_custom_chime":
-			return generate_custom_coin_chime(param_values)
-		"generate_custom_tom_fill":
-			return generate_custom_tom_fill(param_values)
-		"generate_custom_guitar":
-			return generate_custom_guitar_chord(param_values)
+		"generate_advanced_kick":
+			return generate_advanced_kick_drum(param_values)
+		"generate_advanced_snare":
+			return generate_advanced_snare_drum(param_values)
+		"generate_advanced_hihat":
+			return generate_advanced_hihat(param_values)
+		"generate_advanced_chime":
+			return generate_advanced_coin_chime(param_values)
+		"generate_advanced_tom_fill":
+			return generate_advanced_tom_fill(param_values)
+		"generate_advanced_guitar":
+			return generate_advanced_guitar_chord(param_values)
 		_:
 			print("Unknown sound function: ", function_name)
 			return PackedFloat32Array()
 
-# Custom sound generation functions with full parameter control
+# Advanced sound generation functions with professional synthesizer controls
 
-func generate_custom_kick_drum(params: Dictionary) -> PackedFloat32Array:
+# Utility functions for advanced synthesis
+func generate_oscillator(osc_type: int, frequency: float, time: float, phase: float = 0.0) -> float:
+	match osc_type:
+		0: # Sine
+			return sin(2.0 * PI * frequency * time + phase)
+		1: # Square
+			return sign(sin(2.0 * PI * frequency * time + phase))
+		2: # Sawtooth
+			return 2.0 * fmod(frequency * time + phase / (2.0 * PI), 1.0) - 1.0
+		3: # Triangle
+			var t = fmod(frequency * time + phase / (2.0 * PI), 1.0)
+			return 4.0 * abs(t - 0.5) - 1.0
+		4: # Noise
+			return randf() * 2.0 - 1.0
+		_:
+			return 0.0
+
+func apply_adsr_envelope(time: float, duration: float, attack: float, decay: float, sustain: float, release: float) -> float:
+	if time < attack:
+		return time / attack
+	elif time < attack + decay:
+		var decay_progress = (time - attack) / decay
+		return 1.0 - (1.0 - sustain) * decay_progress
+	elif time < duration - release:
+		return sustain
+	else:
+		var release_progress = (time - (duration - release)) / release
+		return sustain * (1.0 - release_progress)
+
+func apply_distortion(sample: float, amount: float) -> float:
+	if amount <= 0.0:
+		return sample
+	var drive = 1.0 + amount * 10.0
+	var distorted = sample * drive
+	return tanh(distorted) / drive * (1.0 + amount * 0.5)
+
+func apply_chorus(sample: float, time: float, depth: float, rate: float, voices: int = 3) -> float:
+	if depth <= 0.0:
+		return sample
+	
+	var chorus_sample = sample
+	for v in range(1, voices + 1):
+		var delay_time = 0.01 + depth * 0.02 * sin(2.0 * PI * rate * time + v * PI / voices)
+		var delayed_sample = sample * 0.7  # Simplified delay
+		chorus_sample += delayed_sample * (depth / voices)
+	
+	return chorus_sample
+
+func apply_reverb(sample: float, amount: float) -> float:
+	if amount <= 0.0:
+		return sample
+	# Simplified reverb simulation
+	var reverb_tail = sample * amount * 0.3
+	return sample + reverb_tail
+
+func apply_filter(sample: float, frequency: float, resonance: float, sample_rate: float) -> float:
+	# Simplified lowpass filter simulation
+	var cutoff = min(frequency / sample_rate * 2.0, 0.99)
+	var filtered = sample * cutoff + sample * (1.0 - cutoff) * resonance * 0.1
+	return filtered
+
+func generate_advanced_kick_drum(params: Dictionary) -> PackedFloat32Array:
 	var frequency = params.get("frequency", 60.0)
+	var osc_type = int(params.get("osc_type", 0))
 	var pitch_decay = params.get("pitch_decay", 35.0)
+	var attack = params.get("attack", 0.01)
+	var decay = params.get("decay", 0.1)
+	var sustain = params.get("sustain", 0.3)
+	var release = params.get("release", 0.2)
+	var distortion = params.get("distortion", 0.0)
+	var chorus_depth = params.get("chorus_depth", 0.0)
+	var reverb = params.get("reverb", 0.0)
 	var amplitude = params.get("amplitude", 0.8)
-	var click_amount = params.get("click_amount", 0.2)
 	var duration = params.get("duration", 0.15)
 	
 	var samples = int(AudioGenerator.SAMPLE_RATE * duration)
@@ -378,157 +514,279 @@ func generate_custom_kick_drum(params: Dictionary) -> PackedFloat32Array:
 	
 	for i in samples:
 		var time = float(i) / AudioGenerator.SAMPLE_RATE
-		var envelope = exp(-time * 20.0)
 		
-		# Main tone with controllable pitch decay
-		var freq = frequency * exp(-time * pitch_decay)
-		var main_tone = sin(2.0 * PI * freq * time)
+		# Dynamic frequency with pitch decay
+		var current_freq = frequency * exp(-time * pitch_decay)
 		
-		# Controllable click attack
-		var click = sin(2.0 * PI * 1500.0 * time) * exp(-time * 100.0)
+		# Generate oscillator
+		var sample = generate_oscillator(osc_type, current_freq, time)
 		
-		var sample = (main_tone * (1.0 - click_amount) + click * click_amount) * envelope * amplitude
+		# Apply ADSR envelope
+		var envelope = apply_adsr_envelope(time, duration, attack, decay, sustain, release)
+		sample *= envelope
+		
+		# Apply effects
+		sample = apply_distortion(sample, distortion)
+		sample = apply_chorus(sample, time, chorus_depth, 2.0)
+		sample = apply_reverb(sample, reverb)
+		
+		# Final amplitude
+		sample *= amplitude
+		
 		audio_data.append(sample)
 	
 	return audio_data
 
-func generate_custom_snare_drum(params: Dictionary) -> PackedFloat32Array:
+func generate_advanced_snare_drum(params: Dictionary) -> PackedFloat32Array:
 	var tone_freq = params.get("tone_freq", 200.0)
-	var noise_amount = params.get("noise_amount", 0.7)
-	var tone_amount = params.get("tone_amount", 0.3)
-	var decay_speed = params.get("decay_speed", 25.0)
-	var duration = params.get("duration", 0.1)
+	var osc_type = int(params.get("osc_type", 0))
+	var noise_mix = params.get("noise_mix", 0.7)
+	var attack = params.get("attack", 0.005)
+	var decay = params.get("decay", 0.08)
+	var sustain = params.get("sustain", 0.2)
+	var release = params.get("release", 0.1)
+	var filter_freq = params.get("filter_freq", 3000.0)
+	var filter_res = params.get("filter_res", 1.0)
+	var distortion = params.get("distortion", 0.1)
+	var reverb = params.get("reverb", 0.05)
+	var amplitude = params.get("amplitude", 0.8)
 	
+	var duration = attack + decay + release + 0.05
 	var samples = int(AudioGenerator.SAMPLE_RATE * duration)
 	var audio_data = PackedFloat32Array()
 	
 	for i in samples:
 		var time = float(i) / AudioGenerator.SAMPLE_RATE
-		var envelope = exp(-time * decay_speed)
 		
-		# Noise component
-		var noise = (randf() * 2.0 - 1.0) * noise_amount
+		# Generate noise and tone components
+		var noise = generate_oscillator(4, 0.0, time)  # Noise oscillator
+		var tone = generate_oscillator(osc_type, tone_freq, time)
 		
-		# Tonal component
-		var tone = sin(2.0 * PI * tone_freq * time) * tone_amount
+		# Mix noise and tone
+		var sample = lerp(tone, noise, noise_mix)
 		
-		var sample = (noise + tone) * envelope
+		# Apply ADSR envelope
+		var envelope = apply_adsr_envelope(time, duration, attack, decay, sustain, release)
+		sample *= envelope
+		
+		# Apply filter
+		sample = apply_filter(sample, filter_freq, filter_res, AudioGenerator.SAMPLE_RATE)
+		
+		# Apply effects
+		sample = apply_distortion(sample, distortion)
+		sample = apply_reverb(sample, reverb)
+		
+		# Final amplitude
+		sample *= amplitude
+		
 		audio_data.append(sample)
 	
 	return audio_data
 
-func generate_custom_hihat(params: Dictionary) -> PackedFloat32Array:
-	var brightness = params.get("brightness", 8000.0)
-	var metallic = params.get("metallic", 12000.0)
-	var noise_amount = params.get("noise_amount", 0.8)
-	var decay_speed = params.get("decay_speed", 40.0)
-	var duration = params.get("duration", 0.05)
+func generate_advanced_hihat(params: Dictionary) -> PackedFloat32Array:
+	var base_freq = params.get("base_freq", 8000.0)
+	var noise_type = int(params.get("noise_type", 0))
+	var metallic_mix = params.get("metallic_mix", 0.4)
+	var attack = params.get("attack", 0.002)
+	var decay = params.get("decay", 0.03)
+	var sustain = params.get("sustain", 0.0)
+	var release = params.get("release", 0.02)
+	var filter_freq = params.get("filter_freq", 12000.0)
+	var filter_res = params.get("filter_res", 2.0)
+	var chorus_rate = params.get("chorus_rate", 0.0)
+	var reverb = params.get("reverb", 0.0)
+	var amplitude = params.get("amplitude", 0.6)
 	
+	var duration = attack + decay + release + 0.01
 	var samples = int(AudioGenerator.SAMPLE_RATE * duration)
 	var audio_data = PackedFloat32Array()
 	
 	for i in samples:
 		var time = float(i) / AudioGenerator.SAMPLE_RATE
-		var envelope = exp(-time * decay_speed)
 		
-		# High-frequency noise
-		var noise = (randf() * 2.0 - 1.0) * noise_amount
-		var metallic1 = sin(2.0 * PI * brightness * time) * 0.3
-		var metallic2 = sin(2.0 * PI * metallic * time) * 0.2
+		# Generate different noise types
+		var noise: float
+		match noise_type:
+			0: # White noise
+				noise = generate_oscillator(4, 0.0, time)
+			1: # Pink noise (simplified)
+				noise = generate_oscillator(4, 0.0, time) * 0.7
+			2: # Brown noise (simplified)
+				noise = generate_oscillator(4, 0.0, time) * 0.5
+			_:
+				noise = generate_oscillator(4, 0.0, time)
 		
-		var sample = (noise + metallic1 + metallic2) * envelope
+		# High frequency metallic components
+		var metallic = sin(2.0 * PI * base_freq * time) + sin(2.0 * PI * base_freq * 1.5 * time) * 0.5
+		
+		# Mix noise and metallic
+		var sample = lerp(noise, metallic, metallic_mix)
+		
+		# Apply ADSR envelope
+		var envelope = apply_adsr_envelope(time, duration, attack, decay, sustain, release)
+		sample *= envelope
+		
+		# Apply filter
+		sample = apply_filter(sample, filter_freq, filter_res, AudioGenerator.SAMPLE_RATE)
+		
+		# Apply effects
+		if chorus_rate > 0.0:
+			sample = apply_chorus(sample, time, 0.1, chorus_rate)
+		sample = apply_reverb(sample, reverb)
+		
+		# Final amplitude
+		sample *= amplitude
+		
 		audio_data.append(sample)
 	
 	return audio_data
 
-func generate_custom_coin_chime(params: Dictionary) -> PackedFloat32Array:
+func generate_advanced_coin_chime(params: Dictionary) -> PackedFloat32Array:
 	var root_freq = params.get("root_freq", 1046.5)
+	var osc_type = int(params.get("osc_type", 0))
 	var chord_type = int(params.get("chord_type", 0))
-	var harmonics = params.get("harmonics", 0.2)
-	var decay_speed = params.get("decay_speed", 12.0)
-	var duration = params.get("duration", 0.2)
+	var harmonics = params.get("harmonics", 0.3)
+	var attack = params.get("attack", 0.01)
+	var decay = params.get("decay", 0.8)
+	var sustain = params.get("sustain", 0.3)
+	var release = params.get("release", 1.0)
+	var chorus_depth = params.get("chorus_depth", 0.05)
+	var chorus_rate = params.get("chorus_rate", 2.5)
+	var reverb = params.get("reverb", 0.3)
+	var amplitude = params.get("amplitude", 0.6)
 	
-	# Different chord types
+	# Extended chord types
 	var chord_intervals = [
-		[1.0, 1.26, 1.5],     # Major triad (C, E, G)
-		[1.0, 1.189, 1.5],    # Minor triad (C, Eb, G)
-		[1.0, 1.125, 1.5]     # Sus2 (C, D, G)
+		[1.0, 1.26, 1.5],           # Major triad
+		[1.0, 1.189, 1.5],          # Minor triad
+		[1.0, 1.125, 1.5],          # Sus2
+		[1.0, 1.335, 1.5],          # Sus4
+		[1.0, 1.189, 1.414],        # Diminished
+		[1.0, 1.26, 1.587]          # Augmented
 	]
 	
 	var intervals = chord_intervals[chord_type % chord_intervals.size()]
+	var duration = attack + decay + release
 	var samples = int(AudioGenerator.SAMPLE_RATE * duration)
 	var audio_data = PackedFloat32Array()
 	
 	for i in samples:
 		var time = float(i) / AudioGenerator.SAMPLE_RATE
-		var envelope = exp(-time * decay_speed)
 		
 		var chime_sample = 0.0
 		for interval in intervals:
 			var freq = root_freq * interval
-			# Fundamental + harmonics
-			var fundamental = sin(2.0 * PI * freq * time) * 0.6
-			var harmonic2 = sin(2.0 * PI * freq * 2.0 * time) * harmonics * 0.3
-			var harmonic3 = sin(2.0 * PI * freq * 3.0 * time) * harmonics * 0.1
-			chime_sample += (fundamental + harmonic2 + harmonic3) / 3.0
+			
+			# Generate oscillator with harmonics
+			var fundamental = generate_oscillator(osc_type, freq, time)
+			var harmonic2 = generate_oscillator(osc_type, freq * 2.0, time) * harmonics * 0.5
+			var harmonic3 = generate_oscillator(osc_type, freq * 3.0, time) * harmonics * 0.25
+			
+			chime_sample += (fundamental + harmonic2 + harmonic3) / intervals.size()
 		
-		var final_sample = chime_sample * envelope * 0.35
-		audio_data.append(final_sample)
+		# Apply ADSR envelope
+		var envelope = apply_adsr_envelope(time, duration, attack, decay, sustain, release)
+		chime_sample *= envelope
+		
+		# Apply effects
+		chime_sample = apply_chorus(chime_sample, time, chorus_depth, chorus_rate)
+		chime_sample = apply_reverb(chime_sample, reverb)
+		
+		# Final amplitude
+		chime_sample *= amplitude
+		
+		audio_data.append(chime_sample)
 	
 	return audio_data
 
-func generate_custom_tom_fill(params: Dictionary) -> PackedFloat32Array:
+func generate_advanced_tom_fill(params: Dictionary) -> PackedFloat32Array:
 	var tom1_freq = params.get("tom1_freq", 180.0)
-	var tom2_freq = params.get("tom2_freq", 160.0) 
+	var tom2_freq = params.get("tom2_freq", 140.0)
 	var tom3_freq = params.get("tom3_freq", 80.0)
-	var noise_amount = params.get("noise_amount", 0.25)
-	var duration = params.get("duration", 0.4)
+	var osc_type = int(params.get("osc_type", 0))
+	var noise_mix = params.get("noise_mix", 0.25)
+	var attack = params.get("attack", 0.005)
+	var decay = params.get("decay", 0.15)
+	var sustain = params.get("sustain", 0.2)
+	var release = params.get("release", 0.2)
+	var distortion = params.get("distortion", 0.05)
+	var reverb = params.get("reverb", 0.15)
+	var duration = params.get("duration", 0.6)
+	var amplitude = params.get("amplitude", 0.9)
 	
 	var samples = int(AudioGenerator.SAMPLE_RATE * duration)
 	var audio_data = PackedFloat32Array()
+	var beat_duration = duration / 3.0
 	
 	for i in samples:
 		var time = float(i) / AudioGenerator.SAMPLE_RATE
-		var envelope = exp(-time * 10.0)
-		
 		var tom_sample = 0.0
-		var beat_duration = duration / 3.0  # Three beats
+		var local_time = 0.0
+		var freq = 0.0
 		
+		# Determine which tom and local timing
 		if time < beat_duration:
-			# First tom
-			tom_sample = sin(2.0 * PI * tom1_freq * time) * exp(-time * 30.0) * 0.8
+			freq = tom1_freq
+			local_time = time
 		elif time < beat_duration * 2:
-			# Second tom
-			var tom2_time = time - beat_duration
-			tom_sample = sin(2.0 * PI * tom2_freq * tom2_time) * exp(-tom2_time * 30.0) * 0.8
+			freq = tom2_freq
+			local_time = time - beat_duration
 		else:
-			# Third tom (emphasis)
-			var tom3_time = time - beat_duration * 2
-			tom_sample = sin(2.0 * PI * tom3_freq * tom3_time) * exp(-tom3_time * 20.0) * 1.2
+			freq = tom3_freq
+			local_time = time - beat_duration * 2
 		
-		# Add noise texture
-		var noise = (randf() * 2.0 - 1.0) * noise_amount * envelope
-		var final_sample = (tom_sample + noise) * envelope * 0.75
-		audio_data.append(final_sample)
+		# Generate tom with noise mix
+		var tone = generate_oscillator(osc_type, freq, local_time)
+		var noise = generate_oscillator(4, 0.0, time)
+		tom_sample = lerp(tone, noise, noise_mix)
+		
+		# Apply ADSR envelope
+		var envelope = apply_adsr_envelope(local_time, beat_duration, attack, decay, sustain, release)
+		tom_sample *= envelope
+		
+		# Apply effects
+		tom_sample = apply_distortion(tom_sample, distortion)
+		tom_sample = apply_reverb(tom_sample, reverb)
+		
+		# Final amplitude
+		tom_sample *= amplitude
+		
+		audio_data.append(tom_sample)
 	
 	return audio_data
 
-func generate_custom_guitar_chord(params: Dictionary) -> PackedFloat32Array:
+func generate_advanced_guitar_chord(params: Dictionary) -> PackedFloat32Array:
 	var root_freq = params.get("root_freq", 261.63)
+	var osc_type = int(params.get("osc_type", 0))
 	var chord_type = int(params.get("chord_type", 0))
+	var voices = int(params.get("voices", 4))
+	var attack = params.get("attack", 0.1)
+	var decay = params.get("decay", 0.3)
+	var sustain = params.get("sustain", 0.7)
+	var release = params.get("release", 1.0)
 	var vibrato_rate = params.get("vibrato_rate", 5.0)
 	var vibrato_depth = params.get("vibrato_depth", 0.005)
-	var duration = params.get("duration", 1.0)
+	var chorus_depth = params.get("chorus_depth", 0.2)
+	var chorus_rate = params.get("chorus_rate", 1.5)
+	var reverb = params.get("reverb", 0.4)
+	var duration = params.get("duration", 2.0)
+	var amplitude = params.get("amplitude", 0.5)
 	
-	# Different chord types
+	# Extended chord types
 	var chord_ratios = [
-		[1.0, 1.26, 1.5, 1.89],        # Cmaj7 (C, E, G, B)
-		[1.0, 1.189, 1.5, 1.78],       # Cm7 (C, Eb, G, Bb)
-		[1.0, 1.125, 1.5, 1.78],       # C7sus2 (C, D, G, Bb)
-		[1.0, 1.335, 1.5, 2.0]         # C6 (C, F, G, C)
+		[1.0, 1.26, 1.5, 1.89],        # Cmaj7
+		[1.0, 1.189, 1.5, 1.78],       # Cm7
+		[1.0, 1.26, 1.5, 1.78],        # C7
+		[1.0, 1.26, 1.5],              # Major
+		[1.0, 1.189, 1.5],             # Minor
+		[1.0, 1.189, 1.414, 1.78],     # Diminished
+		[1.0, 1.26, 1.587],            # Augmented
+		[1.0, 1.125, 1.5]              # Sus2
 	]
 	
 	var ratios = chord_ratios[chord_type % chord_ratios.size()]
+	ratios = ratios.slice(0, min(voices, ratios.size()))
+	
 	var samples = int(AudioGenerator.SAMPLE_RATE * duration)
 	var audio_data = PackedFloat32Array()
 	
@@ -536,15 +794,26 @@ func generate_custom_guitar_chord(params: Dictionary) -> PackedFloat32Array:
 		var time = float(i) / AudioGenerator.SAMPLE_RATE
 		var sample = 0.0
 		
-		# Mix all chord notes with vibrato
+		# Mix all chord voices
 		for ratio in ratios:
 			var freq = root_freq * ratio
+			
+			# Apply vibrato
 			var vibrato = 1.0 + sin(2.0 * PI * vibrato_rate * time) * vibrato_depth
-			sample += sin(2.0 * PI * freq * vibrato * time) * 0.25
+			var voice_sample = generate_oscillator(osc_type, freq * vibrato, time)
+			
+			sample += voice_sample / ratios.size()
 		
-		# Soft envelope for guitar-like sustain
-		var envelope = min(time * 2.0, 1.0) * (1.0 - time / duration)
-		sample *= envelope * 0.3
+		# Apply ADSR envelope
+		var envelope = apply_adsr_envelope(time, duration, attack, decay, sustain, release)
+		sample *= envelope
+		
+		# Apply effects
+		sample = apply_chorus(sample, time, chorus_depth, chorus_rate)
+		sample = apply_reverb(sample, reverb)
+		
+		# Final amplitude
+		sample *= amplitude
 		
 		audio_data.append(sample)
 	
