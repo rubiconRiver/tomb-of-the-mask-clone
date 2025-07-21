@@ -7,6 +7,13 @@ var point_lifetime = 0.5
 var trail_color = Color(0.0, 1.0, 0.8, 0.8)
 var trail_width = 20.0
 
+# Timing responsiveness
+var base_trail_color = Color(0.0, 1.0, 0.8, 0.8)
+var perfect_timing_color = Color(1.0, 0.9, 0.0, 1.0)  # Gold
+var good_timing_color = Color(0.2, 1.0, 0.4, 0.9)    # Green
+var poor_timing_color = Color(1.0, 0.3, 0.3, 0.7)    # Red
+var current_timing_quality = 0  # 0=off, 1=poor, 2=good, 3=perfect
+
 func _ready():
 	set_process(true)
 	z_index = -1  # Draw behind parent
@@ -69,7 +76,43 @@ func _draw():
 		draw_line(local_start, local_end, glow_color, glow_width)
 
 func set_trail_color(color: Color):
+	base_trail_color = color
 	trail_color = color
+
+func set_timing_quality(quality: int):
+	current_timing_quality = quality
+	update_trail_color_for_timing()
+
+func update_trail_color_for_timing():
+	match current_timing_quality:
+		3: # Perfect
+			trail_color = perfect_timing_color
+			trail_width = 25.0  # Wider trail for perfect timing
+		2: # Good
+			trail_color = good_timing_color
+			trail_width = 22.0
+		1: # Poor
+			trail_color = poor_timing_color
+			trail_width = 18.0
+		_: # Off beat or default
+			trail_color = base_trail_color
+			trail_width = 20.0
+
+func pulse_for_perfect_timing():
+	# Special effect for perfect timing
+	var tween = create_tween()
+	tween.set_parallel(true)
+	
+	# Temporary width increase
+	var original_width = trail_width
+	trail_width = original_width * 1.5
+	tween.tween_method(func(w): trail_width = w, trail_width, original_width, 0.3)
+	
+	# Color flash
+	var flash_color = Color.WHITE
+	var original_color = trail_color
+	trail_color = flash_color
+	tween.tween_method(func(c): trail_color = c, flash_color, original_color, 0.2)
 
 func clear_trail():
 	trail_points.clear()

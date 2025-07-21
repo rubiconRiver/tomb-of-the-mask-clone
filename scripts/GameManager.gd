@@ -21,6 +21,14 @@ var style_score_manager: StyleScoreManager
 var beat_visualizer: BeatVisualizer
 # Audio now handled by AudioManager singleton
 
+# New effect systems
+var screen_shake: ScreenShake
+var particle_manager: ParticleManager
+var latency_compensator: LatencyCompensator
+var audio_analyzer: AudioAnalyzer
+var beat_indicator_ui: BeatIndicatorUI
+var background_elements: BackgroundReactiveElements
+
 var score = 0  # Total points (coins × multiplier)
 var coins = 0  # Number of coins collected
 var current_level = 2  # Start with Garett's tutorial
@@ -54,6 +62,9 @@ var pending_wall_hits_8th = 0    # For 8th note wall hit timing
 func _ready():
 	# Initialize sound bank
 	SoundBank.initialize()
+	
+	# Initialize new effect systems
+	initialize_effect_systems()
 	
 	swipe_detector = SwipeDetector.new()
 	add_child(swipe_detector)
@@ -577,3 +588,77 @@ func show_go_message():
 	# Start beat tracking
 	print("[GameManager] Starting beat tracking")
 	AudioManager.start_beat_tracking()
+
+func initialize_effect_systems():
+	# Initialize ScreenShake system
+	screen_shake = ScreenShake.new()
+	add_child(screen_shake)
+	
+	# Set camera for screen shake once player is created
+	call_deferred("setup_screen_shake_camera")
+	
+	# Initialize ParticleManager
+	particle_manager = ParticleManager.new()
+	add_child(particle_manager)
+	
+	# Initialize LatencyCompensator
+	latency_compensator = LatencyCompensator.new()
+	add_child(latency_compensator)
+	latency_compensator.latency_measured.connect(_on_latency_measured)
+	
+	# Load saved calibration if available
+	if not latency_compensator.load_calibration():
+		latency_compensator.auto_detect_latency()
+	
+	# Initialize AudioAnalyzer
+	audio_analyzer = AudioAnalyzer.new()
+	add_child(audio_analyzer)
+	audio_analyzer.beat_detected.connect(_on_audio_beat_detected)
+	audio_analyzer.tempo_detected.connect(_on_tempo_detected)
+	
+	# Initialize BeatIndicator UI
+	beat_indicator_ui = BeatIndicatorUI.new()
+	ui_layer.add_child(beat_indicator_ui)
+	beat_indicator_ui.set_position_preset("bottom_center")
+	
+	# Initialize Background Reactive Elements
+	background_elements = BackgroundReactiveElements.new()
+	add_child(background_elements)
+	background_elements.z_index = -5  # Behind game elements
+
+func setup_screen_shake_camera():
+	if player and player.get_node_or_null("Camera2D"):
+		screen_shake.set_camera(player.get_node("Camera2D"))
+
+func _on_latency_measured(latency_ms: float):
+	audio_latency_offset = latency_ms / 1000.0
+	print("[GameManager] Latency compensation set to: ", latency_ms, "ms")
+	
+	# Update latency display
+	if latency_label:
+		latency_label.text = "Latency: " + str(int(latency_ms)) + "ms"
+
+func _on_audio_beat_detected(strength: float, frequency_band: String):
+	# Enhanced beat detection from audio analysis
+	print("[GameManager] Audio beat detected - Strength: ", strength, " Band: ", frequency_band)
+	
+	# Could trigger additional visual effects based on frequency band
+	match frequency_band:
+		"bass":
+			# Bass beats could trigger screen shake or particle bursts
+			if screen_shake and strength > 0.8:
+				screen_shake.add_trauma(strength * 0.1)
+		"mid":
+			# Mid-frequency beats could affect UI pulsing
+			pass
+		"treble":
+			# Treble beats could trigger sparkle effects
+			pass
+
+func _on_tempo_detected(bpm: float):
+	print("[GameManager] Tempo detected: ", bpm, " BPM")
+	
+	# Update beat indicator with detected tempo
+	if beat_indicator_ui:
+		var beat_interval = 60.0 / bpm
+		beat_indicator_ui.set_beat_interval(beat_interval)

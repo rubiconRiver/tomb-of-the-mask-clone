@@ -174,10 +174,11 @@ func build_level():
 					var wall = wall_scene.instantiate()
 					wall.position = world_pos
 					add_child(wall)
-					if beat_visualizer:
-						var sprite = wall.get_node_or_null("Sprite2D")
-						if sprite:
-							sprite.material = beat_visualizer.get_material_for_type("wall")
+					# Beat visualizer disabled for walls - keeping code for easy re-enable
+					# if beat_visualizer:
+					#	var sprite = wall.get_node_or_null("Sprite2D")
+					#	if sprite:
+					#		sprite.material = beat_visualizer.get_material_for_type("wall")
 				CellType.SPIKE:
 					var spike = spike_scene.instantiate()
 					spike.position = world_pos
@@ -191,10 +192,11 @@ func build_level():
 					coin.position = world_pos
 					add_child(coin)
 					coin_count += 1
-					if beat_visualizer:
-						var sprite = coin.get_node_or_null("Sprite2D")
-						if sprite:
-							sprite.material = beat_visualizer.get_material_for_type("coin")
+					# Beat visualizer disabled for coins - using custom animation instead
+					# if beat_visualizer:
+					#	var sprite = coin.get_node_or_null("Sprite2D")
+					#	if sprite:
+					#		sprite.material = beat_visualizer.get_material_for_type("coin")
 				CellType.GOAL:
 					var goal = goal_scene.instantiate()
 					goal.position = world_pos

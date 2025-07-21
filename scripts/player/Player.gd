@@ -13,6 +13,22 @@ var player_visual: Node2D
 var last_timing_quality = -1
 var movement_ray: RayCast2D
 
+# Input buffering system
+var buffered_input: Vector2 = Vector2.ZERO
+var input_buffer_time: float = 0.15  # Buffer input for 150ms
+var input_buffer_timer: float = 0.0
+
+# Movement enhancement
+var base_speed: float = 1024.0
+var current_momentum: float = 1.0
+var momentum_buildup: float = 0.1
+var momentum_decay: float = 0.05
+var max_momentum: float = 1.3
+
+# Effect systems
+var screen_shake: ScreenShake
+var particle_manager: ParticleManager
+
 @onready var area = $Area2D
 
 signal moved
@@ -31,25 +47,47 @@ func _ready():
 	if area:
 		area.area_entered.connect(_on_area_entered)
 	
+	# Initialize base speed
+	base_speed = move_speed
+	
 	# Add trail effect
 	var trail_script = preload("res://scripts/visual/TrailEffect.gd")
 	trail_effect = trail_script.new()
 	add_child(trail_effect)
-	trail_effect.set_trail_color(Color(0.0, 1.0, 0.8, 0.8))  # Cyan trail
+	trail_effect.set_trail_color(Color("#94fbe6"))  # Match player color
 	
 	# Add player visual controller
 	var visual_script = preload("res://scripts/player/PlayerVisual.gd")
 	player_visual = visual_script.new()
 	add_child(player_visual)
 	
-	# Connect to beat system
+	# Get effect systems from game manager and connect to beat system
 	var game_manager = get_tree().get_first_node_in_group("game_manager")
-	if game_manager and game_manager.has_signal("beat_occurred"):
-		game_manager.beat_occurred.connect(_on_beat)
+	if game_manager:
+		screen_shake = game_manager.get("screen_shake")
+		particle_manager = game_manager.get("particle_manager")
+		
+		# Connect to beat system
+		if game_manager.has_signal("beat_occurred"):
+			game_manager.beat_occurred.connect(_on_beat)
 
 func _physics_process(delta):
+	# Handle input buffering
+	if input_buffer_timer > 0:
+		input_buffer_timer -= delta
+		if input_buffer_timer <= 0 and buffered_input != Vector2.ZERO:
+			# Try to execute buffered input
+			if not is_moving:
+				move(buffered_input)
+			buffered_input = Vector2.ZERO
+	
+	# Update momentum
+	update_momentum(delta)
+	
 	if is_moving:
-		velocity = move_direction * move_speed
+		# Apply momentum to movement speed
+		var effective_speed = base_speed * current_momentum
+		velocity = move_direction * effective_speed
 		move_and_slide()
 		
 		# Add trail points while moving
@@ -70,6 +108,17 @@ func _physics_process(delta):
 			position = target_position
 			is_moving = false
 			velocity = Vector2.ZERO
+			
+			# Add landing effects
+			if particle_manager:
+				particle_manager.spawn_landing(global_position, get_parent())
+			
+			# Subtle landing screen shake
+			if screen_shake:
+				screen_shake.shake_preset("landing")
+			
+			# Build momentum for successful moves
+			current_momentum = min(current_momentum + momentum_buildup, max_momentum)
 			
 			# NEVER REMOVE - Critical for debugging movement glitches
 			validate_position()
@@ -101,6 +150,17 @@ func _physics_process(delta):
 				is_moving = false
 				velocity = Vector2.ZERO
 				
+				# Wall hit effects
+				if particle_manager:
+					particle_manager.spawn_wall_hit(collision.get_position(), get_parent())
+				
+				# Wall hit screen shake
+				if screen_shake:
+					screen_shake.shake_preset("wall_hit")
+				
+				# Reduce momentum on wall hit
+				current_momentum = max(current_momentum - momentum_decay * 2.0, 0.8)
+				
 				# NEVER REMOVE - Critical for debugging movement glitches
 				print("Corrected to grid position: ", corrected_position, " Grid: ", Vector2i(corrected_position / GRID_SIZE))
 				validate_position()
@@ -114,6 +174,9 @@ func _physics_process(delta):
 
 func move(direction: Vector2):
 	if is_moving:
+		# Buffer the input for later execution
+		buffered_input = direction
+		input_buffer_timer = input_buffer_time
 		return
 	
 	# NEVER REMOVE - Critical for debugging movement glitches
@@ -162,7 +225,17 @@ func die():
 
 func _on_area_entered(other_area):
 	if other_area.is_in_group("coins"):
-		other_area.queue_free()
+		# Trigger coin explosion effect if it has the method
+		if other_area.has_method("_on_coin_collected"):
+			other_area._on_coin_collected()
+		else:
+			# Fallback for coins without explosion effect
+			other_area.queue_free()
+		
+		# Coin collection screen shake
+		if screen_shake:
+			screen_shake.shake_preset("coin_collect")
+		
 		emit_signal("collected_coin")
 	elif other_area.is_in_group("hazards"):
 		die()
@@ -175,3 +248,28 @@ func set_timing_quality(quality: int):
 	last_timing_quality = quality
 	if player_visual:
 		player_visual.set_timing_quality_color(quality)
+	
+	# Update trail color based on timing
+	if trail_effect:
+		trail_effect.set_timing_quality(quality)
+		
+		# Special effect for perfect timing
+		if quality == 3:  # Perfect timing
+			trail_effect.pulse_for_perfect_timing()
+
+func update_momentum(delta: float):
+	# Gradually decay momentum when not building it up
+	if not is_moving:
+		current_momentum = max(current_momentum - momentum_decay * delta, 1.0)
+	
+	# Update move speed based on current momentum
+	move_speed = base_speed * current_momentum
+
+func get_momentum_factor() -> float:
+	# Return current momentum as a factor (1.0 = normal, >1.0 = faster)
+	return current_momentum
+
+func reset_momentum():
+	# Reset momentum to baseline (useful for level restart)
+	current_momentum = 1.0
+	move_speed = base_speed
