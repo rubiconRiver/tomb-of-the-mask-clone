@@ -414,20 +414,38 @@ func _on_multiplier_changed(new_multiplier: int):
 		background.material.set_shader_parameter("multiplier", float(new_multiplier))
 
 func _unhandled_key_input(event):
-	if event.pressed and player:
+	if event.pressed:
 		match event.keycode:
+			KEY_A:
+				open_synth_editor()
 			KEY_R:
-				player.move_speed = min(2000, player.move_speed + 100)
-				print("Player move speed: ", player.move_speed)
+				if player:
+					player.move_speed = min(2000, player.move_speed + 100)
+					print("Player move speed: ", player.move_speed)
 			KEY_T:
-				player.move_speed = max(100, player.move_speed - 100)
-				print("Player move speed: ", player.move_speed)
+				if player:
+					player.move_speed = max(100, player.move_speed - 100)
+					print("Player move speed: ", player.move_speed)
 			KEY_F:
-				player.move_speed = min(2000, player.move_speed + 10)
-				print("Player move speed: ", player.move_speed)
+				if player:
+					player.move_speed = min(2000, player.move_speed + 10)
+					print("Player move speed: ", player.move_speed)
 			KEY_G:
-				player.move_speed = max(100, player.move_speed - 10)
-				print("Player move speed: ", player.move_speed)
+				if player:
+					player.move_speed = max(100, player.move_speed - 10)
+					print("Player move speed: ", player.move_speed)
+
+func open_synth_editor():
+	var synth_editor_script = preload("res://scripts/tools/SynthEditor.gd")
+	var synth_editor = synth_editor_script.new()
+	
+	# Add to UILayer for proper z-ordering
+	if ui_layer:
+		ui_layer.add_child(synth_editor)
+	else:
+		add_child(synth_editor)
+	
+	print("Synth Editor opened - press ESC to close")
 
 func update_latency_display():
 	if latency_label:
