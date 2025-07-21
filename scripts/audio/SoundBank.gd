@@ -24,7 +24,7 @@ static func initialize():
 	_cache_drum_sounds()
 	_cache_sfx_sounds()
 	_cache_melodic_sounds()
-	_cache_ambient_sounds()
+	# _cache_ambient_sounds()  # Guitar disabled for performance
 	
 	_initialized = true
 	print("[SoundBank] Cached ", cached_sounds.size(), " sounds")
