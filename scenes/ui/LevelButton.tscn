@@ -1,4 +1,4 @@
-[gd_scene load_steps=3 format=3 uid="uid://b1234levelbutton"]
+[gd_scene load_steps=3 format=3 uid="uid://duysoms5olfkn"]
 
 [ext_resource type="Script" path="res://scripts/ui/LevelButton.gd" id="1"]
 

@@ -128,6 +128,21 @@ func setup_camera():
 	camera.position = Vector2(level_width * GRID_SIZE / 2, level_height * GRID_SIZE / 2)
 	add_child(camera)
 	camera.make_current()
+	
+	# Calculate zoom to fit entire level on screen
+	var window_size = get_window().size
+	var level_size = Vector2(level_width * GRID_SIZE, level_height * GRID_SIZE)
+	
+	# Add padding (20% border)
+	var padding_factor = 1.2
+	var zoom_x = window_size.x / (level_size.x * padding_factor)
+	var zoom_y = window_size.y / (level_size.y * padding_factor)
+	
+	# Use the smaller zoom factor to ensure entire level fits
+	var zoom_factor = min(zoom_x, zoom_y)
+	camera.zoom = Vector2(zoom_factor, zoom_factor)
+	
+	print("[LevelEditor] Camera zoom set to: ", zoom_factor, " to fit level size: ", level_size)
 
 func setup_file_dialog():
 	# We won't use FileDialog, just append to a fixed file
@@ -319,13 +334,13 @@ func place_tile(grid_pos: Vector2i, tile_type: TileType):
 		# Erase tile - also remove waypoint if present
 		tilemap.set_cell(0, grid_pos, -1)
 		if grid_pos in waypoints:
-			remove_waypoint(grid_pos)
+			remove_waypoint_at_position(grid_pos)  # Use new function for erasers too
 	elif tile_type == TileType.WAYPOINT:
 		# Handle waypoint placement
 		if grid_pos in waypoints:
-			# Already has a waypoint, remove it
+			# Already has a waypoint, remove it and allow replacement
 			var letter = waypoints[grid_pos]
-			remove_waypoint(grid_pos)
+			remove_waypoint_at_position(grid_pos)  # New function for position-specific removal
 			tilemap.set_cell(0, grid_pos, -1)  # Remove the tile
 			print("Removed waypoint '", letter, "' at ", grid_pos)
 			return
@@ -393,28 +408,46 @@ func remove_waypoint(grid_pos: Vector2i):
 	var letter = waypoints[grid_pos]
 	var index = waypoint_order.find(grid_pos)
 	
-	# Only allow removing the most recent waypoint
+	# Only allow removing the most recent waypoint (for keyboard usage)
 	if index == waypoint_order.size() - 1:
-		waypoints.erase(grid_pos)
-		waypoint_order.remove_at(index)
-		
-		# Roll back to previous letter
-		if waypoint_order.size() == 0:
-			next_waypoint_letter = 'a'
-		else:
-			# Get the last waypoint's letter and advance from there
-			var last_pos = waypoint_order[-1]
-			var last_letter = waypoints[last_pos]
-			var next_char_code = last_letter.unicode_at(0) + 1
-			if next_char_code <= 'z'.unicode_at(0):
-				next_waypoint_letter = char(next_char_code)
-			else:
-				next_waypoint_letter = 'z'  # Cap at 'z'
-		
-		update_current_tile_display()
-		queue_redraw()
+		remove_waypoint_at_position(grid_pos)
 	else:
 		print("Can only remove the most recent waypoint (currently '%s')" % [waypoints[waypoint_order[-1]]])
+
+func remove_waypoint_at_position(grid_pos: Vector2i):
+	# New function: Remove waypoint at any position and rebuild sequence
+	if not grid_pos in waypoints:
+		return
+		
+	var letter = waypoints[grid_pos]
+	var index = waypoint_order.find(grid_pos)
+	
+	# Remove the waypoint
+	waypoints.erase(grid_pos)
+	waypoint_order.remove_at(index)
+	
+	# Rebuild the waypoint letter sequence to maintain order
+	rebuild_waypoint_sequence()
+	
+	update_current_tile_display()
+	queue_redraw()
+	print("Removed waypoint '", letter, "' and rebuilt sequence")
+
+func rebuild_waypoint_sequence():
+	# Rebuild waypoint letters to be sequential (a, b, c, etc.)
+	var new_waypoints = {}
+	var current_letter = 'a'
+	
+	for pos in waypoint_order:
+		new_waypoints[pos] = current_letter
+		var next_char_code = current_letter.unicode_at(0) + 1
+		if next_char_code <= 'z'.unicode_at(0):
+			current_letter = char(next_char_code)
+		else:
+			current_letter = 'z'  # Cap at 'z'
+	
+	waypoints = new_waypoints
+	next_waypoint_letter = current_letter
 
 func _draw():
 	# Draw waypoint path

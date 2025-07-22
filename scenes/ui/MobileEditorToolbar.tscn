@@ -1,4 +1,4 @@
-[gd_scene load_steps=3 format=3 uid="uid://b1234mobiletoolbar"]
+[gd_scene load_steps=3 format=3 uid="uid://dswpccumvawmn"]
 
 [ext_resource type="Script" path="res://scripts/ui/MobileEditorToolbar.gd" id="1"]
 
