@@ -1,0 +1,210 @@
+[gd_scene load_steps=4 format=3 uid="uid://b1234mainmenu"]
+
+[ext_resource type="Script" uid="uid://mainmenu_script" path="res://scripts/MainMenuManager.gd" id="1"]
+
+[sub_resource type="LabelSettings" id="LabelSettings_1"]
+font_size = 28
+font_color = Color(0.58, 0.98, 0.91, 1)
+outline_size = 2
+outline_color = Color(0.94, 0.25, 0.77, 1)
+
+[sub_resource type="LabelSettings" id="LabelSettings_2"]
+font_size = 20
+font_color = Color(0.94, 0.98, 0.58, 1)
+outline_size = 1
+outline_color = Color(0.2, 0.2, 0.2, 1)
+
+[node name="MainMenu" type="Control" groups=["main_menu"]]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+script = ExtResource("1")
+
+[node name="Background" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+color = Color(0, 0, 0, 1)
+z_index = -10
+
+[node name="GridPattern" type="Control" parent="Background"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+
+[node name="VBoxContainer" type="VBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 20.0
+offset_top = 20.0
+offset_right = -20.0
+offset_bottom = -20.0
+
+[node name="TopBanner" type="HBoxContainer" parent="VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 0
+custom_minimum_size = Vector2(0, 80)
+
+[node name="PlayerInfo" type="HBoxContainer" parent="VBoxContainer/TopBanner"]
+layout_mode = 2
+size_flags_horizontal = 0
+
+[node name="PlayerAvatar" type="ColorRect" parent="VBoxContainer/TopBanner/PlayerInfo"]
+layout_mode = 2
+custom_minimum_size = Vector2(60, 60)
+color = Color(0.58, 0.98, 0.91, 0.3)
+
+[node name="PlayerLevel" type="Label" parent="VBoxContainer/TopBanner/PlayerInfo"]
+layout_mode = 2
+text = "LVL 1"
+label_settings = SubResource("LabelSettings_2")
+vertical_alignment = 1
+
+[node name="StatsContainer" type="HBoxContainer" parent="VBoxContainer/TopBanner"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="ScoreContainer" type="VBoxContainer" parent="VBoxContainer/TopBanner/StatsContainer"]
+layout_mode = 2
+alignment = 1
+
+[node name="ScoreLabel" type="Label" parent="VBoxContainer/TopBanner/StatsContainer/ScoreContainer"]
+layout_mode = 2
+text = "Score"
+label_settings = SubResource("LabelSettings_2")
+horizontal_alignment = 1
+
+[node name="ScoreValue" type="Label" parent="VBoxContainer/TopBanner/StatsContainer/ScoreContainer"]
+layout_mode = 2
+text = "0"
+label_settings = SubResource("LabelSettings_1")
+horizontal_alignment = 1
+
+[node name="CoinsContainer" type="VBoxContainer" parent="VBoxContainer/TopBanner/StatsContainer"]
+layout_mode = 2
+alignment = 1
+
+[node name="CoinsLabel" type="Label" parent="VBoxContainer/TopBanner/StatsContainer/CoinsContainer"]
+layout_mode = 2
+text = "Coins"
+label_settings = SubResource("LabelSettings_2")
+horizontal_alignment = 1
+
+[node name="CoinsValue" type="Label" parent="VBoxContainer/TopBanner/StatsContainer/CoinsContainer"]
+layout_mode = 2
+text = "0"
+label_settings = SubResource("LabelSettings_1")
+horizontal_alignment = 1
+
+[node name="StarsContainer" type="VBoxContainer" parent="VBoxContainer/TopBanner/StatsContainer"]
+layout_mode = 2
+alignment = 1
+
+[node name="StarsLabel" type="Label" parent="VBoxContainer/TopBanner/StatsContainer/StarsContainer"]
+layout_mode = 2
+text = "Stars"
+label_settings = SubResource("LabelSettings_2")
+horizontal_alignment = 1
+
+[node name="StarsValue" type="Label" parent="VBoxContainer/TopBanner/StatsContainer/StarsContainer"]
+layout_mode = 2
+text = "0/100"
+label_settings = SubResource("LabelSettings_1")
+horizontal_alignment = 1
+
+[node name="TopButtons" type="HBoxContainer" parent="VBoxContainer/TopBanner"]
+layout_mode = 2
+size_flags_horizontal = 0
+
+[node name="ShopButton" type="Button" parent="VBoxContainer/TopBanner/TopButtons"]
+layout_mode = 2
+custom_minimum_size = Vector2(60, 60)
+text = "SHOP"
+
+[node name="SettingsButton" type="Button" parent="VBoxContainer/TopBanner/TopButtons"]
+layout_mode = 2
+custom_minimum_size = Vector2(60, 60)
+text = "SET"
+
+[node name="PromoSection" type="Panel" parent="VBoxContainer"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 120)
+size_flags_vertical = 0
+
+[node name="PromoContent" type="VBoxContainer" parent="VBoxContainer/PromoSection"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 20.0
+offset_top = 20.0
+offset_right = -20.0
+offset_bottom = -20.0
+alignment = 1
+
+[node name="PromoTitle" type="Label" parent="VBoxContainer/PromoSection/PromoContent"]
+layout_mode = 2
+text = "DAILY CHALLENGE"
+label_settings = SubResource("LabelSettings_1")
+horizontal_alignment = 1
+
+[node name="PromoDescription" type="Label" parent="VBoxContainer/PromoSection/PromoContent"]
+layout_mode = 2
+text = "Complete 5 levels in a row for bonus rewards!"
+label_settings = SubResource("LabelSettings_2")
+horizontal_alignment = 1
+
+[node name="PlayNowButton" type="Button" parent="VBoxContainer/PromoSection/PromoContent"]
+layout_mode = 2
+size_flags_horizontal = 4
+text = "PLAY NOW"
+
+[node name="LevelMapSection" type="Panel" parent="VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="ScrollContainer" type="ScrollContainer" parent="VBoxContainer/LevelMapSection"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 10.0
+offset_top = 10.0
+offset_right = -10.0
+offset_bottom = -10.0
+
+[node name="LevelGrid" type="GridContainer" parent="VBoxContainer/LevelMapSection/ScrollContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+columns = 5
+
+[node name="BottomToolbar" type="HBoxContainer" parent="VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 0
+custom_minimum_size = Vector2(0, 60)
+
+[node name="EditorButton" type="Button" parent="VBoxContainer/BottomToolbar"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "LEVEL EDITOR"
+
+[node name="AchievementsButton" type="Button" parent="VBoxContainer/BottomToolbar"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "ACHIEVEMENTS"
+
+[node name="StatsButton" type="Button" parent="VBoxContainer/BottomToolbar"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "STATS"
+
+[node name="QuitButton" type="Button" parent="VBoxContainer/BottomToolbar"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "QUIT"

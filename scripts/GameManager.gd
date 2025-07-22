@@ -30,9 +30,9 @@ var beat_indicator_ui: BeatIndicatorUI
 var background_elements: BackgroundReactiveElements
 var grid_star_effect: GridStarEffect
 
-var score = 0  # Total points (coins × multiplier)
-var coins = 0  # Number of coins collected
-var current_level = 2  # Start with Garett's tutorial
+var score = 0  # Session points (coins × multiplier)
+var coins = 0  # Session coins collected
+var current_level = 1  # Gets set by GameData
 var is_game_over = false
 var game_started = false
 var level_start_time = 0.0
@@ -170,6 +170,12 @@ func _process(delta):
 		print("Is launched from editor: ", LevelEditorData.is_launched_from_editor())
 		return_to_level_editor()
 		return  # Prevent further processing this frame
+	
+	# Return to main menu with ESC key (if not from editor)
+	if Input.is_action_just_pressed("ui_cancel") and not LevelEditorData.is_launched_from_editor():
+		print("ESC pressed - returning to main menu")
+		return_to_menu()
+		return
 		
 	# Update beat timeline
 	if beat_timeline:
@@ -178,7 +184,7 @@ func _process(delta):
 func start_game():
 	score = 0
 	coins = 0
-	current_level = 2  # Start with Garett's tutorial
+	current_level = GameData.current_level  # Get from GameData
 	is_game_over = false
 	game_started = false  # Will be set to true after GO message
 	is_level_complete = false
@@ -200,6 +206,8 @@ func start_game():
 	spawn_player()
 	update_ui()
 	update_latency_display()
+	
+	print("[GameManager] Starting level ", current_level)
 	
 	# Show GO message and start game after delay
 	show_go_message()
@@ -523,8 +531,9 @@ func return_to_menu():
 	if LevelEditorData.is_launched_from_editor():
 		return_to_level_editor()
 	else:
-		# For now, just restart the game
-		start_game()
+		# Return to main menu
+		print("[GameManager] Returning to main menu")
+		get_tree().change_scene_to_file("res://scenes/MainMenu.tscn")
 
 func return_to_level_editor():
 	print("=== RETURNING TO LEVEL EDITOR ===")
@@ -560,8 +569,11 @@ func _on_goal_reached():
 	AudioManager.stop_ambient_guitar()
 	
 	print("Level completed! Time: ", level_complete_time, " seconds")
-	print("Coins collected: ", coins)
+	print("Coins collected: ", coins, " Score: ", score)
 	print("Style accuracy: ", style_score_manager.get_accuracy(), "%")
+	
+	# Update GameData with completion
+	GameData.complete_level(current_level, score, coins, level_complete_time)
 	
 	# Show results screen
 	show_results_screen()
