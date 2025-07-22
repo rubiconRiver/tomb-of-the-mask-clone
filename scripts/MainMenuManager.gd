@@ -34,12 +34,14 @@ var neon_glow_tween: Tween
 var grid_animation_time = 0.0
 
 func _ready():
+	print("[MainMenu] MainMenuManager starting initialization...")
 	setup_synthwave_styling()
 	setup_grid_background()
 	connect_signals()
 	load_player_data()
 	create_level_grid()
 	start_background_animations()
+	print("[MainMenu] MainMenuManager initialization complete!")
 
 func setup_synthwave_styling():
 	# Set up the neon color scheme
@@ -63,22 +65,8 @@ func setup_synthwave_styling():
 		promo_section.add_theme_stylebox_override("panel", style_box)
 
 func setup_grid_background():
-	# Create the synthwave grid pattern
-	if grid_pattern:
-		grid_pattern.draw.connect(_draw_grid_pattern)
-
-func _draw_grid_pattern():
-	var size = get_viewport().get_visible_rect().size
-	var grid_size = 64
-	var line_color = Color("#94fbe6", 0.15)  # Semi-transparent cyan
-	
-	# Draw vertical lines
-	for x in range(0, int(size.x), grid_size):
-		grid_pattern.draw_line(Vector2(x, 0), Vector2(x, size.y), line_color, 1)
-	
-	# Draw horizontal lines
-	for y in range(0, int(size.y), grid_size):
-		grid_pattern.draw_line(Vector2(0, y), Vector2(size.x, y), line_color, 1)
+	# Simplified background for testing - just set a subtle pattern later
+	print("[MainMenu] Grid background setup complete")
 
 func connect_signals():
 	# Connect button signals
@@ -121,6 +109,12 @@ func update_ui():
 		stars_value.text = str(GameData.get_total_stars()) + "/" + str(max_stars)
 
 func create_level_grid():
+	print("[MainMenu] Creating level grid with ", total_levels, " levels")
+	
+	if not level_grid:
+		print("[MainMenu] ERROR: level_grid node not found!")
+		return
+	
 	# Clear existing level buttons
 	for child in level_grid.get_children():
 		child.queue_free()
@@ -128,6 +122,8 @@ func create_level_grid():
 	# Create level buttons
 	for level_num in range(1, total_levels + 1):
 		create_level_button(level_num)
+	
+	print("[MainMenu] Level grid created successfully")
 
 func create_level_button(level_num: int):
 	var level_button = Button.new()
@@ -180,18 +176,8 @@ func create_level_button(level_num: int):
 	level_grid.add_child(level_button)
 
 func start_background_animations():
-	# Animate grid pattern
-	var grid_tween = create_tween()
-	grid_tween.set_loops()
-	grid_tween.tween_method(_update_grid_animation, 0.0, TAU, 4.0)
-	
 	# Animate promo section glow
 	start_neon_glow_animation()
-
-func _update_grid_animation(value: float):
-	grid_animation_time = value
-	if grid_pattern:
-		grid_pattern.queue_redraw()
 
 func start_neon_glow_animation():
 	# Animate the promo section border to pulse

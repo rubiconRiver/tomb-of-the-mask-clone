@@ -37,6 +37,30 @@ var save_path = "user://player_data.save"
 
 func _ready():
 	load_player_data()
+	# Add some test data for menu testing
+	add_test_data_if_empty()
+
+func add_test_data_if_empty():
+	# Add some sample progress for testing the menu
+	if player_data.total_score == 0 and player_data.total_stars == 0:
+		print("[GameData] Adding test data for menu demo")
+		player_data.total_score = 1250
+		player_data.total_coins = 85
+		player_data.total_stars = 12
+		player_data.unlocked_levels = 5
+		player_data.player_level = 2
+		
+		# Add some completed levels
+		player_data.level_scores[1] = 350
+		player_data.level_scores[2] = 420  
+		player_data.level_scores[3] = 480
+		
+		player_data.level_stars[1] = 2
+		player_data.level_stars[2] = 3
+		player_data.level_stars[3] = 1
+		
+		# Save the test data
+		save_player_data()
 
 # ============================================
 # SAVE/LOAD SYSTEM
