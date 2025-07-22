@@ -210,6 +210,7 @@ func _update_neon_glow(alpha: float):
 
 # Button signal handlers
 func _on_play_now_pressed():
+	HapticFeedback.on_button_press()
 	print("[MainMenu] Play Now pressed - starting game")
 	# Find the next available level or start level 1
 	var next_level = 1
@@ -221,32 +222,41 @@ func _on_play_now_pressed():
 	start_level(next_level)
 
 func _on_level_selected(level_num: int):
+	HapticFeedback.on_menu_navigation()
 	print("[MainMenu] Level ", level_num, " selected")
 	if GameData.is_level_unlocked(level_num):
 		start_level(level_num)
+	else:
+		HapticFeedback.on_error()  # Locked level feedback
 
 func _on_shop_pressed():
+	HapticFeedback.on_button_press()
 	print("[MainMenu] Shop pressed - opening shop")
 	# TODO: Implement shop
 
 func _on_settings_pressed():
+	HapticFeedback.on_button_press()
 	print("[MainMenu] Settings pressed - opening settings")
 	# TODO: Implement settings menu
 
 func _on_editor_pressed():
+	HapticFeedback.on_button_press()
 	print("[MainMenu] Level Editor pressed")
 	# Load level editor
 	get_tree().change_scene_to_file("res://scenes/level_editor/LevelEditor.tscn")
 
 func _on_achievements_pressed():
+	HapticFeedback.on_button_press()
 	print("[MainMenu] Achievements pressed")
 	# TODO: Implement achievements
 
 func _on_stats_pressed():
+	HapticFeedback.on_button_press()
 	print("[MainMenu] Stats pressed")
 	# TODO: Implement stats screen
 
 func _on_quit_pressed():
+	HapticFeedback.on_button_press()
 	print("[MainMenu] Quit pressed")
 	get_tree().quit()
 
@@ -275,3 +285,24 @@ func _process(delta):
 	if GameData.is_returning_from_game():
 		print("[MainMenu] Player returned from game - showing updated progress")
 		GameData.returning_from_game = false  # Reset flag
+
+# Mobile-friendly input handling
+func _input(event):
+	# Handle swipe gestures on level grid for scrolling
+	if event is InputEventScreenDrag or (event is InputEventMouseMotion and Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT)):
+		handle_scroll_gesture(event)
+
+func handle_scroll_gesture(event):
+	# Enable smooth scrolling on level grid with touch/drag
+	var scroll_container = level_grid.get_parent() if level_grid else null
+	if scroll_container and scroll_container is ScrollContainer:
+		var relative_motion = Vector2.ZERO
+		
+		if event is InputEventScreenDrag:
+			relative_motion = -event.relative * 2.0  # Invert and amplify for natural scrolling
+		elif event is InputEventMouseMotion:
+			relative_motion = -event.relative * 1.5
+		
+		# Apply scrolling
+		var current_scroll = scroll_container.scroll_vertical
+		scroll_container.scroll_vertical = max(0, current_scroll + relative_motion.y)

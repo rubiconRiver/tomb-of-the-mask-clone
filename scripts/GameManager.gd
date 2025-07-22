@@ -29,6 +29,7 @@ var audio_analyzer: AudioAnalyzer
 var beat_indicator_ui: BeatIndicatorUI
 var background_elements: BackgroundReactiveElements
 var grid_star_effect: GridStarEffect
+var mobile_controls: MobileControls
 
 var score = 0  # Session points (coins × multiplier)
 var coins = 0  # Session coins collected
@@ -143,25 +144,7 @@ func _process(delta):
 		if background and background.material:
 			background.material.set_shader_parameter("camera_position", camera.position)
 		
-	# Handle beat speed controls
-	if Input.is_action_just_pressed("ui_up"):
-		AudioManager.beat_interval = max(0.2, AudioManager.beat_interval - 0.05)
-		print("Beat interval: ", AudioManager.beat_interval)
-	elif Input.is_action_just_pressed("ui_down"):
-		AudioManager.beat_interval = min(2.0, AudioManager.beat_interval + 0.05)
-		print("Beat interval: ", AudioManager.beat_interval)
-		
-	# Handle player speed adjustment with dedicated keys
-	
-	# Handle audio latency adjustment
-	if Input.is_action_just_pressed("ui_left"):
-		audio_latency_offset = max(-0.2, audio_latency_offset - 0.01)
-		update_latency_display()
-		print("Audio latency offset: ", audio_latency_offset * 1000, "ms")
-	elif Input.is_action_just_pressed("ui_right"):
-		audio_latency_offset = min(0.2, audio_latency_offset + 0.01)
-		update_latency_display()
-		print("Audio latency offset: ", audio_latency_offset * 1000, "ms")
+	# Mobile controls now handled by MobileControls UI component
 		
 	
 	# Return to level editor with M key when launched from editor
@@ -321,11 +304,23 @@ func _on_swipe_detected(direction: Vector2):
 		print("Buffered swipe: ", direction)
 		return
 	
+	# Mobile haptic feedback for swipe
+	HapticFeedback.on_swipe()
+	
 	# Start the guitar chord when movement begins
 	AudioManager.start_ambient_guitar()
 	
 	# Calculate timing and score
 	var timing_result = style_score_manager.register_move(AudioManager.get_beat_progress(), AudioManager.beat_interval)
+	
+	# Haptic feedback based on timing quality
+	match timing_result.timing:
+		StyleScoreManager.TimingQuality.PERFECT:
+			HapticFeedback.trigger_haptic(HapticFeedback.HapticType.SUCCESS)
+		StyleScoreManager.TimingQuality.GREAT:
+			HapticFeedback.trigger_haptic(HapticFeedback.HapticType.MEDIUM)
+		StyleScoreManager.TimingQuality.GOOD:
+			HapticFeedback.trigger_haptic(HapticFeedback.HapticType.LIGHT)
 	
 	# Track successful moves for 4th beat requirement
 	if timing_result.timing == StyleScoreManager.TimingQuality.PERFECT or timing_result.timing == StyleScoreManager.TimingQuality.GREAT:
@@ -354,6 +349,8 @@ func _on_swipe_detected(direction: Vector2):
 func _on_player_died():
 	# Stop the guitar chord when player dies
 	AudioManager.stop_ambient_guitar()
+	# Game over haptic feedback
+	HapticFeedback.on_game_over()
 	is_game_over = true
 	if game_over_panel:
 		game_over_panel.visible = true
@@ -361,6 +358,9 @@ func _on_player_died():
 func _on_coin_collected():
 	# Increment coin count
 	coins += 1
+	
+	# Haptic feedback for coin collection
+	HapticFeedback.on_coin_collect()
 	
 	# Add to score based on current multiplier
 	var multiplier = style_score_manager.get_current_multiplier()
@@ -379,6 +379,9 @@ func _on_player_moved():
 	pass
 
 func _on_player_hit_wall():
+	# Haptic feedback for wall collision
+	HapticFeedback.on_wall_hit()
+	
 	# Queue wall hit tom fill to play on next 8th note (much more responsive!)
 	pending_wall_hits_8th += 1
 	print("Wall hit - tom fill queued for next 8th note")
@@ -443,6 +446,10 @@ func _on_combo_changed(new_combo: int, _multiplier_increased: bool = false):
 	# Play combo sound through AudioManager
 	if new_combo > 0 and new_combo <= 8:
 		AudioManager.play_combo_sound(new_combo, _multiplier_increased)
+	
+	# Haptic feedback for combos
+	if new_combo > 0:
+		HapticFeedback.trigger_combo_pattern(new_combo)
 
 # Old combo music function removed - now handled in _on_combo_changed
 
@@ -568,6 +575,9 @@ func _on_goal_reached():
 	# Stop the guitar if playing
 	AudioManager.stop_ambient_guitar()
 	
+	# Level complete haptic feedback
+	HapticFeedback.on_level_complete()
+	
 	print("Level completed! Time: ", level_complete_time, " seconds")
 	print("Coins collected: ", coins, " Score: ", score)
 	print("Style accuracy: ", style_score_manager.get_accuracy(), "%")
@@ -650,6 +660,12 @@ func initialize_effect_systems():
 	grid_star_effect = grid_star_script.new()
 	add_child(grid_star_effect)
 	grid_star_effect.z_index = -3  # Behind game but in front of background
+	
+	# Initialize Mobile Controls
+	var mobile_controls_scene = preload("res://scenes/ui/MobileControls.tscn")
+	mobile_controls = mobile_controls_scene.instantiate()
+	add_child(mobile_controls)
+	mobile_controls.layer = 100  # On top of everything
 
 func setup_screen_shake_camera():
 	if player and player.get_node_or_null("Camera2D"):
