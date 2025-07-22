@@ -1,5 +1,4 @@
 extends Node
-class_name HapticFeedback
 
 # ============================================
 # MOBILE HAPTIC FEEDBACK SYSTEM
