@@ -13,7 +13,6 @@ var ambient_players = []
 # Constants
 const PLAYER_POOL_SIZE = 4  # Increased for better concurrency
 const SAMPLE_RATE = 44100
-const MASTER_LIMITER = 0.85  # Soft limit to prevent clipping
 
 func _ready():
 	print("[AudioMixer] Initializing mixer and player pools")
@@ -122,11 +121,12 @@ func play_sound(audio_data: PackedFloat32Array, bus_type: String = "SFX", volume
 	
 	var playback = player.get_stream_playback() as AudioStreamGeneratorPlayback
 	if playback:
-		# Convert to stereo frames with soft limiting
+		# Convert to stereo frames (no soft limiting - sounds are pre-normalized)
 		var stereo_frames = PackedVector2Array()
 		for sample in audio_data:
-			var limited_sample = SoundBank.soft_clip(sample * MASTER_LIMITER)
-			stereo_frames.append(Vector2(limited_sample, limited_sample))
+			# Simple hard clip as failsafe only
+			var clamped = clamp(sample, -1.0, 1.0)
+			stereo_frames.append(Vector2(clamped, clamped))
 		
 		# Push all at once for better performance
 		playback.push_buffer(stereo_frames)

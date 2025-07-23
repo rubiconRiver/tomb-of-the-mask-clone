@@ -123,4 +123,13 @@ func _draw():
 			draw_circle(center, 10, Color(0.0, 1.0, 1.0, 1.0))
 
 func _process(_delta):
-	queue_redraw() # Continuously redraw for smooth animation
+	# Only redraw when beat timer changes significantly
+	var needs_redraw = false
+	var time_to_beat = beat_interval - beat_timer
+	
+	# Redraw when very close to beat for visual feedback
+	if abs(time_to_beat) < 0.1:
+		needs_redraw = true
+	
+	if needs_redraw:
+		queue_redraw()

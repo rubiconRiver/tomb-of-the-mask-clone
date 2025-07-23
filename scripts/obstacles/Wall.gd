@@ -4,17 +4,24 @@ var particle_scene = preload("res://scenes/effects/WallParticles.tscn")
 var particles: GPUParticles2D
 
 func _ready():
-	# Generate smooth wall texture
+	# Generate wall texture with solid color and transparent border
 	var sprite = $Sprite2D
 	if sprite:
-		# For now, just use a simple white square that the shader will process
+		# Create 64x64 image with solid color and 1px transparent border
 		var image = Image.create(64, 64, false, Image.FORMAT_RGBA8)
-		image.fill(Color.WHITE)
+		var wall_color = Color("#dcfb94")  # Light green color
+		
+		# Fill entire image with transparent first
+		image.fill(Color.TRANSPARENT)
+		
+		# Fill inner area (leaving 1px border transparent)
+		for y in range(1, 63):
+			for x in range(1, 63):
+				image.set_pixel(x, y, wall_color)
+		
 		var texture = ImageTexture.create_from_image(image)
 		sprite.texture = texture
-		
-		# The material will be applied by the LevelGenerator via BeatVisualizer
-		sprite.modulate = Color.WHITE  # Remove the gray tint
+		sprite.modulate = Color.WHITE
 	
 	# Add particle system
 	particles = particle_scene.instantiate()

@@ -37,7 +37,7 @@ func _ready():
 	
 	wall_material = ShaderMaterial.new()
 	wall_material.shader = wall_shader
-	wall_material.set_shader_parameter("base_color", Color(0.29, 0.08, 0.55, 1.0))  # Deep purple
+	wall_material.set_shader_parameter("base_color", Color("#dcfb94"))  # Light green
 	wall_material.set_shader_parameter("glow_color", Color(0.0, 0.74, 0.83, 1.0))  # Cyan
 	wall_material.set_shader_parameter("accent_color", Color(0.91, 0.12, 0.39, 1.0))  # Magenta
 	wall_material.set_shader_parameter("glow_intensity", 0.8)

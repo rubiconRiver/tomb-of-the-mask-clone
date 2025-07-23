@@ -1,10 +1,27 @@
-[gd_scene load_steps=4 format=3 uid="uid://t5cl84b1nyd8"]
+[gd_scene load_steps=6 format=3 uid="uid://t5cl84b1nyd8"]
 
 [ext_resource type="Script" uid="uid://cxrjxmyr60n3a" path="res://scripts/tools/LevelEditor.gd" id="1"]
 [ext_resource type="Script" uid="uid://by1b4nvcpa8sp" path="res://scripts/tools/GridOverlay.gd" id="2"]
 
-[sub_resource type="LabelSettings" id="1"]
-font_size = 24
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_1"]
+bg_color = Color(0.1, 0.1, 0.1, 0.9)
+border_width_bottom = 2
+border_color = Color(0.3, 0.3, 0.3, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_2"]
+bg_color = Color(0.2, 0.2, 0.2, 0.9)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.4, 0.4, 0.4, 1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+
+[sub_resource type="LabelSettings" id="LabelSettings_1"]
+font_size = 18
 
 [node name="LevelEditor" type="Node2D"]
 script = ExtResource("1")
@@ -14,54 +31,115 @@ script = ExtResource("2")
 
 [node name="UI" type="CanvasLayer" parent="."]
 
-[node name="Instructions" type="Panel" parent="UI"]
-modulate = Color(1, 1, 1, 0.9)
-offset_right = 250.0
-offset_bottom = 400.0
+[node name="TopBar" type="Panel" parent="UI"]
+custom_minimum_size = Vector2(0, 60)
+anchors_preset = 10
+anchor_right = 1.0
+offset_bottom = 60.0
+theme_override_styles/panel = SubResource("StyleBoxFlat_1")
 
-[node name="Label" type="Label" parent="UI/Instructions"]
-layout_mode = 0
+[node name="ToolButtons" type="HBoxContainer" parent="UI/TopBar"]
+layout_mode = 1
+anchors_preset = 4
+anchor_top = 0.5
+anchor_bottom = 0.5
 offset_left = 10.0
-offset_top = 10.0
-offset_right = 240.0
-offset_bottom = 390.0
-text = "LEVEL EDITOR
+offset_top = -20.0
+offset_right = 500.0
+offset_bottom = 20.0
+grow_vertical = 2
+theme_override_constants/separation = 10
 
-Tile Selection:
-1 - Wall (Gray)
-2 - Coin (Yellow) 
-3 - Spike (Red)
-4 - Player Spawn (Green)
-5 - Goal (Blue)
-6 - Eraser
-9 - Waypoint (Path)
+[node name="FileButton" type="Button" parent="UI/TopBar/ToolButtons"]
+layout_mode = 2
+text = "File"
 
-Mouse Controls:
-- Left Click: Place tile
-- Left Drag: Paint tiles
-- Right Click/Drag: Erase
-- Shift+Left Click: Start beat guide
-- Shift+Right Click: Clear guides
+[node name="EditButton" type="Button" parent="UI/TopBar/ToolButtons"]
+layout_mode = 2
+text = "Edit"
 
-Commands:
-- Ctrl+S: Save to test_levels.txt
-- L: Test in main game
-- C: Clear all
-- N: Change level size
+[node name="ViewButton" type="Button" parent="UI/TopBar/ToolButtons"]
+layout_mode = 2
+text = "View"
 
-Camera:
-- Arrow Keys: Move camera
+[node name="VSeparator" type="VSeparator" parent="UI/TopBar/ToolButtons"]
+layout_mode = 2
 
-Waypoints:
-- Auto-increments (a-z)
-- Delete only most recent
-- Shows perfect path"
-label_settings = SubResource("1")
+[node name="PlayButton" type="Button" parent="UI/TopBar/ToolButtons"]
+layout_mode = 2
+text = "▶ Test Level"
 
-[node name="CurrentTile" type="Label" parent="UI"]
-offset_left = 260.0
-offset_top = 10.0
-offset_right = 460.0
-offset_bottom = 50.0
+[node name="VSeparator2" type="VSeparator" parent="UI/TopBar/ToolButtons"]
+layout_mode = 2
+
+[node name="SaveButton" type="Button" parent="UI/TopBar/ToolButtons"]
+layout_mode = 2
+text = "💾 Save"
+
+[node name="LoadButton" type="Button" parent="UI/TopBar/ToolButtons"]
+layout_mode = 2
+text = "📁 Load"
+
+[node name="CurrentTilePanel" type="Panel" parent="UI/TopBar"]
+layout_mode = 1
+anchors_preset = 6
+anchor_left = 1.0
+anchor_top = 0.5
+anchor_right = 1.0
+anchor_bottom = 0.5
+offset_left = -250.0
+offset_top = -20.0
+offset_right = -10.0
+offset_bottom = 20.0
+grow_horizontal = 0
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_2")
+
+[node name="CurrentTileLabel" type="Label" parent="UI/TopBar/CurrentTilePanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 text = "Current: Wall"
-label_settings = SubResource("1")
+label_settings = SubResource("LabelSettings_1")
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="StatusBar" type="Panel" parent="UI"]
+custom_minimum_size = Vector2(0, 30)
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -30.0
+theme_override_styles/panel = SubResource("StyleBoxFlat_1")
+
+[node name="StatusLabel" type="Label" parent="UI/StatusBar"]
+layout_mode = 1
+anchors_preset = 4
+anchor_top = 0.5
+anchor_bottom = 0.5
+offset_left = 10.0
+offset_top = -10.0
+offset_right = 300.0
+offset_bottom = 10.0
+grow_vertical = 2
+text = "Ready"
+
+[node name="CoordinatesLabel" type="Label" parent="UI/StatusBar"]
+layout_mode = 1
+anchors_preset = 6
+anchor_left = 1.0
+anchor_top = 0.5
+anchor_right = 1.0
+anchor_bottom = 0.5
+offset_left = -150.0
+offset_top = -10.0
+offset_right = -10.0
+offset_bottom = 10.0
+grow_horizontal = 0
+grow_vertical = 2
+text = "0, 0"
+horizontal_alignment = 2

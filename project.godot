@@ -10,16 +10,19 @@ config_version=5
 
 [application]
 
-config/name="Tomb of the Mask Clone"
-config/description="A fast-paced arcade game with swipe controls"
-run/main_scene="res://scenes/main.tscn"
+config/name="TechnoBeat"
+config/description="A rhythm-based arcade game with beat-synchronized movement"
+run/main_scene="res://scenes/TestStart.tscn"
 config/features=PackedStringArray("4.4", "Mobile")
+run/max_fps=60
 config/icon="res://icon.svg"
 
 [autoload]
 
 LevelEditorData="*res://scripts/LevelEditorData.gd"
 AudioManager="*res://scripts/audio/AudioManager.gd"
+GameData="*res://scripts/singletons/GameData.gd"
+HapticFeedback="*res://scripts/utils/HapticFeedback.gd"
 
 [display]
 

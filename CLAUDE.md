@@ -1,7 +1,7 @@
-# Tomb of the Mask Clone - Project Instructions
+# TechnoBeat - Project Instructions
 
 ## Project Overview
-Building a Tomb of the Mask clone in Godot targeting mobile platforms with ad integration.
+A rhythm-based arcade game with beat-synchronized movement built in Godot for mobile platforms.
 
 ## Troubleshooting Tips
 - **Class registration errors**: If you see "Could not find type" errors, reload the project in the Godot editor before changing code
@@ -16,10 +16,10 @@ godot --path . --editor
 godot --path .
 
 # Export for Android (after setting up export templates)
-godot --export-release "Android" tomb_of_mask.apk
+godot --export-release "Android" "../2dgameandroidbuilds/TechnoBeat.apk"
 
 # Export for iOS (after setting up export templates)
-godot --export-release "iOS" tomb_of_mask.ipa
+godot --export-release "iOS" "../ios exports/TechnoBeat.ipa"
 ```
 
 ## Project Structure
@@ -65,28 +65,33 @@ godot --export-release "iOS" tomb_of_mask.ipa
 
 ## iOS Build Instructions
 
-### First Time Setup
-```bash
-# Export iOS project (creates Xcode project) - ONLY DO THIS ONCE
-godot --path . --export-release "iOS" "../ios exports/TombOfTheMask.ipa"
+### Project Info
+- **Game Name**: TechnoBeat
+- **Bundle ID**: com.company.technobeat
+- **Xcode Project Location**: ../ios exports/TechnoBeat.xcodeproj
 
-# The export creates an Xcode project at: ../ios exports/TombOfTheMask/
-# Initial setup:
-# 1. Open TombOfTheMask.xcodeproj in Xcode
-# 2. Select your development team in Signing & Capabilities
-# 3. Configure bundle identifier, app icons, etc.
-```
-
-### Updating Existing Build (PREFERRED METHOD)
+### Updating Build (PREFERRED METHOD)
 ```bash
 # Export just the PCK file with game content:
-godot --path . --export-pack "iOS" "../ios exports/TombOfTheMask/TombOfTheMask.pck"
+godot --path . --export-pack "iOS" "../ios exports/TechnoBeat/TechnoBeat.pck"
 
 # This overwrites the .pck file in your existing Xcode project
 # Then in Xcode:
 # 1. Clean build folder (Shift+Cmd+K)
 # 2. Build and run (Cmd+R)
 # Your signing settings and project config remain unchanged!
+```
+
+### Re-creating Xcode Project (if needed)
+```bash
+# Export full iOS project (creates new Xcode project):
+godot --path . --export-release "iOS" "../ios exports/TechnoBeat.ipa"
+
+# This creates/overwrites: ../ios exports/TechnoBeat.xcodeproj
+# After export:
+# 1. Open TechnoBeat.xcodeproj in Xcode
+# 2. Select your development team in Signing & Capabilities
+# 3. Configure bundle identifier, app icons, etc.
 ```
 
 ### For App Store Release
