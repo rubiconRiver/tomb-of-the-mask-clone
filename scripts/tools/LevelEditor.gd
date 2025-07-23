@@ -599,57 +599,98 @@ func draw_dotted_line(start: Vector2, end: Vector2, color: Color, width: float, 
 		current_distance += dash_length
 		draw_dash = not draw_dash
 
-func load_test_notes():
-	print("Loading test notes level...")
-	# Get the test notes template
-	var template = LevelTemplates.get_test_notes()
+func load_level_from_json(path: String):
+	print("Loading level from: ", path)
+	var file = FileAccess.open(path, FileAccess.READ)
+	if not file:
+		print("ERROR: Could not open file: ", path)
+		return false
+		
+	var json_text = file.get_as_text()
+	file.close()
 	
-	# Update level dimensions
-	level_height = template.size()
-	if level_height > 0:
-		level_width = template[0].length()
+	var json = JSON.new()
+	var parse_result = json.parse(json_text)
+	if parse_result != OK:
+		print("ERROR: Failed to parse JSON: ", json.get_error_message())
+		return false
 	
-	# Clear existing tiles
+	var data = json.data
+	
+	# Load metadata
+	if data.has("metadata"):
+		var meta = data.metadata
+		level_width = meta.get("width", 11)
+		level_height = meta.get("height", 20)
+		print("Level: ", meta.get("name", "Unnamed"), " (", level_width, "x", level_height, ")")
+	
+	# Clear existing level
 	tilemap.clear()
-	
-	# Clear waypoints
 	waypoints.clear()
 	waypoint_order.clear()
 	next_waypoint_letter = 'a'
 	
-	# Populate tilemap from template
-	for y in range(level_height):
-		var row = template[y]
-		for x in range(row.length()):
-			var cell = row[x]
-			match cell:
-				'#':
-					tilemap.set_cell(0, Vector2i(x, y), 0, Vector2i(TileType.WALL, 0))
-				'C':
-					tilemap.set_cell(0, Vector2i(x, y), 0, Vector2i(TileType.COIN, 0))
-				'S':
-					tilemap.set_cell(0, Vector2i(x, y), 0, Vector2i(TileType.SPIKE, 0))
-				'P':
-					tilemap.set_cell(0, Vector2i(x, y), 0, Vector2i(TileType.PLAYER_SPAWN, 0))
-				'G':
-					tilemap.set_cell(0, Vector2i(x, y), 0, Vector2i(TileType.GOAL, 0))
-				'.':
-					tilemap.set_cell(0, Vector2i(x, y), -1)  # Empty
-				_:
-					# Check if it's a lowercase letter (waypoint)
-					if cell >= 'a' and cell <= 'z':
-						add_waypoint(Vector2i(x, y))
-						tilemap.set_cell(0, Vector2i(x, y), 0, Vector2i(TileType.WAYPOINT, 0))
-					else:
-						tilemap.set_cell(0, Vector2i(x, y), -1)  # Default to empty
+	# Load tiles
+	if data.has("tiles"):
+		var tiles = data.tiles
+		for y in range(min(tiles.size(), level_height)):
+			var row = tiles[y]
+			for x in range(min(row.size(), level_width)):
+				var cell = row[x]
+				match cell:
+					'#':
+						tilemap.set_cell(0, Vector2i(x, y), 0, Vector2i(TileType.WALL, 0))
+					'C':
+						tilemap.set_cell(0, Vector2i(x, y), 0, Vector2i(TileType.COIN, 0))
+					'S':
+						tilemap.set_cell(0, Vector2i(x, y), 0, Vector2i(TileType.SPIKE, 0))
+					'P':
+						tilemap.set_cell(0, Vector2i(x, y), 0, Vector2i(TileType.PLAYER_SPAWN, 0))
+					'G':
+						tilemap.set_cell(0, Vector2i(x, y), 0, Vector2i(TileType.GOAL, 0))
+					'.':
+						tilemap.set_cell(0, Vector2i(x, y), -1)  # Empty
+					_:
+						# Check if it's a lowercase letter (waypoint)
+						if typeof(cell) == TYPE_STRING and cell.length() == 1:
+							var char_code = cell.unicode_at(0)
+							if char_code >= 'a'.unicode_at(0) and char_code <= 'z'.unicode_at(0):
+								# It's a waypoint
+								var pos = Vector2i(x, y)
+								waypoints[pos] = cell
+								waypoint_order.append(pos)
+								tilemap.set_cell(0, pos, 0, Vector2i(TileType.WAYPOINT, 0))
+								# Update next letter
+								if char_code >= next_waypoint_letter.unicode_at(0):
+									next_waypoint_letter = char(char_code + 1)
+									if next_waypoint_letter.unicode_at(0) > 'z'.unicode_at(0):
+										next_waypoint_letter = 'z'
 	
-	# Recalculate camera zoom and position for new level size
+	# Load waypoint data if available (for proper ordering)
+	if data.has("waypoints") and data.waypoints.has("order"):
+		var wp_data = data.waypoints
+		waypoint_order.clear()
+		for pos_array in wp_data.order:
+			if pos_array.size() >= 2:
+				var pos = Vector2i(pos_array[0], pos_array[1])
+				if pos in waypoints:
+					waypoint_order.append(pos)
+	
+	# Update camera and redraw
 	update_camera_for_level_size()
-	
-	# Redraw to show grid
 	queue_redraw()
 	if grid_node:
 		grid_node.queue_redraw()
+	
+	update_current_tile_display()
+	if status_label:
+		status_label.text = "Loaded: " + path.get_file()
+	
+	return true
+
+func load_test_notes():
+	print("Loading default level from JSON...")
+	load_level_from_json("res://levels/default_level.json")
 
 func load_big_level():
 	print("Loading big level...")
@@ -727,11 +768,31 @@ func clear_level():
 
 func save_level():
 	print("Saving level...")
-	var level_template = []
 	
-	# Convert tilemap to template format
+	# Build the level data structure
+	var level_data = {
+		"metadata": {
+			"name": current_filename.get_basename() if current_filename != "" else "Untitled",
+			"author": "Level Editor",
+			"created": Time.get_datetime_string_from_system(),
+			"version": 1,
+			"width": level_width,
+			"height": level_height
+		},
+		"tiles": [],
+		"waypoints": {
+			"order": [],
+			"positions": {}
+		},
+		"settings": {
+			"beats_per_minute": 120,
+			"cells_per_beat": CELLS_PER_BEAT
+		}
+	}
+	
+	# Convert tilemap to JSON format
 	for y in range(level_height):
-		var row = ""
+		var row = []
 		for x in range(level_width):
 			var grid_pos = Vector2i(x, y)
 			var cell_char = "."
@@ -757,58 +818,40 @@ func save_level():
 						TileType.WAYPOINT:
 							# This shouldn't happen since we check waypoints first
 							cell_char = "."
-		
-			row += cell_char
-		level_template.append(row)
+			
+			row.append(cell_char)
+		level_data.tiles.append(row)
 	
-	# Get current timestamp
-	var datetime = Time.get_datetime_dict_from_system()
-	var timestamp = "%04d-%02d-%02d %02d:%02d:%02d" % [
-		datetime.year, datetime.month, datetime.day,
-		datetime.hour, datetime.minute, datetime.second
-	]
+	# Add waypoint data
+	for pos in waypoint_order:
+		level_data.waypoints.order.append([pos.x, pos.y])
+		level_data.waypoints.positions[str(pos.x) + "," + str(pos.y)] = waypoints[pos]
 	
-	# Append to test levels file
-	var file = FileAccess.open("res://levels/test_levels.txt", FileAccess.WRITE_READ)
-	if not file:
-		# Create file if it doesn't exist
-		file = FileAccess.open("res://levels/test_levels.txt", FileAccess.WRITE)
-	else:
-		# Move to end of file
-		file.seek_end()
+	# Save to JSON file
+	var json = JSON.new()
+	var json_string = json.stringify(level_data, "\t")
 	
+	# For now, just save to a fixed file
+	var file_path = "res://levels/custom/test_level.json"
+	var file = FileAccess.open(file_path, FileAccess.WRITE)
 	if file:
-		# Write header comment
-		file.store_line("")
-		file.store_line("# Level created: " + timestamp)
-		file.store_line("# Size: %dx%d" % [level_width, level_height])
-		file.store_line("# Description: [Add description here]")
-		if waypoint_order.size() > 0:
-			var path_str = ""
-			for pos in waypoint_order:
-				path_str += waypoints[pos] + " "
-			file.store_line("# Perfect path: " + path_str.strip_edges())
-		file.store_line("")
-		
-		# Write level data
-		for row in level_template:
-			file.store_line(row)
-		
+		file.store_string(json_string)
 		file.close()
-		print("Level appended to res://levels/test_levels.txt")
-		print("Timestamp: " + timestamp)
+		print("Level saved to: ", file_path)
+		if status_label:
+			status_label.text = "Saved: " + file_path.get_file()
 		
-		# Also print to console for easy copying
-		print("Level template (copy this to LevelTemplates.gd):")
+		# Also print a summary
+		print("Level: ", level_width, "x", level_height)
 		if waypoint_order.size() > 0:
 			var path_str = ""
 			for pos in waypoint_order:
 				path_str += waypoints[pos] + "->"
-			print("# Perfect path: ", path_str.trim_suffix("->"))
-		for i in range(level_template.size()):
-			print('		"', level_template[i], '",  # Row ', i)
+			print("Perfect path: ", path_str.trim_suffix("->"))
 	else:
-		print("Failed to save level!")
+		print("ERROR: Failed to save level!")
+		if status_label:
+			status_label.text = "Error: Failed to save"
 
 func load_into_game():
 	print("=== LOADING LEVEL INTO GAME ===")
@@ -1017,6 +1060,5 @@ func _on_view_button_pressed():
 		status_label.text = "View menu coming soon..."
 
 func _on_load_button_pressed():
-	print("Load dialog - TODO")
-	if status_label:
-		status_label.text = "Load dialog coming soon..."
+	print("Loading test level with waypoints...")
+	load_level_from_json("res://levels/test_level_with_waypoints.json")
