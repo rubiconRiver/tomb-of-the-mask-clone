@@ -31,6 +31,7 @@ var current_tile_label: Label
 var camera: Camera2D
 var file_dialog: FileDialog
 var current_filename = ""
+var file_browser_scene = preload("res://scenes/level_editor/FileBrowser.tscn")
 
 # Click and drag support
 var is_dragging = false
@@ -58,6 +59,7 @@ const BEAT_GUIDE_COLORS = {
 @onready var play_button = $UI/TopBar/ToolButtons/PlayButton
 @onready var save_button = $UI/TopBar/ToolButtons/SaveButton
 @onready var load_button = $UI/TopBar/ToolButtons/LoadButton
+
 
 # Waypoint system
 var waypoints = {}  # Dictionary of grid_pos -> letter
@@ -831,12 +833,23 @@ func save_level():
 	var json = JSON.new()
 	var json_string = json.stringify(level_data, "\t")
 	
-	# For now, just save to a fixed file
-	var file_path = "res://levels/custom/test_level.json"
+	# Find next available filename
+	var base_name = "level_"
+	var number = 1
+	var file_path = ""
+	
+	# Check for existing files and find next number
+	while true:
+		file_path = "res://levels/custom/%s%03d.json" % [base_name, number]
+		if not FileAccess.file_exists(file_path):
+			break
+		number += 1
+	
 	var file = FileAccess.open(file_path, FileAccess.WRITE)
 	if file:
 		file.store_string(json_string)
 		file.close()
+		current_filename = "custom/" + file_path.get_file()
 		print("Level saved to: ", file_path)
 		if status_label:
 			status_label.text = "Saved: " + file_path.get_file()
@@ -1060,5 +1073,22 @@ func _on_view_button_pressed():
 		status_label.text = "View menu coming soon..."
 
 func _on_load_button_pressed():
-	print("Loading test level with waypoints...")
-	load_level_from_json("res://levels/test_level_with_waypoints.json")
+	print("Opening file browser...")
+	open_file_browser()
+
+# File browser functions
+func open_file_browser():
+	var file_browser = file_browser_scene.instantiate()
+	ui_layer.add_child(file_browser)
+	file_browser.file_selected.connect(_on_file_selected)
+	file_browser.closed.connect(_on_file_browser_closed)
+
+func _on_file_selected(path: String):
+	print("Loading level: ", path)
+	if load_level_from_json(path):
+		current_filename = path.get_file()
+		if status_label:
+			status_label.text = "Loaded: " + current_filename
+
+func _on_file_browser_closed():
+	print("File browser closed")
