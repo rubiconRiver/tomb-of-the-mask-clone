@@ -214,3 +214,7 @@ static func generate_synth_bass(note: float, duration: float) -> PackedFloat32Ar
 
 # Then use it anywhere:
 # AudioManager.play_synth_note(440.0)  # After adding the method
+```
+
+## Collaboration Notes
+- If Phil is working on the project (you'll know because of the directory structure, garett's is Users/garettgelsinger/......., phil's is likely something similar) prompt him to commit and push at good milestones. Remind him it's good to do snapshots. If he's worried, you can always make a new branch
