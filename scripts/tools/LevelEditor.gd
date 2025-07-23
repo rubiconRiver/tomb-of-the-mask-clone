@@ -121,7 +121,7 @@ func _ready():
 	print("Level Editor Ready!")
 	print("Keys 1-5: Tile types (6: Eraser) | Click: Place | Right-click: Erase")
 	print("Ctrl+S: Save | L: Load into game | C: Clear | N: Change size")
-	print("Arrow keys: Move camera")
+	print("Arrow keys: Move camera | Scroll wheel: Zoom in/out")
 
 func setup_camera():
 	camera = Camera2D.new()
@@ -133,16 +133,42 @@ func setup_camera():
 	var window_size = get_window().size
 	var level_size = Vector2(level_width * GRID_SIZE, level_height * GRID_SIZE)
 	
-	# Add padding (20% border)
-	var padding_factor = 1.2
+	# Add minimal padding (5% border) to see more of the level
+	var padding_factor = 1.05
 	var zoom_x = window_size.x / (level_size.x * padding_factor)
 	var zoom_y = window_size.y / (level_size.y * padding_factor)
 	
 	# Use the smaller zoom factor to ensure entire level fits
 	var zoom_factor = min(zoom_x, zoom_y)
+	# Make it even more zoomed out by default
+	zoom_factor *= 0.8
 	camera.zoom = Vector2(zoom_factor, zoom_factor)
 	
 	print("[LevelEditor] Camera zoom set to: ", zoom_factor, " to fit level size: ", level_size)
+
+func update_camera_for_level_size():
+	if not camera:
+		return
+		
+	# Center camera on level
+	camera.position = Vector2(level_width * GRID_SIZE / 2, level_height * GRID_SIZE / 2)
+	
+	# Calculate zoom to fit entire level on screen
+	var window_size = get_window().size
+	var level_size = Vector2(level_width * GRID_SIZE, level_height * GRID_SIZE)
+	
+	# Add minimal padding (5% border) to see more of the level
+	var padding_factor = 1.05
+	var zoom_x = window_size.x / (level_size.x * padding_factor)
+	var zoom_y = window_size.y / (level_size.y * padding_factor)
+	
+	# Use the smaller zoom factor to ensure entire level fits
+	var zoom_factor = min(zoom_x, zoom_y)
+	# Make it even more zoomed out by default
+	zoom_factor *= 0.8
+	camera.zoom = Vector2(zoom_factor, zoom_factor)
+	
+	print("[LevelEditor] Updated camera for level size: ", level_size, " with zoom: ", zoom_factor)
 
 func setup_file_dialog():
 	# We won't use FileDialog, just append to a fixed file
@@ -199,6 +225,20 @@ func setup_ui():
 	update_current_tile_display()
 
 func _input(event):
+	# Handle mouse wheel zoom
+	if event is InputEventMouseButton:
+		if event.pressed:
+			if event.button_index == MOUSE_BUTTON_WHEEL_UP:
+				# Zoom in
+				camera.zoom *= 1.1
+				camera.zoom = camera.zoom.clamp(Vector2(0.1, 0.1), Vector2(5.0, 5.0))
+				print("[LevelEditor] Zoom in: ", camera.zoom.x)
+			elif event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
+				# Zoom out
+				camera.zoom *= 0.9
+				camera.zoom = camera.zoom.clamp(Vector2(0.1, 0.1), Vector2(5.0, 5.0))
+				print("[LevelEditor] Zoom out: ", camera.zoom.x)
+	
 	# Handle tool selection
 	if event is InputEventKey and event.pressed:
 		match event.keycode:
@@ -262,7 +302,7 @@ func _input(event):
 					calculate_ghost_path()
 	
 	# Handle mouse input for tile placement
-	if event is InputEventMouseButton:
+	if event is InputEventMouseButton and event.button_index != MOUSE_BUTTON_WHEEL_UP and event.button_index != MOUSE_BUTTON_WHEEL_DOWN:
 		var grid_pos = world_to_grid(get_global_mouse_position())
 		
 		if event.button_index == MOUSE_BUTTON_LEFT:
@@ -571,8 +611,8 @@ func load_test_notes():
 					else:
 						tilemap.set_cell(0, Vector2i(x, y), -1)  # Default to empty
 	
-	# Center camera on the loaded level
-	camera.position = Vector2(level_width * GRID_SIZE / 2, level_height * GRID_SIZE / 2)
+	# Recalculate camera zoom and position for new level size
+	update_camera_for_level_size()
 	
 	# Redraw to show grid
 	queue_redraw()
@@ -622,8 +662,8 @@ func load_big_level():
 					else:
 						tilemap.set_cell(0, Vector2i(x, y), -1)  # Default to empty
 	
-	# Center camera on the loaded level
-	camera.position = Vector2(level_width * GRID_SIZE / 2, level_height * GRID_SIZE / 2)
+	# Recalculate camera zoom and position for new level size
+	update_camera_for_level_size()
 	
 	# Redraw to show grid
 	queue_redraw()
@@ -854,8 +894,8 @@ func restore_from_backup(backup):
 			if tile_type != -1:
 				tilemap.set_cell(0, Vector2i(x, y), 0, Vector2i(tile_type, 0))
 	
-	# Center camera on the restored level
-	camera.position = Vector2(level_width * GRID_SIZE / 2, level_height * GRID_SIZE / 2)
+	# Update camera for restored level size
+	update_camera_for_level_size()
 	print("Level restored successfully")
 
 func new_level_dialog():
@@ -887,9 +927,8 @@ func new_level_dialog():
 	# Clear and resize
 	clear_level()
 	
-	# Update camera position
-	if camera:
-		camera.position = Vector2(level_width * GRID_SIZE / 2, level_height * GRID_SIZE / 2)
+	# Update camera for new level size
+	update_camera_for_level_size()
 
 func calculate_ghost_path():
 	print("\n=== CALCULATING GHOST PATH ===")
