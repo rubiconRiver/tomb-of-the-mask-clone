@@ -58,3 +58,4 @@ func pulse_strong():
 	pulse_timer = pulse_duration * 1.5
 	beat_count += 1
 	queue_redraw()
+	print("[BEAT] Beat 4 (PURPLE) - beat_count: ", beat_count)

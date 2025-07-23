@@ -8,6 +8,7 @@ var style_score_manager_script = preload("res://scripts/ui/StyleScoreManager.gd"
 var timing_feedback_script = preload("res://scripts/ui/TimingFeedback.gd")
 var beat_timeline_script = preload("res://scripts/ui/BeatTimeline.gd")
 var beat_visualizer_script = preload("res://scripts/visual/BeatVisualizer.gd")
+var timing_monitor_script = preload("res://scripts/ui/TimingMonitor.gd")
 # Combo music now handled by AudioManager
 
 var player: Player
@@ -20,10 +21,21 @@ var style_score_manager: StyleScoreManager
 var beat_visualizer: BeatVisualizer
 # Audio now handled by AudioManager singleton
 
-var score = 0  # Total points (coins × multiplier)
-var coins = 0  # Number of coins collected
-var current_level = 2  # Start with Garett's tutorial
+# New effect systems
+var screen_shake: ScreenShake
+var particle_manager: ParticleManager
+var latency_compensator: LatencyCompensator
+var audio_analyzer: AudioAnalyzer
+var beat_indicator_ui: BeatIndicatorUI
+var background_elements: BackgroundReactiveElements
+var grid_star_effect: GridStarEffect
+var mobile_controls: MobileControls
+
+var score = 0  # Session points (coins × multiplier)
+var coins = 0  # Session coins collected
+var current_level = 1  # Gets set by GameData
 var is_game_over = false
+var game_started = false
 var level_start_time = 0.0
 var level_complete_time = 0.0
 var is_level_complete = false
@@ -53,6 +65,9 @@ func _ready():
 	# Initialize sound bank
 	SoundBank.initialize()
 	
+	# Initialize new effect systems
+	initialize_effect_systems()
+	
 	swipe_detector = SwipeDetector.new()
 	add_child(swipe_detector)
 	swipe_detector.swiped.connect(_on_swipe_detected)
@@ -68,6 +83,7 @@ func _ready():
 	setup_beat_timeline()
 	setup_beat_visualizer()
 	setup_multiplier_indicator()
+	setup_timing_monitor()
 	
 	# Connect to AudioManager signals
 	AudioManager.beat_occurred.connect(_on_beat)
@@ -113,6 +129,13 @@ func setup_multiplier_indicator():
 	# Store reference for updates
 	set_meta("multiplier_indicator", multiplier_indicator)
 
+func setup_timing_monitor():
+	var timing_monitor = timing_monitor_script.new()
+	timing_monitor.position = Vector2(20, 200)  # Below beat indicator
+	
+	if ui_layer:
+		ui_layer.add_child(timing_monitor)
+
 func _process(delta):
 	if camera and player:
 		camera.position = player.position
@@ -121,25 +144,7 @@ func _process(delta):
 		if background and background.material:
 			background.material.set_shader_parameter("camera_position", camera.position)
 		
-	# Handle beat speed controls
-	if Input.is_action_just_pressed("ui_up"):
-		AudioManager.beat_interval = max(0.2, AudioManager.beat_interval - 0.05)
-		print("Beat interval: ", AudioManager.beat_interval)
-	elif Input.is_action_just_pressed("ui_down"):
-		AudioManager.beat_interval = min(2.0, AudioManager.beat_interval + 0.05)
-		print("Beat interval: ", AudioManager.beat_interval)
-		
-	# Handle player speed adjustment with dedicated keys
-	
-	# Handle audio latency adjustment
-	if Input.is_action_just_pressed("ui_left"):
-		audio_latency_offset = max(-0.2, audio_latency_offset - 0.01)
-		update_latency_display()
-		print("Audio latency offset: ", audio_latency_offset * 1000, "ms")
-	elif Input.is_action_just_pressed("ui_right"):
-		audio_latency_offset = min(0.2, audio_latency_offset + 0.01)
-		update_latency_display()
-		print("Audio latency offset: ", audio_latency_offset * 1000, "ms")
+	# Mobile controls now handled by MobileControls UI component
 		
 	
 	# Return to level editor with M key when launched from editor
@@ -148,6 +153,12 @@ func _process(delta):
 		print("Is launched from editor: ", LevelEditorData.is_launched_from_editor())
 		return_to_level_editor()
 		return  # Prevent further processing this frame
+	
+	# Return to main menu with ESC key (if not from editor)
+	if Input.is_action_just_pressed("ui_cancel") and not LevelEditorData.is_launched_from_editor():
+		print("ESC pressed - returning to main menu")
+		return_to_menu()
+		return
 		
 	# Update beat timeline
 	if beat_timeline:
@@ -156,10 +167,11 @@ func _process(delta):
 func start_game():
 	score = 0
 	coins = 0
-	current_level = 2  # Start with Garett's tutorial
+	current_level = GameData.current_level  # Get from GameData
 	is_game_over = false
+	game_started = false  # Will be set to true after GO message
 	is_level_complete = false
-	level_start_time = Time.get_ticks_msec() / 1000.0
+	level_start_time = 0.0  # Will be set when game actually starts
 	pending_coin_chimes = 0
 	pending_wall_hits = 0
 	pending_coin_chimes_8th = 0
@@ -177,6 +189,11 @@ func start_game():
 	spawn_player()
 	update_ui()
 	update_latency_display()
+	
+	print("[GameManager] Starting level ", current_level)
+	
+	# Show GO message and start game after delay
+	show_go_message()
 
 func setup_level():
 	if level_generator:
@@ -278,40 +295,62 @@ func _on_eighth_note():
 
 # Old audio functions removed - now handled by AudioManager
 func _on_swipe_detected(direction: Vector2):
-	if not is_game_over and player and not player.is_moving:
-		# Start the guitar chord when movement begins
-		AudioManager.start_ambient_guitar()
-		
-		# Calculate timing and score
-		var timing_result = style_score_manager.register_move(AudioManager.get_beat_progress(), AudioManager.beat_interval)
-		
-		# Track successful moves for 4th beat requirement
-		if timing_result.timing == StyleScoreManager.TimingQuality.PERFECT or timing_result.timing == StyleScoreManager.TimingQuality.GREAT:
-			last_4th_beat_move = AudioManager.get_current_beat()
-			last_move_quality = timing_result.timing
-		
-		# Debug info
-		var timing_text = timing_result.name
-		if timing_result.timing == StyleScoreManager.TimingQuality.OFF_BEAT and timing_result.distance < 0.5:
-			timing_text = "too early" if timing_result.is_early else "too late"
-		
-		print("Move timing: ", timing_result.name, " Combo: ", timing_result.combo, 
-			  " Distance: ", int(timing_result.distance * 1000), "ms",
-			  " (", timing_text, ")")
-		
-		# Apply score multiplier
-		var base_score = 1
-		score += int(base_score * timing_result.multiplier)
-		update_ui()
-		
-		# Store timing info for visual feedback
-		set_meta("last_timing", timing_result)
-		
-		player.move(direction)
+	if not game_started or is_game_over or not player:
+		return
+	
+	# If player is already moving, buffer the input
+	if player.is_moving:
+		player.buffered_direction = direction
+		print("Buffered swipe: ", direction)
+		return
+	
+	# Mobile haptic feedback for swipe
+	HapticFeedback.on_swipe()
+	
+	# Start the guitar chord when movement begins
+	AudioManager.start_ambient_guitar()
+	
+	# Calculate timing and score
+	var timing_result = style_score_manager.register_move(AudioManager.get_beat_progress(), AudioManager.beat_interval)
+	
+	# Haptic feedback based on timing quality
+	match timing_result.timing:
+		StyleScoreManager.TimingQuality.PERFECT:
+			HapticFeedback.trigger_haptic(HapticFeedback.HapticType.SUCCESS)
+		StyleScoreManager.TimingQuality.GREAT:
+			HapticFeedback.trigger_haptic(HapticFeedback.HapticType.MEDIUM)
+		StyleScoreManager.TimingQuality.GOOD:
+			HapticFeedback.trigger_haptic(HapticFeedback.HapticType.LIGHT)
+	
+	# Track successful moves for 4th beat requirement
+	if timing_result.timing == StyleScoreManager.TimingQuality.PERFECT or timing_result.timing == StyleScoreManager.TimingQuality.GREAT:
+		last_4th_beat_move = AudioManager.get_current_beat()
+		last_move_quality = timing_result.timing
+	
+	# Debug info
+	var timing_text = timing_result.name
+	if timing_result.timing == StyleScoreManager.TimingQuality.OFF_BEAT and timing_result.distance < 0.5:
+		timing_text = "too early" if timing_result.is_early else "too late"
+	
+	print("Move timing: ", timing_result.name, " Combo: ", timing_result.combo, 
+		  " Distance: ", int(timing_result.distance * 1000), "ms",
+		  " (", timing_text, ")")
+	
+	# Apply score multiplier
+	var base_score = 1
+	score += int(base_score * timing_result.multiplier)
+	update_ui()
+	
+	# Store timing info for visual feedback
+	set_meta("last_timing", timing_result)
+	
+	player.move(direction)
 
 func _on_player_died():
 	# Stop the guitar chord when player dies
 	AudioManager.stop_ambient_guitar()
+	# Game over haptic feedback
+	HapticFeedback.on_game_over()
 	is_game_over = true
 	if game_over_panel:
 		game_over_panel.visible = true
@@ -319,6 +358,9 @@ func _on_player_died():
 func _on_coin_collected():
 	# Increment coin count
 	coins += 1
+	
+	# Haptic feedback for coin collection
+	HapticFeedback.on_coin_collect()
 	
 	# Add to score based on current multiplier
 	var multiplier = style_score_manager.get_current_multiplier()
@@ -334,8 +376,12 @@ func _on_player_moved():
 	# Stop the guitar chord when movement ends
 	AudioManager.stop_ambient_guitar()
 	# Score is now handled by timing system in _on_swipe_detected
+	pass
 
 func _on_player_hit_wall():
+	# Haptic feedback for wall collision
+	HapticFeedback.on_wall_hit()
+	
 	# Queue wall hit tom fill to play on next 8th note (much more responsive!)
 	pending_wall_hits_8th += 1
 	print("Wall hit - tom fill queued for next 8th note")
@@ -400,6 +446,10 @@ func _on_combo_changed(new_combo: int, _multiplier_increased: bool = false):
 	# Play combo sound through AudioManager
 	if new_combo > 0 and new_combo <= 8:
 		AudioManager.play_combo_sound(new_combo, _multiplier_increased)
+	
+	# Haptic feedback for combos
+	if new_combo > 0:
+		HapticFeedback.trigger_combo_pattern(new_combo)
 
 # Old combo music function removed - now handled in _on_combo_changed
 
@@ -488,8 +538,9 @@ func return_to_menu():
 	if LevelEditorData.is_launched_from_editor():
 		return_to_level_editor()
 	else:
-		# For now, just restart the game
-		start_game()
+		# Return to main menu
+		print("[GameManager] Returning to main menu")
+		get_tree().change_scene_to_file("res://scenes/MainMenu.tscn")
 
 func return_to_level_editor():
 	print("=== RETURNING TO LEVEL EDITOR ===")
@@ -524,9 +575,131 @@ func _on_goal_reached():
 	# Stop the guitar if playing
 	AudioManager.stop_ambient_guitar()
 	
+	# Level complete haptic feedback
+	HapticFeedback.on_level_complete()
+	
 	print("Level completed! Time: ", level_complete_time, " seconds")
-	print("Coins collected: ", coins)
+	print("Coins collected: ", coins, " Score: ", score)
 	print("Style accuracy: ", style_score_manager.get_accuracy(), "%")
+	
+	# Update GameData with completion
+	GameData.complete_level(current_level, score, coins, level_complete_time)
 	
 	# Show results screen
 	show_results_screen()
+
+func show_go_message():
+	# Create GO label
+	var go_label = Label.new()
+	go_label.text = "GO!"
+	go_label.add_theme_font_size_override("font_size", 72)
+	go_label.add_theme_color_override("font_color", Color(1, 1, 1))
+	go_label.add_theme_color_override("font_shadow_color", Color(0, 0, 0))
+	go_label.add_theme_constant_override("shadow_offset_x", 4)
+	go_label.add_theme_constant_override("shadow_offset_y", 4)
+	
+	# Center it on screen
+	go_label.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
+	
+	if ui_layer:
+		ui_layer.add_child(go_label)
+	
+	# After 1 second, remove GO and start the game
+	await get_tree().create_timer(1.0).timeout
+	
+	go_label.queue_free()
+	
+	# NOW we start everything in sync
+	game_started = true
+	level_start_time = Time.get_ticks_msec() / 1000.0
+	print("[GameManager] Game started at: ", level_start_time)
+	
+	# Start beat tracking
+	print("[GameManager] Starting beat tracking")
+	AudioManager.start_beat_tracking()
+
+func initialize_effect_systems():
+	# Initialize ScreenShake system
+	screen_shake = ScreenShake.new()
+	add_child(screen_shake)
+	
+	# Set camera for screen shake once player is created
+	call_deferred("setup_screen_shake_camera")
+	
+	# Initialize ParticleManager
+	particle_manager = ParticleManager.new()
+	add_child(particle_manager)
+	
+	# Initialize LatencyCompensator
+	latency_compensator = LatencyCompensator.new()
+	add_child(latency_compensator)
+	latency_compensator.latency_measured.connect(_on_latency_measured)
+	
+	# Load saved calibration if available
+	if not latency_compensator.load_calibration():
+		latency_compensator.auto_detect_latency()
+	
+	# Initialize AudioAnalyzer
+	audio_analyzer = AudioAnalyzer.new()
+	add_child(audio_analyzer)
+	audio_analyzer.beat_detected.connect(_on_audio_beat_detected)
+	audio_analyzer.tempo_detected.connect(_on_tempo_detected)
+	
+	# Initialize BeatIndicator UI
+	beat_indicator_ui = BeatIndicatorUI.new()
+	ui_layer.add_child(beat_indicator_ui)
+	beat_indicator_ui.set_position_preset("bottom_center")
+	
+	# Initialize Background Reactive Elements
+	background_elements = BackgroundReactiveElements.new()
+	add_child(background_elements)
+	background_elements.z_index = -5  # Behind game elements
+	
+	# Initialize Grid Star Effect
+	var grid_star_script = preload("res://scripts/effects/GridStarEffect.gd")
+	grid_star_effect = grid_star_script.new()
+	add_child(grid_star_effect)
+	grid_star_effect.z_index = -3  # Behind game but in front of background
+	
+	# Initialize Mobile Controls
+	var mobile_controls_scene = preload("res://scenes/ui/MobileControls.tscn")
+	mobile_controls = mobile_controls_scene.instantiate()
+	add_child(mobile_controls)
+	mobile_controls.layer = 100  # On top of everything
+
+func setup_screen_shake_camera():
+	if player and player.get_node_or_null("Camera2D"):
+		screen_shake.set_camera(player.get_node("Camera2D"))
+
+func _on_latency_measured(latency_ms: float):
+	audio_latency_offset = latency_ms / 1000.0
+	print("[GameManager] Latency compensation set to: ", latency_ms, "ms")
+	
+	# Update latency display
+	if latency_label:
+		latency_label.text = "Latency: " + str(int(latency_ms)) + "ms"
+
+func _on_audio_beat_detected(strength: float, frequency_band: String):
+	# Enhanced beat detection from audio analysis
+	print("[GameManager] Audio beat detected - Strength: ", strength, " Band: ", frequency_band)
+	
+	# Could trigger additional visual effects based on frequency band
+	match frequency_band:
+		"bass":
+			# Bass beats could trigger screen shake or particle bursts
+			if screen_shake and strength > 0.8:
+				screen_shake.add_trauma(strength * 0.1)
+		"mid":
+			# Mid-frequency beats could affect UI pulsing
+			pass
+		"treble":
+			# Treble beats could trigger sparkle effects
+			pass
+
+func _on_tempo_detected(bpm: float):
+	print("[GameManager] Tempo detected: ", bpm, " BPM")
+	
+	# Update beat indicator with detected tempo
+	if beat_indicator_ui:
+		var beat_interval = 60.0 / bpm
+		beat_indicator_ui.set_beat_interval(beat_interval)

@@ -6,11 +6,11 @@
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_1"]
 shader = ExtResource("2_techno_bg")
 shader_parameter/grid_size = 64.0
-shader_parameter/line_thickness = 1.0
-shader_parameter/grid_color = Color(0, 0.5, 0.5, 0.3)
-shader_parameter/bg_color = Color(0, 0, 0.1, 1)
+shader_parameter/line_thickness = 5.0
+shader_parameter/grid_color = Color(0, 0.7, 0.7, 1)
+shader_parameter/bg_color = Color(0, 0, 0, 1)
 shader_parameter/pulse_strength = 0.3
-shader_parameter/wave_speed = 1.0
+shader_parameter/wave_speed = 2.0
 shader_parameter/wave_amplitude = 5.0
 shader_parameter/camera_position = Vector2(0, 0)
 shader_parameter/multiplier = 1.0
@@ -32,7 +32,7 @@ offset_left = -10000.0
 offset_top = -10000.0
 offset_right = 10000.0
 offset_bottom = 10000.0
-color = Color(0, 0, 0.1, 1)
+color = Color(0, 0, 0, 1)
 
 [node name="UILayer" type="CanvasLayer" parent="."]
 

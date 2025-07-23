@@ -31,6 +31,7 @@ var current_tile_label: Label
 var camera: Camera2D
 var file_dialog: FileDialog
 var current_filename = ""
+var file_browser_scene = preload("res://scenes/level_editor/FileBrowser.tscn")
 
 # Click and drag support
 var is_dragging = false
@@ -49,8 +50,16 @@ const BEAT_GUIDE_COLORS = {
 }
 
 @onready var ui_layer = $UI
-@onready var instructions_panel = $UI/Instructions
 @onready var grid_node = $Grid
+@onready var status_label = $UI/StatusBar/StatusLabel
+@onready var coordinates_label = $UI/StatusBar/CoordinatesLabel
+@onready var file_button = $UI/TopBar/ToolButtons/FileButton
+@onready var edit_button = $UI/TopBar/ToolButtons/EditButton
+@onready var view_button = $UI/TopBar/ToolButtons/ViewButton
+@onready var play_button = $UI/TopBar/ToolButtons/PlayButton
+@onready var save_button = $UI/TopBar/ToolButtons/SaveButton
+@onready var load_button = $UI/TopBar/ToolButtons/LoadButton
+
 
 # Waypoint system
 var waypoints = {}  # Dictionary of grid_pos -> letter
@@ -121,13 +130,54 @@ func _ready():
 	print("Level Editor Ready!")
 	print("Keys 1-5: Tile types (6: Eraser) | Click: Place | Right-click: Erase")
 	print("Ctrl+S: Save | L: Load into game | C: Clear | N: Change size")
-	print("Arrow keys: Move camera")
+	print("Arrow keys: Move camera | Scroll wheel: Zoom in/out")
 
 func setup_camera():
 	camera = Camera2D.new()
 	camera.position = Vector2(level_width * GRID_SIZE / 2, level_height * GRID_SIZE / 2)
 	add_child(camera)
 	camera.make_current()
+	
+	# Calculate zoom to fit entire level on screen
+	var window_size = get_window().size
+	var level_size = Vector2(level_width * GRID_SIZE, level_height * GRID_SIZE)
+	
+	# Add minimal padding (5% border) to see more of the level
+	var padding_factor = 1.05
+	var zoom_x = window_size.x / (level_size.x * padding_factor)
+	var zoom_y = window_size.y / (level_size.y * padding_factor)
+	
+	# Use the smaller zoom factor to ensure entire level fits
+	var zoom_factor = min(zoom_x, zoom_y)
+	# Make it even more zoomed out by default
+	zoom_factor *= 0.8
+	camera.zoom = Vector2(zoom_factor, zoom_factor)
+	
+	print("[LevelEditor] Camera zoom set to: ", zoom_factor, " to fit level size: ", level_size)
+
+func update_camera_for_level_size():
+	if not camera:
+		return
+		
+	# Center camera on level
+	camera.position = Vector2(level_width * GRID_SIZE / 2, level_height * GRID_SIZE / 2)
+	
+	# Calculate zoom to fit entire level on screen
+	var window_size = get_window().size
+	var level_size = Vector2(level_width * GRID_SIZE, level_height * GRID_SIZE)
+	
+	# Add minimal padding (5% border) to see more of the level
+	var padding_factor = 1.05
+	var zoom_x = window_size.x / (level_size.x * padding_factor)
+	var zoom_y = window_size.y / (level_size.y * padding_factor)
+	
+	# Use the smaller zoom factor to ensure entire level fits
+	var zoom_factor = min(zoom_x, zoom_y)
+	# Make it even more zoomed out by default
+	zoom_factor *= 0.8
+	camera.zoom = Vector2(zoom_factor, zoom_factor)
+	
+	print("[LevelEditor] Updated camera for level size: ", level_size, " with zoom: ", zoom_factor)
 
 func setup_file_dialog():
 	# We won't use FileDialog, just append to a fixed file
@@ -180,10 +230,42 @@ func setup_tilemap():
 	clear_level()
 
 func setup_ui():
-	current_tile_label = $UI/CurrentTile
+	current_tile_label = $UI/TopBar/CurrentTilePanel/CurrentTileLabel
 	update_current_tile_display()
+	
+	# Connect button signals
+	if file_button:
+		file_button.pressed.connect(_on_file_button_pressed)
+	if edit_button:
+		edit_button.pressed.connect(_on_edit_button_pressed)
+	if view_button:
+		view_button.pressed.connect(_on_view_button_pressed)
+	if play_button:
+		play_button.pressed.connect(load_into_game)
+	if save_button:
+		save_button.pressed.connect(save_level)
+	if load_button:
+		load_button.pressed.connect(_on_load_button_pressed)
+	
+	# Update status
+	if status_label:
+		status_label.text = "Ready"
 
 func _input(event):
+	# Handle mouse wheel zoom
+	if event is InputEventMouseButton:
+		if event.pressed:
+			if event.button_index == MOUSE_BUTTON_WHEEL_UP:
+				# Zoom in
+				camera.zoom *= 1.1
+				camera.zoom = camera.zoom.clamp(Vector2(0.1, 0.1), Vector2(5.0, 5.0))
+				print("[LevelEditor] Zoom in: ", camera.zoom.x)
+			elif event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
+				# Zoom out
+				camera.zoom *= 0.9
+				camera.zoom = camera.zoom.clamp(Vector2(0.1, 0.1), Vector2(5.0, 5.0))
+				print("[LevelEditor] Zoom out: ", camera.zoom.x)
+	
 	# Handle tool selection
 	if event is InputEventKey and event.pressed:
 		match event.keycode:
@@ -247,7 +329,7 @@ func _input(event):
 					calculate_ghost_path()
 	
 	# Handle mouse input for tile placement
-	if event is InputEventMouseButton:
+	if event is InputEventMouseButton and event.button_index != MOUSE_BUTTON_WHEEL_UP and event.button_index != MOUSE_BUTTON_WHEEL_DOWN:
 		var grid_pos = world_to_grid(get_global_mouse_position())
 		
 		if event.button_index == MOUSE_BUTTON_LEFT:
@@ -297,8 +379,12 @@ func _input(event):
 	
 	# Handle mouse motion for dragging
 	elif event is InputEventMouseMotion:
+		# Update coordinates display
+		var grid_pos = world_to_grid(get_global_mouse_position())
+		if coordinates_label and is_valid_grid_position(grid_pos):
+			coordinates_label.text = "%d, %d" % [grid_pos.x, grid_pos.y]
+		
 		if is_dragging:
-			var grid_pos = world_to_grid(get_global_mouse_position())
 			if is_valid_grid_position(grid_pos) and grid_pos != last_placed_position:
 				if Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT):
 					place_tile(grid_pos, current_tile_type)
@@ -319,13 +405,13 @@ func place_tile(grid_pos: Vector2i, tile_type: TileType):
 		# Erase tile - also remove waypoint if present
 		tilemap.set_cell(0, grid_pos, -1)
 		if grid_pos in waypoints:
-			remove_waypoint(grid_pos)
+			remove_waypoint_at_position(grid_pos)  # Use new function for erasers too
 	elif tile_type == TileType.WAYPOINT:
 		# Handle waypoint placement
 		if grid_pos in waypoints:
-			# Already has a waypoint, remove it
+			# Already has a waypoint, remove it and allow replacement
 			var letter = waypoints[grid_pos]
-			remove_waypoint(grid_pos)
+			remove_waypoint_at_position(grid_pos)  # New function for position-specific removal
 			tilemap.set_cell(0, grid_pos, -1)  # Remove the tile
 			print("Removed waypoint '", letter, "' at ", grid_pos)
 			return
@@ -343,7 +429,10 @@ func place_tile(grid_pos: Vector2i, tile_type: TileType):
 		if grid_pos in waypoints:
 			remove_waypoint(grid_pos)
 	
-	print("Placed ", get_tile_type_name(tile_type), " at ", grid_pos)
+	var tile_name = get_tile_type_name(tile_type)
+	print("Placed ", tile_name, " at ", grid_pos)
+	if status_label:
+		status_label.text = "Placed %s at (%d, %d)" % [tile_name, grid_pos.x, grid_pos.y]
 
 func get_tile_type_name(tile_type: TileType) -> String:
 	match tile_type:
@@ -393,28 +482,46 @@ func remove_waypoint(grid_pos: Vector2i):
 	var letter = waypoints[grid_pos]
 	var index = waypoint_order.find(grid_pos)
 	
-	# Only allow removing the most recent waypoint
+	# Only allow removing the most recent waypoint (for keyboard usage)
 	if index == waypoint_order.size() - 1:
-		waypoints.erase(grid_pos)
-		waypoint_order.remove_at(index)
-		
-		# Roll back to previous letter
-		if waypoint_order.size() == 0:
-			next_waypoint_letter = 'a'
-		else:
-			# Get the last waypoint's letter and advance from there
-			var last_pos = waypoint_order[-1]
-			var last_letter = waypoints[last_pos]
-			var next_char_code = last_letter.unicode_at(0) + 1
-			if next_char_code <= 'z'.unicode_at(0):
-				next_waypoint_letter = char(next_char_code)
-			else:
-				next_waypoint_letter = 'z'  # Cap at 'z'
-		
-		update_current_tile_display()
-		queue_redraw()
+		remove_waypoint_at_position(grid_pos)
 	else:
 		print("Can only remove the most recent waypoint (currently '%s')" % [waypoints[waypoint_order[-1]]])
+
+func remove_waypoint_at_position(grid_pos: Vector2i):
+	# New function: Remove waypoint at any position and rebuild sequence
+	if not grid_pos in waypoints:
+		return
+		
+	var letter = waypoints[grid_pos]
+	var index = waypoint_order.find(grid_pos)
+	
+	# Remove the waypoint
+	waypoints.erase(grid_pos)
+	waypoint_order.remove_at(index)
+	
+	# Rebuild the waypoint letter sequence to maintain order
+	rebuild_waypoint_sequence()
+	
+	update_current_tile_display()
+	queue_redraw()
+	print("Removed waypoint '", letter, "' and rebuilt sequence")
+
+func rebuild_waypoint_sequence():
+	# Rebuild waypoint letters to be sequential (a, b, c, etc.)
+	var new_waypoints = {}
+	var current_letter = 'a'
+	
+	for pos in waypoint_order:
+		new_waypoints[pos] = current_letter
+		var next_char_code = current_letter.unicode_at(0) + 1
+		if next_char_code <= 'z'.unicode_at(0):
+			current_letter = char(next_char_code)
+		else:
+			current_letter = 'z'  # Cap at 'z'
+	
+	waypoints = new_waypoints
+	next_waypoint_letter = current_letter
 
 func _draw():
 	# Draw waypoint path
@@ -494,57 +601,98 @@ func draw_dotted_line(start: Vector2, end: Vector2, color: Color, width: float, 
 		current_distance += dash_length
 		draw_dash = not draw_dash
 
-func load_test_notes():
-	print("Loading test notes level...")
-	# Get the test notes template
-	var template = LevelTemplates.get_test_notes()
+func load_level_from_json(path: String):
+	print("Loading level from: ", path)
+	var file = FileAccess.open(path, FileAccess.READ)
+	if not file:
+		print("ERROR: Could not open file: ", path)
+		return false
+		
+	var json_text = file.get_as_text()
+	file.close()
 	
-	# Update level dimensions
-	level_height = template.size()
-	if level_height > 0:
-		level_width = template[0].length()
+	var json = JSON.new()
+	var parse_result = json.parse(json_text)
+	if parse_result != OK:
+		print("ERROR: Failed to parse JSON: ", json.get_error_message())
+		return false
 	
-	# Clear existing tiles
+	var data = json.data
+	
+	# Load metadata
+	if data.has("metadata"):
+		var meta = data.metadata
+		level_width = meta.get("width", 11)
+		level_height = meta.get("height", 20)
+		print("Level: ", meta.get("name", "Unnamed"), " (", level_width, "x", level_height, ")")
+	
+	# Clear existing level
 	tilemap.clear()
-	
-	# Clear waypoints
 	waypoints.clear()
 	waypoint_order.clear()
 	next_waypoint_letter = 'a'
 	
-	# Populate tilemap from template
-	for y in range(level_height):
-		var row = template[y]
-		for x in range(row.length()):
-			var cell = row[x]
-			match cell:
-				'#':
-					tilemap.set_cell(0, Vector2i(x, y), 0, Vector2i(TileType.WALL, 0))
-				'C':
-					tilemap.set_cell(0, Vector2i(x, y), 0, Vector2i(TileType.COIN, 0))
-				'S':
-					tilemap.set_cell(0, Vector2i(x, y), 0, Vector2i(TileType.SPIKE, 0))
-				'P':
-					tilemap.set_cell(0, Vector2i(x, y), 0, Vector2i(TileType.PLAYER_SPAWN, 0))
-				'G':
-					tilemap.set_cell(0, Vector2i(x, y), 0, Vector2i(TileType.GOAL, 0))
-				'.':
-					tilemap.set_cell(0, Vector2i(x, y), -1)  # Empty
-				_:
-					# Check if it's a lowercase letter (waypoint)
-					if cell >= 'a' and cell <= 'z':
-						add_waypoint(Vector2i(x, y))
-						tilemap.set_cell(0, Vector2i(x, y), 0, Vector2i(TileType.WAYPOINT, 0))
-					else:
-						tilemap.set_cell(0, Vector2i(x, y), -1)  # Default to empty
+	# Load tiles
+	if data.has("tiles"):
+		var tiles = data.tiles
+		for y in range(min(tiles.size(), level_height)):
+			var row = tiles[y]
+			for x in range(min(row.size(), level_width)):
+				var cell = row[x]
+				match cell:
+					'#':
+						tilemap.set_cell(0, Vector2i(x, y), 0, Vector2i(TileType.WALL, 0))
+					'C':
+						tilemap.set_cell(0, Vector2i(x, y), 0, Vector2i(TileType.COIN, 0))
+					'S':
+						tilemap.set_cell(0, Vector2i(x, y), 0, Vector2i(TileType.SPIKE, 0))
+					'P':
+						tilemap.set_cell(0, Vector2i(x, y), 0, Vector2i(TileType.PLAYER_SPAWN, 0))
+					'G':
+						tilemap.set_cell(0, Vector2i(x, y), 0, Vector2i(TileType.GOAL, 0))
+					'.':
+						tilemap.set_cell(0, Vector2i(x, y), -1)  # Empty
+					_:
+						# Check if it's a lowercase letter (waypoint)
+						if typeof(cell) == TYPE_STRING and cell.length() == 1:
+							var char_code = cell.unicode_at(0)
+							if char_code >= 'a'.unicode_at(0) and char_code <= 'z'.unicode_at(0):
+								# It's a waypoint
+								var pos = Vector2i(x, y)
+								waypoints[pos] = cell
+								waypoint_order.append(pos)
+								tilemap.set_cell(0, pos, 0, Vector2i(TileType.WAYPOINT, 0))
+								# Update next letter
+								if char_code >= next_waypoint_letter.unicode_at(0):
+									next_waypoint_letter = char(char_code + 1)
+									if next_waypoint_letter.unicode_at(0) > 'z'.unicode_at(0):
+										next_waypoint_letter = 'z'
 	
-	# Center camera on the loaded level
-	camera.position = Vector2(level_width * GRID_SIZE / 2, level_height * GRID_SIZE / 2)
+	# Load waypoint data if available (for proper ordering)
+	if data.has("waypoints") and data.waypoints.has("order"):
+		var wp_data = data.waypoints
+		waypoint_order.clear()
+		for pos_array in wp_data.order:
+			if pos_array.size() >= 2:
+				var pos = Vector2i(pos_array[0], pos_array[1])
+				if pos in waypoints:
+					waypoint_order.append(pos)
 	
-	# Redraw to show grid
+	# Update camera and redraw
+	update_camera_for_level_size()
 	queue_redraw()
 	if grid_node:
 		grid_node.queue_redraw()
+	
+	update_current_tile_display()
+	if status_label:
+		status_label.text = "Loaded: " + path.get_file()
+	
+	return true
+
+func load_test_notes():
+	print("Loading default level from JSON...")
+	load_level_from_json("res://levels/default_level.json")
 
 func load_big_level():
 	print("Loading big level...")
@@ -589,8 +737,8 @@ func load_big_level():
 					else:
 						tilemap.set_cell(0, Vector2i(x, y), -1)  # Default to empty
 	
-	# Center camera on the loaded level
-	camera.position = Vector2(level_width * GRID_SIZE / 2, level_height * GRID_SIZE / 2)
+	# Recalculate camera zoom and position for new level size
+	update_camera_for_level_size()
 	
 	# Redraw to show grid
 	queue_redraw()
@@ -622,11 +770,31 @@ func clear_level():
 
 func save_level():
 	print("Saving level...")
-	var level_template = []
 	
-	# Convert tilemap to template format
+	# Build the level data structure
+	var level_data = {
+		"metadata": {
+			"name": current_filename.get_basename() if current_filename != "" else "Untitled",
+			"author": "Level Editor",
+			"created": Time.get_datetime_string_from_system(),
+			"version": 1,
+			"width": level_width,
+			"height": level_height
+		},
+		"tiles": [],
+		"waypoints": {
+			"order": [],
+			"positions": {}
+		},
+		"settings": {
+			"beats_per_minute": 120,
+			"cells_per_beat": CELLS_PER_BEAT
+		}
+	}
+	
+	# Convert tilemap to JSON format
 	for y in range(level_height):
-		var row = ""
+		var row = []
 		for x in range(level_width):
 			var grid_pos = Vector2i(x, y)
 			var cell_char = "."
@@ -652,58 +820,51 @@ func save_level():
 						TileType.WAYPOINT:
 							# This shouldn't happen since we check waypoints first
 							cell_char = "."
-		
-			row += cell_char
-		level_template.append(row)
+			
+			row.append(cell_char)
+		level_data.tiles.append(row)
 	
-	# Get current timestamp
-	var datetime = Time.get_datetime_dict_from_system()
-	var timestamp = "%04d-%02d-%02d %02d:%02d:%02d" % [
-		datetime.year, datetime.month, datetime.day,
-		datetime.hour, datetime.minute, datetime.second
-	]
+	# Add waypoint data
+	for pos in waypoint_order:
+		level_data.waypoints.order.append([pos.x, pos.y])
+		level_data.waypoints.positions[str(pos.x) + "," + str(pos.y)] = waypoints[pos]
 	
-	# Append to test levels file
-	var file = FileAccess.open("res://levels/test_levels.txt", FileAccess.WRITE_READ)
-	if not file:
-		# Create file if it doesn't exist
-		file = FileAccess.open("res://levels/test_levels.txt", FileAccess.WRITE)
-	else:
-		# Move to end of file
-		file.seek_end()
+	# Save to JSON file
+	var json = JSON.new()
+	var json_string = json.stringify(level_data, "\t")
 	
+	# Find next available filename
+	var base_name = "level_"
+	var number = 1
+	var file_path = ""
+	
+	# Check for existing files and find next number
+	while true:
+		file_path = "res://levels/custom/%s%03d.json" % [base_name, number]
+		if not FileAccess.file_exists(file_path):
+			break
+		number += 1
+	
+	var file = FileAccess.open(file_path, FileAccess.WRITE)
 	if file:
-		# Write header comment
-		file.store_line("")
-		file.store_line("# Level created: " + timestamp)
-		file.store_line("# Size: %dx%d" % [level_width, level_height])
-		file.store_line("# Description: [Add description here]")
-		if waypoint_order.size() > 0:
-			var path_str = ""
-			for pos in waypoint_order:
-				path_str += waypoints[pos] + " "
-			file.store_line("# Perfect path: " + path_str.strip_edges())
-		file.store_line("")
-		
-		# Write level data
-		for row in level_template:
-			file.store_line(row)
-		
+		file.store_string(json_string)
 		file.close()
-		print("Level appended to res://levels/test_levels.txt")
-		print("Timestamp: " + timestamp)
+		current_filename = "custom/" + file_path.get_file()
+		print("Level saved to: ", file_path)
+		if status_label:
+			status_label.text = "Saved: " + file_path.get_file()
 		
-		# Also print to console for easy copying
-		print("Level template (copy this to LevelTemplates.gd):")
+		# Also print a summary
+		print("Level: ", level_width, "x", level_height)
 		if waypoint_order.size() > 0:
 			var path_str = ""
 			for pos in waypoint_order:
 				path_str += waypoints[pos] + "->"
-			print("# Perfect path: ", path_str.trim_suffix("->"))
-		for i in range(level_template.size()):
-			print('		"', level_template[i], '",  # Row ', i)
+			print("Perfect path: ", path_str.trim_suffix("->"))
 	else:
-		print("Failed to save level!")
+		print("ERROR: Failed to save level!")
+		if status_label:
+			status_label.text = "Error: Failed to save"
 
 func load_into_game():
 	print("=== LOADING LEVEL INTO GAME ===")
@@ -821,8 +982,8 @@ func restore_from_backup(backup):
 			if tile_type != -1:
 				tilemap.set_cell(0, Vector2i(x, y), 0, Vector2i(tile_type, 0))
 	
-	# Center camera on the restored level
-	camera.position = Vector2(level_width * GRID_SIZE / 2, level_height * GRID_SIZE / 2)
+	# Update camera for restored level size
+	update_camera_for_level_size()
 	print("Level restored successfully")
 
 func new_level_dialog():
@@ -854,9 +1015,8 @@ func new_level_dialog():
 	# Clear and resize
 	clear_level()
 	
-	# Update camera position
-	if camera:
-		camera.position = Vector2(level_width * GRID_SIZE / 2, level_height * GRID_SIZE / 2)
+	# Update camera for new level size
+	update_camera_for_level_size()
 
 func calculate_ghost_path():
 	print("\n=== CALCULATING GHOST PATH ===")
@@ -895,3 +1055,40 @@ func calculate_ghost_path():
 	var result = calculator.calculate_ghost_path(level_template)
 	
 	print("\nPress Ctrl+G to recalculate ghost path")
+
+# Button handlers
+func _on_file_button_pressed():
+	print("File menu - TODO")
+	if status_label:
+		status_label.text = "File menu coming soon..."
+
+func _on_edit_button_pressed():
+	print("Edit menu - TODO")
+	if status_label:
+		status_label.text = "Edit menu coming soon..."
+
+func _on_view_button_pressed():
+	print("View menu - TODO")
+	if status_label:
+		status_label.text = "View menu coming soon..."
+
+func _on_load_button_pressed():
+	print("Opening file browser...")
+	open_file_browser()
+
+# File browser functions
+func open_file_browser():
+	var file_browser = file_browser_scene.instantiate()
+	ui_layer.add_child(file_browser)
+	file_browser.file_selected.connect(_on_file_selected)
+	file_browser.closed.connect(_on_file_browser_closed)
+
+func _on_file_selected(path: String):
+	print("Loading level: ", path)
+	if load_level_from_json(path):
+		current_filename = path.get_file()
+		if status_label:
+			status_label.text = "Loaded: " + current_filename
+
+func _on_file_browser_closed():
+	print("File browser closed")
