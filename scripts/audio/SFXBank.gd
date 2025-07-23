@@ -55,33 +55,45 @@ func play_random_tom_fill():
 	else:
 		hit_count = 2  # 60% chance (0.40 to 1.0)
 	
-	# Randomly select timing
-	# 40% quarter notes, 40% 8th notes, 20% 16th notes
+	# Calculate timing based on hit count to cap at 1.5 beats max
+	# 1.5 beats at 120 BPM = 0.75 seconds
+	var max_duration = 0.75
+	var max_spacing = max_duration / max(hit_count - 1, 1)  # Space between hits
+	
+	# Define note timing options but constrain by max duration
 	var timing_types = {
 		"quarter": 0.5,    # Quarter note at 120 BPM
 		"eighth": 0.25,    # 8th note at 120 BPM  
 		"sixteenth": 0.125 # 16th note at 120 BPM
 	}
 	
-	var timing_roll = randf()
-	var fill_spacing = 0.125  # Default to 16th notes
-	var timing_name = "sixteenth"
+	# Filter available timings based on hit count and max duration constraint
+	var available_timings = []
+	for timing_name in timing_types:
+		var spacing = timing_types[timing_name]
+		var total_duration = spacing * (hit_count - 1)
+		if total_duration <= max_duration:
+			available_timings.append({"name": timing_name, "spacing": spacing})
 	
-	if timing_roll < 0.20:
-		fill_spacing = timing_types["sixteenth"]
-		timing_name = "sixteenth"
-	elif timing_roll < 0.60:
-		fill_spacing = timing_types["eighth"] 
-		timing_name = "eighth"
-	else:
-		fill_spacing = timing_types["quarter"]
-		timing_name = "quarter"
+	# If no standard timing fits, use calculated max spacing
+	if available_timings.is_empty():
+		available_timings.append({"name": "custom", "spacing": max_spacing})
+	
+	# Randomly select from available timings
+	var selected_timing = available_timings[randi() % available_timings.size()]
+	var fill_spacing = selected_timing.spacing
+	var timing_name = selected_timing.name
 	
 	# Shuffle pool and select the number of hits we want
 	tom_pool.shuffle()
 	var selected_toms = tom_pool.slice(0, hit_count)
 	
-	print("[SFXBank] Tom fill: ", hit_count, " hits at ", timing_name, " note timing (", fill_spacing, "s)")
+	# Calculate actual duration for debug output
+	var actual_duration = fill_spacing * (hit_count - 1)
+	var beats_duration = actual_duration / 0.5  # Convert to beats (0.5s per beat at 120 BPM)
+	
+	print("[SFXBank] Tom fill: ", hit_count, " hits at ", timing_name, " timing")
+	print("  Spacing: ", snapped(fill_spacing, 0.001), "s, Total duration: ", snapped(actual_duration, 0.001), "s (", snapped(beats_duration, 0.1), " beats)")
 	
 	# Play the tom fill with the selected timing
 	var base_delay = 0.0
