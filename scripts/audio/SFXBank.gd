@@ -22,9 +22,40 @@ func play_coin_chime():
 		mixer.play_sound(coin_sound, "SFX", 0.0)
 
 func play_wall_hit():
-	var wall_sound = SoundBank.get_wall_hit()
-	if wall_sound:
-		mixer.play_sound(wall_sound, "SFX", 0.0)
+	# Create randomized tom fill instead of single wall hit sound
+	play_random_tom_fill()
+
+func play_random_tom_fill():
+	# Create a quick randomized tom fill using all 3 toms
+	# Tom volume is increased for better impact
+	var tom_volume = 3.0  # Increased volume for toms
+	
+	# Get all tom sounds
+	var tom_high = SoundBank.generate_tom_high()
+	var tom_mid = SoundBank.generate_tom_mid()
+	var tom_low = SoundBank.generate_tom_low()
+	
+	# Create array of toms and shuffle for random order
+	var toms = [
+		{"sound": tom_high, "name": "high"},
+		{"sound": tom_mid, "name": "mid"}, 
+		{"sound": tom_low, "name": "low"}
+	]
+	
+	# Shuffle the array for random order
+	toms.shuffle()
+	
+	# Play the tom fill in quick succession (16th note timing)
+	var base_delay = 0.0
+	var fill_spacing = 0.08  # 16th note at 120 BPM ≈ 0.125s, slightly faster for impact
+	
+	for i in range(toms.size()):
+		var tom_data = toms[i]
+		if tom_data.sound:
+			# Use a timer to create the fill timing
+			await get_tree().create_timer(base_delay + (i * fill_spacing)).timeout
+			mixer.play_sound(tom_data.sound, "SFX", tom_volume)
+			print("[SFXBank] Tom fill: ", tom_data.name, " tom at position ", i)
 
 func play_game_over():
 	var game_over_sound = SoundBank.get_game_over()
