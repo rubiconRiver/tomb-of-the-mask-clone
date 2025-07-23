@@ -19,7 +19,7 @@ func _ready():
 
 func play_combo_sound(combo: int, multiplier_increased: bool):
 	var combo_sound = SoundBank.get_combo_sound(combo)
-	if combo_sound.size() > 0:
+	if combo_sound:
 		var volume = 0.0 if multiplier_increased else -6.0
 		mixer.play_sound(combo_sound, "Melodic", volume)
 
@@ -31,7 +31,7 @@ func play_multiplier_note(multiplier: int):
 	
 	current_multiplier = multiplier
 	var mult_sound = SoundBank.get_multiplier_sound(multiplier)
-	if mult_sound.size() > 0:
+	if mult_sound:
 		mixer.play_sound(mult_sound, "Melodic", 0.0)
 
 func reset():
