@@ -49,8 +49,15 @@ const BEAT_GUIDE_COLORS = {
 }
 
 @onready var ui_layer = $UI
-@onready var instructions_panel = $UI/Instructions
 @onready var grid_node = $Grid
+@onready var status_label = $UI/StatusBar/StatusLabel
+@onready var coordinates_label = $UI/StatusBar/CoordinatesLabel
+@onready var file_button = $UI/TopBar/ToolButtons/FileButton
+@onready var edit_button = $UI/TopBar/ToolButtons/EditButton
+@onready var view_button = $UI/TopBar/ToolButtons/ViewButton
+@onready var play_button = $UI/TopBar/ToolButtons/PlayButton
+@onready var save_button = $UI/TopBar/ToolButtons/SaveButton
+@onready var load_button = $UI/TopBar/ToolButtons/LoadButton
 
 # Waypoint system
 var waypoints = {}  # Dictionary of grid_pos -> letter
@@ -221,8 +228,26 @@ func setup_tilemap():
 	clear_level()
 
 func setup_ui():
-	current_tile_label = $UI/CurrentTile
+	current_tile_label = $UI/TopBar/CurrentTilePanel/CurrentTileLabel
 	update_current_tile_display()
+	
+	# Connect button signals
+	if file_button:
+		file_button.pressed.connect(_on_file_button_pressed)
+	if edit_button:
+		edit_button.pressed.connect(_on_edit_button_pressed)
+	if view_button:
+		view_button.pressed.connect(_on_view_button_pressed)
+	if play_button:
+		play_button.pressed.connect(load_into_game)
+	if save_button:
+		save_button.pressed.connect(save_level)
+	if load_button:
+		load_button.pressed.connect(_on_load_button_pressed)
+	
+	# Update status
+	if status_label:
+		status_label.text = "Ready"
 
 func _input(event):
 	# Handle mouse wheel zoom
@@ -352,8 +377,12 @@ func _input(event):
 	
 	# Handle mouse motion for dragging
 	elif event is InputEventMouseMotion:
+		# Update coordinates display
+		var grid_pos = world_to_grid(get_global_mouse_position())
+		if coordinates_label and is_valid_grid_position(grid_pos):
+			coordinates_label.text = "%d, %d" % [grid_pos.x, grid_pos.y]
+		
 		if is_dragging:
-			var grid_pos = world_to_grid(get_global_mouse_position())
 			if is_valid_grid_position(grid_pos) and grid_pos != last_placed_position:
 				if Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT):
 					place_tile(grid_pos, current_tile_type)
@@ -398,7 +427,10 @@ func place_tile(grid_pos: Vector2i, tile_type: TileType):
 		if grid_pos in waypoints:
 			remove_waypoint(grid_pos)
 	
-	print("Placed ", get_tile_type_name(tile_type), " at ", grid_pos)
+	var tile_name = get_tile_type_name(tile_type)
+	print("Placed ", tile_name, " at ", grid_pos)
+	if status_label:
+		status_label.text = "Placed %s at (%d, %d)" % [tile_name, grid_pos.x, grid_pos.y]
 
 func get_tile_type_name(tile_type: TileType) -> String:
 	match tile_type:
@@ -967,3 +999,24 @@ func calculate_ghost_path():
 	var result = calculator.calculate_ghost_path(level_template)
 	
 	print("\nPress Ctrl+G to recalculate ghost path")
+
+# Button handlers
+func _on_file_button_pressed():
+	print("File menu - TODO")
+	if status_label:
+		status_label.text = "File menu coming soon..."
+
+func _on_edit_button_pressed():
+	print("Edit menu - TODO")
+	if status_label:
+		status_label.text = "Edit menu coming soon..."
+
+func _on_view_button_pressed():
+	print("View menu - TODO")
+	if status_label:
+		status_label.text = "View menu coming soon..."
+
+func _on_load_button_pressed():
+	print("Load dialog - TODO")
+	if status_label:
+		status_label.text = "Load dialog coming soon..."
