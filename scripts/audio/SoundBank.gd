@@ -14,7 +14,7 @@ const SAMPLE_RATE = 44100
 static var cached_sounds = {}
 static var _initialized = false
 #change this to change the theme.  It should match the name of the folder
-static var current_theme = "default"
+static var current_theme = "Kid"
 
 # Note mappings for melodic sounds
 static var note_names = {
@@ -64,7 +64,7 @@ static func set_theme(theme_name: String):
 static func get_available_themes() -> Array:
 	# Could scan the audio directory for available themes
 	# For now, just return known themes
-	return ["default"]
+	return ["default", "test", "Kid"]
 
 # ============================================
 # AUDIO FILE LOADING
