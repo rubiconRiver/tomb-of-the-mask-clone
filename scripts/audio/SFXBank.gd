@@ -25,6 +25,30 @@ func play_wall_hit():
 	# Create randomized tom fill instead of single wall hit sound
 	play_random_tom_fill()
 
+func play_great_tom_fill():
+	# Simplified 2-hit tom fill at half volume for GREAT timing
+	var tom_volume = 0.75  # Half of normal tom volume (1.5 / 2)
+	
+	# Get two different toms
+	var tom_high = SoundBank.generate_tom_high()
+	var tom_low = SoundBank.generate_tom_low()
+	
+	# Fixed 2-hit pattern with 8th note timing
+	var fill_spacing = 0.25  # 8th note at 120 BPM
+	
+	print("[SFXBank] Great tom fill: 2 hits at half volume")
+	
+	# Play first tom immediately
+	if tom_high:
+		mixer.play_sound(tom_high, "SFX", tom_volume)
+		print("[SFXBank] Hit 1: high tom (half volume)")
+	
+	# Play second tom after delay
+	await get_tree().create_timer(fill_spacing).timeout
+	if tom_low:
+		mixer.play_sound(tom_low, "SFX", tom_volume)
+		print("[SFXBank] Hit 2: low tom (half volume)")
+
 func play_random_tom_fill():
 	# Create a dynamic randomized tom fill with variable hit counts and timings
 	var tom_volume = 1.5  # Lowered from 3.0 for better balance

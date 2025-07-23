@@ -57,6 +57,12 @@ var pending_wall_hits_8th = 0    # For 8th note wall hit timing
 # 8th note tracking (0-7, resets every 2 beats)
 var eighth_note_count = 0
 
+# Bar tracking for double snare pattern (0-15, resets every 4 bars)
+var bar_eighth_count = 0
+
+# Current move timing quality (for wall hit tom fills)
+var current_move_quality = StyleScoreManager.TimingQuality.OFF_BEAT
+
 @onready var ui_layer = $UILayer
 @onready var score_label = $UILayer/ScoreLabel
 @onready var coins_label = $UILayer/CoinsLabel
@@ -180,6 +186,8 @@ func start_game():
 	pending_coin_chimes_8th = 0
 	pending_wall_hits_8th = 0
 	eighth_note_count = 0
+	bar_eighth_count = 0
+	current_move_quality = StyleScoreManager.TimingQuality.OFF_BEAT
 	last_4th_beat_move = -1
 	last_move_quality = StyleScoreManager.TimingQuality.OFF_BEAT
 	
@@ -288,6 +296,9 @@ func _on_eighth_note():
 	# Track which 8th note we're on (0-7, resets every 4 quarter notes)
 	eighth_note_count = (eighth_note_count + 1) % 8
 	
+	# Track which 8th note we're on across 4 bars (0-31, resets every 4 bars)
+	bar_eighth_count = (bar_eighth_count + 1) % 32
+	
 	# Play hi-hat
 	AudioManager.play_hihat()
 	
@@ -296,14 +307,27 @@ func _on_eighth_note():
 		AudioManager.drum_bank.play_kick()
 		print("[GameManager] Playing extra kick on half note after beat 1")
 	
+	# Add double snare on 3.5 beat of every 4th bar
+	# Position 7 within each bar = 3.5 beat
+	# 4th bar occurs at positions 24-31 in the 32-eighth-note cycle (bars 1-4 = 0-7, 8-15, 16-23, 24-31)
+	if eighth_note_count == 7 and bar_eighth_count >= 24:  # 3.5 beat of 4th bar
+		AudioManager.drum_bank.play_snare()
+		print("[GameManager] Playing double snare on 3.5 beat of 4th bar")
+	
 	# Play pending 8th note sounds
 	if pending_coin_chimes_8th > 0:
 		AudioManager.play_coin_collected()
 		pending_coin_chimes_8th -= 1
 	
+	# Handle timing-based tom fills
 	if pending_wall_hits_8th > 0:
-		AudioManager.play_wall_hit()
-		pending_wall_hits_8th -= 1
+		if pending_wall_hits_8th == 1:
+			# Perfect timing - full randomized tom fill
+			AudioManager.sfx_bank.play_random_tom_fill()
+		elif pending_wall_hits_8th == 2:
+			# Great timing - 2-hit tom fill at half volume
+			AudioManager.sfx_bank.play_great_tom_fill()
+		pending_wall_hits_8th = 0  # Reset after playing
 
 # Old audio functions removed - now handled by AudioManager
 func _on_swipe_detected(direction: Vector2):
@@ -324,6 +348,9 @@ func _on_swipe_detected(direction: Vector2):
 	
 	# Calculate timing and score
 	var timing_result = style_score_manager.register_move(AudioManager.get_beat_progress(), AudioManager.beat_interval)
+	
+	# Store timing quality for tom fill rewards
+	current_move_quality = timing_result.timing
 	
 	# Haptic feedback based on timing quality
 	match timing_result.timing:
@@ -394,9 +421,25 @@ func _on_player_hit_wall():
 	# Haptic feedback for wall collision
 	HapticFeedback.on_wall_hit()
 	
-	# Queue wall hit tom fill to play on next 8th note (much more responsive!)
-	pending_wall_hits_8th += 1
-	print("Wall hit - tom fill queued for next 8th note")
+	# Queue tom fill based on timing quality to play on next 8th note (beat-synchronized)
+	match current_move_quality:
+		StyleScoreManager.TimingQuality.PERFECT:
+			# Queue full randomized tom fill
+			pending_wall_hits_8th += 1
+			print("Perfect timing - full tom fill queued for next 8th note")
+		StyleScoreManager.TimingQuality.GREAT:
+			# Queue 2-hit tom fill at half volume  
+			pending_wall_hits_8th += 2  # Use different value to distinguish type
+			print("Great timing - 2-hit tom fill queued for next 8th note")
+		StyleScoreManager.TimingQuality.GOOD:
+			# No tom fill
+			print("Good timing - no tom fill")
+		_:
+			# Off-beat or other - no tom fill
+			print("Off-beat timing - no tom fill")
+	
+	# Reset timing quality for next move
+	current_move_quality = StyleScoreManager.TimingQuality.OFF_BEAT
 
 func update_ui():
 	if score_label:
