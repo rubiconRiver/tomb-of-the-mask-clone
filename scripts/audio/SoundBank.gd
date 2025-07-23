@@ -14,7 +14,7 @@ const SAMPLE_RATE = 44100
 static var cached_sounds = {}
 static var _initialized = false
 #change this to change the theme.  It should match the name of the folder
-static var current_theme = "Kid"
+static var current_theme = "default"
 
 # Note mappings for melodic sounds
 static var note_names = {
