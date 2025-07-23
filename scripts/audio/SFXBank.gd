@@ -27,7 +27,7 @@ func play_wall_hit():
 
 func play_random_tom_fill():
 	# Create a dynamic randomized tom fill with variable hit counts and timings
-	var tom_volume = 3.0  # Increased volume for toms
+	var tom_volume = 1.5  # Lowered from 3.0 for better balance
 	
 	# Get all tom sounds
 	var tom_high = SoundBank.generate_tom_high()

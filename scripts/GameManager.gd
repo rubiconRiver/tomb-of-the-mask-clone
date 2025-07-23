@@ -54,6 +54,9 @@ var pending_wall_hits = 0
 var pending_coin_chimes_8th = 0  # For 8th note coin timing
 var pending_wall_hits_8th = 0    # For 8th note wall hit timing
 
+# 8th note tracking (0-7, resets every 2 beats)
+var eighth_note_count = 0
+
 @onready var ui_layer = $UILayer
 @onready var score_label = $UILayer/ScoreLabel
 @onready var coins_label = $UILayer/CoinsLabel
@@ -176,6 +179,7 @@ func start_game():
 	pending_wall_hits = 0
 	pending_coin_chimes_8th = 0
 	pending_wall_hits_8th = 0
+	eighth_note_count = 0
 	last_4th_beat_move = -1
 	last_move_quality = StyleScoreManager.TimingQuality.OFF_BEAT
 	
@@ -281,8 +285,16 @@ func _on_beat(beat_count_param: int):
 			tween.tween_property(background.material, "shader_parameter/pulse_strength", 0.3, 0.3)
 
 func _on_eighth_note():
+	# Track which 8th note we're on (0-7, resets every 4 quarter notes)
+	eighth_note_count = (eighth_note_count + 1) % 8
+	
 	# Play hi-hat
 	AudioManager.play_hihat()
+	
+	# Add kick on half note after beat 1 (8th note position 1, which is between beats 1 and 2)
+	if eighth_note_count == 1:  # Half note after beat 1
+		AudioManager.drum_bank.play_kick()
+		print("[GameManager] Playing extra kick on half note after beat 1")
 	
 	# Play pending 8th note sounds
 	if pending_coin_chimes_8th > 0:
