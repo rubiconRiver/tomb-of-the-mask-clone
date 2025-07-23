@@ -229,6 +229,10 @@ func move(direction: Vector2):
 	move_direction = direction.normalized()
 	is_moving = true
 	
+	# Play whoosh sound for movement start
+	if AudioManager:
+		AudioManager.play_whoosh()
+	
 	# Store start position for tracking blocks traveled
 	set_meta("move_start_pos", position)
 	

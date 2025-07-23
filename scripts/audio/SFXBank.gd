@@ -94,6 +94,11 @@ func play_random_tom_fill():
 			mixer.play_sound(tom_data.sound, "SFX", tom_volume)
 			print("[SFXBank] Hit ", i + 1, ": ", tom_data.name, " tom")
 
+func play_whoosh():
+	var whoosh_sound = SoundBank.get_whoosh()
+	if whoosh_sound:
+		mixer.play_sound(whoosh_sound, "SFX", -3.0)  # Quieter, subtle
+
 func play_game_over():
 	var game_over_sound = SoundBank.get_game_over()
 	if game_over_sound:

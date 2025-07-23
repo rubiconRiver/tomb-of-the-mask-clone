@@ -134,6 +134,9 @@ func play_coin_collected():
 func play_wall_hit():
 	sfx_bank.play_wall_hit()
 
+func play_whoosh():
+	sfx_bank.play_whoosh()
+
 func play_game_over():
 	sfx_bank.play_game_over()
 

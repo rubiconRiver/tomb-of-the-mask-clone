@@ -127,6 +127,7 @@ static func _load_sfx_sounds():
 	
 	cached_sounds["wall_hit"] = _load_wav_file("sfx/wall_hit_" + current_theme + ".wav")
 	cached_sounds["game_over"] = _load_wav_file("sfx/game_over_" + current_theme + ".wav")
+	cached_sounds["whoosh"] = _load_wav_file("sfx/whoosh_" + current_theme + ".wav")
 
 static func get_coin_chime() -> AudioStream:
 	# Randomly select one of three coin variants
@@ -138,6 +139,9 @@ static func get_wall_hit() -> AudioStream:
 
 static func get_game_over() -> AudioStream:
 	return cached_sounds.get("game_over", null)
+
+static func get_whoosh() -> AudioStream:
+	return cached_sounds.get("whoosh", null)
 
 # ============================================
 # MELODIC SOUNDS
