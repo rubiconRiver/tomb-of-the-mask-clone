@@ -18,31 +18,21 @@ func _ready():
 
 func play_kick():
 	var kick_sound = SoundBank.get_kick()
-	if kick_sound.size() > 0:
+	if kick_sound:
 		mixer.play_sound(kick_sound, "Drums", 0.0)
 
 func play_snare():
 	var snare_sound = SoundBank.get_snare()
-	if snare_sound.size() > 0:
+	if snare_sound:
 		mixer.play_sound(snare_sound, "Drums", 0.0)
 
 func play_hihat():
 	var hihat_sound = SoundBank.get_hihat()
-	if hihat_sound.size() > 0:
+	if hihat_sound:
 		mixer.play_sound(hihat_sound, "Drums", -6.0)  # Quieter
 
 func play_tom_fill():
-	# Play the three toms in sequence
-	var sounds = [
-		SoundBank.cached_sounds.get("tom_high", PackedFloat32Array()),
-		SoundBank.cached_sounds.get("tom_mid", PackedFloat32Array()),
-		SoundBank.cached_sounds.get("tom_low", PackedFloat32Array())
-	]
-	
-	# Combine into one sound
-	var combined = PackedFloat32Array()
-	for sound in sounds:
-		combined.append_array(sound)
-	
-	if combined.size() > 0:
-		mixer.play_sound(combined, "Drums", 0.0)
+	# For file-based audio, we'll play the wall hit sound which is a tom fill
+	var tom_fill = SoundBank.get_wall_hit()
+	if tom_fill:
+		mixer.play_sound(tom_fill, "Drums", 0.0)

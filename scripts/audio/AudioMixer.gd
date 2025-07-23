@@ -92,7 +92,10 @@ func get_available_player(player_pool: Array) -> AudioStreamPlayer:
 	# If all playing, use the oldest one
 	return player_pool[0]
 
-func play_sound(audio_data: PackedFloat32Array, bus_type: String = "SFX", volume_adjustment: float = 0.0):
+func play_sound(audio_stream: AudioStream, bus_type: String = "SFX", volume_adjustment: float = 0.0):
+	if not audio_stream:
+		return null
+	
 	var player_pool = []
 	match bus_type:
 		"Drums":
@@ -108,28 +111,12 @@ func play_sound(audio_data: PackedFloat32Array, bus_type: String = "SFX", volume
 	
 	var player = get_available_player(player_pool)
 	if not player:
-		return player
+		return null
 	
-	# Create stream and setup
-	var stream = AudioStreamGenerator.new()
-	stream.mix_rate = SAMPLE_RATE
-	stream.buffer_length = 0.5
-	
-	player.stream = stream
+	# Simply assign the audio stream and play it
+	player.stream = audio_stream
 	player.volume_db = volume_adjustment
 	player.play()
-	
-	var playback = player.get_stream_playback() as AudioStreamGeneratorPlayback
-	if playback:
-		# Convert to stereo frames (no soft limiting - sounds are pre-normalized)
-		var stereo_frames = PackedVector2Array()
-		for sample in audio_data:
-			# Simple hard clip as failsafe only
-			var clamped = clamp(sample, -1.0, 1.0)
-			stereo_frames.append(Vector2(clamped, clamped))
-		
-		# Push all at once for better performance
-		playback.push_buffer(stereo_frames)
 	
 	return player
 
