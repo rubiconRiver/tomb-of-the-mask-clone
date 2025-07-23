@@ -102,6 +102,36 @@ godot --path . --export-release "iOS" "../ios exports/TechnoBeat.ipa"
 ## Ad Integration Notes
 - Use Godot's AdMob plugin for initial implementation
 - Place interstitial ads carefully to not disrupt flow
+
+## Audio System
+
+### Overview
+The game uses a file-based audio system with theme support. All sounds are loaded from WAV files organized by theme.
+
+### File Structure
+```
+assets/audio/[theme_name]/
+├── drums/       (kick, snare, hihat, toms)
+├── sfx/         (coins, wall hits, game over)
+├── melodic/     (combo notes, multiplier sounds)
+└── ambient/     (background sounds)
+```
+
+### Audio Flow
+1. **SoundBank** - Loads WAV files and returns AudioStream objects
+2. **AudioManager** - Main coordinator, routes sound requests
+3. **Subsystem Banks** - DrumBank, SFXBank, MelodicBank handle specific sound types
+4. **AudioMixer** - Manages AudioStreamPlayer pools and plays sounds on correct buses
+
+### Adding New Themes
+1. Create folder: `assets/audio/your_theme/`
+2. Add WAV files with same naming convention (e.g., `kick_yourtheme.wav`)
+3. Switch theme: `SoundBank.set_theme("your_theme")`
+
+### Key Functions
+- `AudioManager.play_coin_collected()` - Play coin sound
+- `AudioManager.play_wall_hit()` - Play wall hit sound
+- `AudioManager.play_beat_sound(beat_num)` - Play drum on beat
 - Rewarded ads for extra lives/continues
 
 ## Audio System Architecture
@@ -219,6 +249,61 @@ static func generate_synth_bass(note: float, duration: float) -> PackedFloat32Ar
 
 # Then use it anywhere:
 # AudioManager.play_synth_note(440.0)  # After adding the method
+
+## File-Based Audio System
+
+### Overview
+The audio system now loads WAV files from disk instead of generating sounds procedurally. This allows for:
+- Easy theme switching
+- Custom sound packs
+- Professional audio production workflows
+
+### File Structure
+```
+assets/audio/
+└── [theme_name]/
+    ├── drums/
+    │   ├── kick_[theme].wav
+    │   ├── snare_[theme].wav
+    │   ├── hihat_[theme].wav
+    │   └── ...
+    ├── sfx/
+    │   ├── coin_[theme]_1.wav
+    │   ├── coin_[theme]_2.wav
+    │   ├── coin_[theme]_3.wav
+    │   └── ...
+    ├── melodic/
+    │   ├── combo_[theme]_c4.wav
+    │   ├── combo_[theme]_d4.wav
+    │   └── ...
+    └── ambient/
+        └── guitar_chord_[theme].wav
+```
+
+### Testing Audio
+```bash
+# First, open in Godot editor to import WAV files
+godot --path . --editor
+
+# Then run the audio test
+godot --path . --script test_file_audio.gd
+
+# Or test in-game
+godot --path . --script test_audio.gd
+```
+
+### Adding New Themes
+1. Create a new folder under `assets/audio/` with your theme name
+2. Copy the default theme structure
+3. Replace WAV files with your custom sounds
+4. Use same naming convention
+5. Switch themes with: `SoundBank.set_theme("your_theme_name")`
+
+### Sound Naming Convention
+- **Drums**: `[type]_[theme].wav` (e.g., `kick_default.wav`)
+- **SFX**: `[type]_[theme]_[variant].wav` (e.g., `coin_default_1.wav`)
+- **Melodic**: `[type]_[theme]_[note].wav` (e.g., `combo_default_c4.wav`)
+- **Ambient**: `[type]_[theme].wav` (e.g., `guitar_chord_default.wav`)
 ```
 
 ## Collaboration Notes
