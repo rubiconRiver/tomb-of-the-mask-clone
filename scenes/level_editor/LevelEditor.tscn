@@ -80,6 +80,13 @@ text = "💾 Save"
 layout_mode = 2
 text = "📁 Load"
 
+[node name="VSeparator3" type="VSeparator" parent="UI/TopBar/ToolButtons"]
+layout_mode = 2
+
+[node name="AudioButton" type="Button" parent="UI/TopBar/ToolButtons"]
+layout_mode = 2
+text = "🎵 Audio"
+
 [node name="CurrentTilePanel" type="Panel" parent="UI/TopBar"]
 layout_mode = 1
 anchors_preset = 6

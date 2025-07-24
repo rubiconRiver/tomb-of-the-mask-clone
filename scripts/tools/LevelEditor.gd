@@ -59,6 +59,7 @@ const BEAT_GUIDE_COLORS = {
 @onready var play_button = $UI/TopBar/ToolButtons/PlayButton
 @onready var save_button = $UI/TopBar/ToolButtons/SaveButton
 @onready var load_button = $UI/TopBar/ToolButtons/LoadButton
+@onready var audio_button = $UI/TopBar/ToolButtons/AudioButton
 
 
 # Waypoint system
@@ -246,6 +247,8 @@ func setup_ui():
 		save_button.pressed.connect(save_level)
 	if load_button:
 		load_button.pressed.connect(_on_load_button_pressed)
+	if audio_button:
+		audio_button.pressed.connect(_on_audio_button_pressed)
 	
 	# Update status
 	if status_label:
@@ -1076,6 +1079,10 @@ func _on_load_button_pressed():
 	print("Opening file browser...")
 	open_file_browser()
 
+func _on_audio_button_pressed():
+	print("Opening audio editor...")
+	open_audio_editor()
+
 # File browser functions
 func open_file_browser():
 	var file_browser = file_browser_scene.instantiate()
@@ -1092,3 +1099,13 @@ func _on_file_selected(path: String):
 
 func _on_file_browser_closed():
 	print("File browser closed")
+
+# Audio editor functions
+func open_audio_editor():
+	var audio_editor_scene = load("res://scenes/level_editor/AudioEditor.tscn")
+	var audio_editor = audio_editor_scene.instantiate()
+	ui_layer.add_child(audio_editor)
+	audio_editor.closed.connect(_on_audio_editor_closed)
+
+func _on_audio_editor_closed():
+	print("Audio editor closed")
