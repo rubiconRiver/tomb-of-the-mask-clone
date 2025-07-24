@@ -239,9 +239,18 @@ func start_beat_tracking():
 		print("[AudioManager] WARNING: Beat tracking already started!")
 		return
 	
+	# Check again for custom patterns when starting (in case timing was off)
+	print("[AudioManager] Checking for custom patterns before starting beat tracking...")
+	load_custom_pattern_if_available()
+	
 	print("[AudioManager] === STARTING BEAT TRACKING ===")
 	start_time = Time.get_ticks_msec() / 1000.0
 	print("[AudioManager] Start time: ", start_time)
+	
+	if custom_pattern_data:
+		print("[AudioManager] 🎵 Using CUSTOM pattern for gameplay")
+	else:
+		print("[AudioManager] 🎵 Using DEFAULT pattern for gameplay")
 	
 	# Initialize timing diagnostics NOW
 	timing_diagnostics = AudioTimingDiagnostics.new(beat_interval)

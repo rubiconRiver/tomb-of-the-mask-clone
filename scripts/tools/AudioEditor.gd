@@ -748,10 +748,14 @@ func advance_step():
 		print("[AudioEditor] Pattern loop completed")
 
 func load_pattern_data(pattern_data):
-	print("[AudioEditor] Loading pattern data...")
+	print("[AudioEditor] ===== LOADING PATTERN DATA =====")
 	print("  BPM: ", pattern_data.bpm)
 	print("  Theme: ", pattern_data.theme)
+	print("  Level: ", pattern_data.get("level_name", "Unknown"))
 	print("  Pattern tracks: ", pattern_data.patterns.keys())
+	print("  UI ready check - bpm_slider: ", bpm_slider != null)
+	print("  UI ready check - theme_option: ", theme_option != null)
+	print("  UI ready check - track_widgets: ", track_widgets.size())
 	
 	# Set BPM
 	update_bpm(pattern_data.bpm)
@@ -848,18 +852,36 @@ func load_pattern_from_file(filename: String):
 	print("[AudioEditor] Pattern loaded from: ", filename)
 
 func update_ui_from_patterns():
+	print("[AudioEditor] ===== UPDATING UI FROM PATTERNS =====")
 	# Update step buttons to reflect loaded patterns
 	for track_type in TrackType.values():
+		var track_name = TRACK_NAMES[track_type]
+		print("  Updating track: ", track_name)
+		print("    track_type in track_widgets: ", track_type in track_widgets)
+		print("    track_type in patterns: ", track_type in patterns)
+		
 		if track_type in track_widgets and track_type in patterns:
 			var track_widget = track_widgets[track_type]
 			var step_buttons = track_widget.get_meta("step_buttons", [])
+			print("    Found ", step_buttons.size(), " step buttons")
+			print("    Pattern data: ", patterns[track_type])
+			
+			var buttons_updated = 0
 			for i in range(min(step_buttons.size(), patterns[track_type].size())):
 				var button = step_buttons[i]
-				button.button_pressed = patterns[track_type][i]
+				var is_active = patterns[track_type][i]
+				button.button_pressed = is_active
 				
-				if button.button_pressed:
+				if is_active:
 					button.add_theme_color_override("font_outline_color", TRACK_COLORS[track_type])
 					button.add_theme_constant_override("outline_size", 3)
+					buttons_updated += 1
 				else:
 					button.remove_theme_color_override("font_outline_color")
 					button.remove_theme_constant_override("outline_size")
+			
+			print("    ✓ Updated ", buttons_updated, " active buttons for ", track_name)
+		else:
+			print("    ✗ Skipped ", track_name, " - not ready")
+	
+	print("[AudioEditor] ===== UI UPDATE COMPLETE =====")

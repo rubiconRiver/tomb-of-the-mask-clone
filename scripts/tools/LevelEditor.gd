@@ -693,13 +693,22 @@ func load_level_from_json(path: String):
 	# Load audio pattern if available
 	if data.has("audio_pattern") and data.audio_pattern != null:
 		level_audio_pattern = data.audio_pattern
-		print("[LevelEditor] Loaded audio pattern:")
+		print("[LevelEditor] ✓ Loaded audio pattern from file:")
 		print("  BPM: ", level_audio_pattern.bpm)
 		print("  Theme: ", level_audio_pattern.theme)
-		print("  Pattern tracks: ", level_audio_pattern.patterns.keys())
+		print("  Level name: ", level_audio_pattern.get("level_name", "Unknown"))
+		if level_audio_pattern.has("patterns"):
+			for track in level_audio_pattern.patterns:
+				var active_count = level_audio_pattern.patterns[track].count(true)
+				print("  ", track, ": ", active_count, " active steps")
+		else:
+			print("  WARNING: No patterns data in audio_pattern!")
 	else:
 		level_audio_pattern = null
 		print("[LevelEditor] No audio pattern found in level file")
+		print("  data.has('audio_pattern'): ", data.has("audio_pattern"))
+		if data.has("audio_pattern"):
+			print("  data.audio_pattern is null: ", data.audio_pattern == null)
 	
 	update_current_tile_display()
 	if status_label:
