@@ -67,6 +67,9 @@ var waypoints = {}  # Dictionary of grid_pos -> letter
 var waypoint_order = []  # Array of grid positions in order
 var next_waypoint_letter = 'a'  # Start with 'a'
 
+# Audio pattern system
+var level_audio_pattern = null  # Stores the audio pattern from AudioEditor
+
 func _ready():
 	# Override project's mobile viewport settings for level editor
 	get_window().content_scale_mode = Window.CONTENT_SCALE_MODE_DISABLED
@@ -687,9 +690,23 @@ func load_level_from_json(path: String):
 	if grid_node:
 		grid_node.queue_redraw()
 	
+	# Load audio pattern if available
+	if data.has("audio_pattern") and data.audio_pattern != null:
+		level_audio_pattern = data.audio_pattern
+		print("[LevelEditor] Loaded audio pattern:")
+		print("  BPM: ", level_audio_pattern.bpm)
+		print("  Theme: ", level_audio_pattern.theme)
+		print("  Pattern tracks: ", level_audio_pattern.patterns.keys())
+	else:
+		level_audio_pattern = null
+		print("[LevelEditor] No audio pattern found in level file")
+	
 	update_current_tile_display()
 	if status_label:
-		status_label.text = "Loaded: " + path.get_file()
+		var status_text = "Loaded: " + path.get_file()
+		if level_audio_pattern:
+			status_text += " (with audio pattern)"
+		status_label.text = status_text
 	
 	return true
 
@@ -774,6 +791,15 @@ func clear_level():
 func save_level():
 	print("Saving level...")
 	
+	# Debug: Check if we have audio pattern data
+	if level_audio_pattern:
+		print("[LevelEditor] Audio pattern found for saving:")
+		print("  BPM: ", level_audio_pattern.bpm)
+		print("  Theme: ", level_audio_pattern.theme)
+		print("  Pattern tracks: ", level_audio_pattern.patterns.keys())
+	else:
+		print("[LevelEditor] No audio pattern to save")
+	
 	# Build the level data structure
 	var level_data = {
 		"metadata": {
@@ -790,9 +816,10 @@ func save_level():
 			"positions": {}
 		},
 		"settings": {
-			"beats_per_minute": 120,
+			"beats_per_minute": level_audio_pattern.bpm if level_audio_pattern else 120,
 			"cells_per_beat": CELLS_PER_BEAT
-		}
+		},
+		"audio_pattern": level_audio_pattern
 	}
 	
 	# Convert tilemap to JSON format
@@ -940,6 +967,15 @@ func load_into_game():
 	LevelEditorData.set_editor_backup(backup)
 	LevelEditorData.set_custom_level(level_data)
 	LevelEditorData.set_launched_from_editor(true)
+	
+	# Pass custom audio pattern if available
+	if level_audio_pattern:
+		LevelEditorData.set_custom_audio_pattern(level_audio_pattern)
+		print("Custom audio pattern passed to game")
+	else:
+		LevelEditorData.clear_custom_audio_pattern()
+		print("No custom audio pattern - game will use default beat")
+	
 	print("Set launched from editor flag = true")
 	
 	# Restore mobile viewport settings before switching to main game
@@ -1106,6 +1142,38 @@ func open_audio_editor():
 	var audio_editor = audio_editor_scene.instantiate()
 	ui_layer.add_child(audio_editor)
 	audio_editor.closed.connect(_on_audio_editor_closed)
+	audio_editor.pattern_saved.connect(_on_audio_pattern_saved)
+	
+	# Set level information
+	print("[LevelEditor] Debug - current_filename: '", current_filename, "'")
+	var level_name = current_filename.get_basename() if current_filename != "" else "Untitled Level"
+	audio_editor.set_level_info(level_name)
+	print("[LevelEditor] Opening AudioEditor for level: ", level_name)
+	
+	# Load existing audio pattern if available (after a frame to ensure UI is ready)
+	if level_audio_pattern:
+		print("[LevelEditor] Loading existing pattern into AudioEditor...")
+		# Wait a frame for AudioEditor UI to be fully initialized
+		await get_tree().process_frame
+		audio_editor.load_pattern_data(level_audio_pattern)
+	else:
+		print("[LevelEditor] No existing pattern found for this level")
 
 func _on_audio_editor_closed():
 	print("Audio editor closed")
+
+func _on_audio_pattern_saved(pattern_data):
+	print("[LevelEditor] Audio pattern received from AudioEditor:")
+	print("  Level: ", pattern_data.get("level_name", "Unknown"))
+	print("  BPM: ", pattern_data.bpm)
+	print("  Theme: ", pattern_data.theme)
+	print("  Pattern tracks: ", pattern_data.patterns.keys())
+	
+	# Store the pattern data for level saving
+	level_audio_pattern = pattern_data
+	
+	# Update status
+	if status_label:
+		status_label.text = "Audio pattern saved (BPM: %d, Theme: %s)" % [pattern_data.bpm, pattern_data.theme]
+	
+	print("[LevelEditor] ✓ Audio pattern stored in level data")

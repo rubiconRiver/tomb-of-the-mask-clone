@@ -5,6 +5,7 @@ class_name AudioEditor
 # Creates 16-step patterns for 5 instrument tracks
 
 signal closed
+signal pattern_saved(pattern_data)
 
 # Track types with colors for visual distinction
 enum TrackType {
@@ -48,12 +49,17 @@ var preview_button: Button
 var play_button: Button
 var stop_button: Button
 var clear_button: Button
+var save_button: Button
 var bpm_label: Label
 var bpm_slider: HSlider
 var tracks_container: VBoxContainer
+var level_name_label: Label
 
 # Track UI references
 var track_widgets = {}
+
+# Level information
+var current_level_name = "Untitled Level"
 
 func _ready():
 	print("[AudioEditor] Initializing audio editor...")
@@ -140,11 +146,20 @@ func create_ui():
 	var header_section = HBoxContainer.new()
 	main_container.add_child(header_section)
 	
+	var title_container = VBoxContainer.new()
+	title_container.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	header_section.add_child(title_container)
+	
 	var title_label = Label.new()
 	title_label.text = "Audio Editor - Pattern Sequencer"
 	title_label.add_theme_font_size_override("font_size", 24)
-	title_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	header_section.add_child(title_label)
+	title_container.add_child(title_label)
+	
+	level_name_label = Label.new()
+	level_name_label.text = "Editing: " + current_level_name
+	level_name_label.add_theme_font_size_override("font_size", 16)
+	level_name_label.add_theme_color_override("font_color", Color(0.8, 0.8, 0.8))
+	title_container.add_child(level_name_label)
 	
 	close_button = Button.new()
 	close_button.text = "✕ Close"
@@ -223,6 +238,14 @@ func create_ui():
 	clear_button.add_theme_color_override("font_color", Color(0.8, 0.8, 0.2))
 	playback_controls.add_child(clear_button)
 	
+	# Save button - LARGE AND VISIBLE
+	save_button = Button.new()
+	save_button.text = "💾 SAVE"
+	save_button.custom_minimum_size = Vector2(150, 70)
+	save_button.add_theme_font_size_override("font_size", 20)
+	save_button.add_theme_color_override("font_color", Color(0.2, 0.8, 0.8))
+	playback_controls.add_child(save_button)
+	
 	# Separator
 	var vseparator = VSeparator.new()
 	playback_controls.add_child(vseparator)
@@ -271,6 +294,7 @@ func debug_ui_elements():
 	print("  play_button: ", play_button)
 	print("  stop_button: ", stop_button)
 	print("  clear_button: ", clear_button)
+	print("  save_button: ", save_button)
 	print("  bpm_label: ", bpm_label)
 	print("  bpm_slider: ", bpm_slider)
 	print("  tracks_container: ", tracks_container)
@@ -320,6 +344,12 @@ func setup_connections():
 		print("  ✓ Clear button connected")
 	else:
 		print("  ✗ Clear button is null!")
+		
+	if save_button:
+		save_button.pressed.connect(_on_save_pressed)
+		print("  ✓ Save button connected")
+	else:
+		print("  ✗ Save button is null!")
 		
 	if bpm_slider:
 		bpm_slider.value_changed.connect(_on_bpm_changed)
@@ -543,6 +573,36 @@ func _on_clear_pressed():
 				button.remove_theme_color_override("font_outline_color")
 				button.remove_theme_constant_override("outline_size")
 
+func _on_save_pressed():
+	print("[AudioEditor] Saving pattern for level: ", current_level_name)
+	
+	# Create audio pattern data structure
+	var audio_pattern = {
+		"bpm": bpm,
+		"theme": SoundBank.current_theme,
+		"level_name": current_level_name,
+		"patterns": {}
+	}
+	
+	# Convert patterns to saveable format (track name -> step array)
+	for track_type in TrackType.values():
+		var track_name = TRACK_NAMES[track_type].to_lower()
+		audio_pattern.patterns[track_name] = patterns[track_type].duplicate()
+	
+	print("[AudioEditor] Audio pattern created: ", audio_pattern)
+	
+	# Store pattern data globally so LevelEditor can access it
+	set_meta("saved_audio_pattern", audio_pattern)
+	
+	# Also send signal to parent (LevelEditor) that pattern was saved
+	print("[AudioEditor] Emitting pattern_saved signal with data:")
+	print("  BPM: ", audio_pattern.bpm)
+	print("  Theme: ", audio_pattern.theme)
+	print("  Patterns: ", audio_pattern.patterns.keys())
+	emit_signal("pattern_saved", audio_pattern)
+	
+	print("[AudioEditor] ✓ Pattern saved! The level editor can now include this audio pattern when saving.")
+
 func _on_bpm_changed(value: float):
 	update_bpm(int(value))
 
@@ -686,6 +746,56 @@ func advance_step():
 	# If we completed a full loop, we could add loop controls here
 	if current_step == 0:
 		print("[AudioEditor] Pattern loop completed")
+
+func load_pattern_data(pattern_data):
+	print("[AudioEditor] Loading pattern data...")
+	print("  BPM: ", pattern_data.bpm)
+	print("  Theme: ", pattern_data.theme)
+	print("  Pattern tracks: ", pattern_data.patterns.keys())
+	
+	# Set BPM
+	update_bpm(pattern_data.bpm)
+	if bpm_slider:
+		bpm_slider.value = pattern_data.bpm
+		print("[AudioEditor] BPM slider updated to: ", pattern_data.bpm)
+	
+	# Set theme
+	if pattern_data.has("theme") and theme_option:
+		var theme_names = ["default", "test", "Kid"]
+		var theme_index = theme_names.find(pattern_data.theme)
+		if theme_index >= 0:
+			theme_option.selected = theme_index
+			SoundBank.set_theme(pattern_data.theme)
+			print("[AudioEditor] Theme set to: ", pattern_data.theme)
+		else:
+			print("[AudioEditor] Warning: Unknown theme '", pattern_data.theme, "'")
+	
+	# Load patterns
+	if pattern_data.has("patterns"):
+		print("[AudioEditor] Loading patterns for tracks:")
+		for track_type in TrackType.values():
+			var track_name = TRACK_NAMES[track_type].to_lower()
+			if track_name in pattern_data.patterns:
+				var pattern_array = pattern_data.patterns[track_name]
+				patterns[track_type] = pattern_array.duplicate()
+				print("  ", track_name, ": ", pattern_array.count(true), " active steps")
+			else:
+				print("  ", track_name, ": no pattern data found")
+		
+		# Update UI to reflect loaded patterns
+		print("[AudioEditor] Updating UI with loaded patterns...")
+		update_ui_from_patterns()
+	else:
+		print("[AudioEditor] No pattern data found in pattern_data")
+	
+	print("[AudioEditor] ✓ Pattern data loaded successfully")
+
+func set_level_info(level_name: String):
+	current_level_name = level_name
+	# Update the display label if it exists
+	if level_name_label:
+		level_name_label.text = "Editing: " + current_level_name
+	print("[AudioEditor] Level set to: ", current_level_name)
 
 func _on_close_pressed():
 	print("[AudioEditor] Closing audio editor")

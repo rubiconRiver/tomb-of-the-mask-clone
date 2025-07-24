@@ -25,6 +25,10 @@ var audio_latency_offset = 0.0
 var is_started = false
 var start_time = 0.0
 
+# Custom pattern support
+var custom_pattern_data = null
+var pattern_step = 0  # Current step in 16-step pattern
+
 # Diagnostics
 var timing_diagnostics: AudioTimingDiagnostics
 var enable_timing_logs = true
@@ -55,6 +59,9 @@ func _ready():
 	
 	print("[AudioManager] Audio system ready (beat tracking not started yet)")
 	print("[AudioManager] Beat interval configured as: %.3f seconds" % beat_interval)
+	
+	# Check for custom audio pattern from level editor
+	load_custom_pattern_if_available()
 
 func _process(delta):
 	# Don't process beats until we've started
@@ -107,15 +114,54 @@ func _process(delta):
 
 # === DRUM INTERFACE ===
 func play_beat_sound(beat_number: int):
-	# Kick on 1 and 3, snare on 2 and 4
-	if beat_number % 4 == 0 or beat_number % 4 == 2:
-		if enable_timing_logs:
-			print("[AudioManager] Playing KICK on beat %d" % beat_number)
-		drum_bank.play_kick()
+	# Use custom pattern if available, otherwise use default pattern
+	if custom_pattern_data and custom_pattern_data.has("patterns"):
+		play_custom_pattern_step(beat_number)
 	else:
+		# Default pattern: Kick on 1 and 3, snare on 2 and 4
+		if beat_number % 4 == 0 or beat_number % 4 == 2:
+			if enable_timing_logs:
+				print("[AudioManager] Playing KICK on beat %d (default)" % beat_number)
+			drum_bank.play_kick()
+		else:
+			if enable_timing_logs:
+				print("[AudioManager] Playing SNARE on beat %d (default)" % beat_number)
+			drum_bank.play_snare()
+
+func play_custom_pattern_step(beat_number: int):
+	var patterns = custom_pattern_data.patterns
+	
+	# Convert beat number to 16-step pattern index (0-15)
+	var step_index = (beat_number - 1) % 16
+	
+	if enable_timing_logs:
+		print("[AudioManager] Beat %d -> Pattern step %d (custom)" % [beat_number, step_index])
+	
+	# Play sounds for active steps
+	if patterns.has("kick") and step_index < patterns.kick.size() and patterns.kick[step_index]:
 		if enable_timing_logs:
-			print("[AudioManager] Playing SNARE on beat %d" % beat_number)
+			print("[AudioManager] Playing custom KICK on step %d" % step_index)
+		drum_bank.play_kick()
+		
+	if patterns.has("snare") and step_index < patterns.snare.size() and patterns.snare[step_index]:
+		if enable_timing_logs:
+			print("[AudioManager] Playing custom SNARE on step %d" % step_index)
 		drum_bank.play_snare()
+		
+	if patterns.has("hi-hat") and step_index < patterns["hi-hat"].size() and patterns["hi-hat"][step_index]:
+		if enable_timing_logs:
+			print("[AudioManager] Playing custom HI-HAT on step %d" % step_index)
+		drum_bank.play_hihat()
+		
+	if patterns.has("percussion") and step_index < patterns.percussion.size() and patterns.percussion[step_index]:
+		if enable_timing_logs:
+			print("[AudioManager] Playing custom PERCUSSION on step %d" % step_index)
+		sfx_bank.play_wall_hit()  # Percussion uses tom sounds
+		
+	if patterns.has("melody") and step_index < patterns.melody.size() and patterns.melody[step_index]:
+		if enable_timing_logs:
+			print("[AudioManager] Playing custom MELODY on step %d" % step_index)
+		sfx_bank.play_coin_chime()  # Melody uses coin chime
 
 func play_hihat():
 	drum_bank.play_hihat()
@@ -154,6 +200,39 @@ func set_master_volume(volume_db: float):
 
 func set_latency_offset(offset: float):
 	audio_latency_offset = offset
+
+# === CUSTOM PATTERN SUPPORT ===
+
+func load_custom_pattern_if_available():
+	if LevelEditorData.has_custom_audio_pattern():
+		var pattern_data = LevelEditorData.get_custom_audio_pattern()
+		load_custom_pattern(pattern_data)
+	else:
+		print("[AudioManager] No custom audio pattern found - using default beat")
+
+func load_custom_pattern(pattern_data):
+	if not pattern_data:
+		custom_pattern_data = null
+		print("[AudioManager] Custom pattern cleared")
+		return
+		
+	custom_pattern_data = pattern_data
+	pattern_step = 0
+	
+	# Update BPM from pattern
+	var custom_bpm = pattern_data.get("bpm", 120)
+	beat_interval = 60.0 / custom_bpm
+	eighth_note_interval = beat_interval / 2.0
+	
+	print("[AudioManager] Custom pattern loaded:")
+	print("  BPM: ", custom_bpm, " (beat interval: ", beat_interval, "s)")
+	print("  Theme: ", pattern_data.get("theme", "unknown"))
+	print("  Level: ", pattern_data.get("level_name", "unknown"))
+	
+	if pattern_data.has("patterns"):
+		for track in pattern_data.patterns:
+			var active_steps = pattern_data.patterns[track].count(true)
+			print("  ", track, ": ", active_steps, " active steps")
 
 func start_beat_tracking():
 	if is_started:

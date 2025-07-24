@@ -5,6 +5,7 @@ var custom_level_data = null
 var use_custom_level = false
 var launched_from_editor = false
 var editor_level_backup = null  # Store the tilemap state before testing
+var custom_audio_pattern = null  # Store audio pattern from level editor
 
 func set_custom_level(level_data: Array):
 	custom_level_data = level_data
@@ -35,3 +36,23 @@ func get_editor_backup():
 
 func clear_editor_backup():
 	editor_level_backup = null
+
+# Audio pattern functions
+func set_custom_audio_pattern(pattern_data):
+	custom_audio_pattern = pattern_data
+	if pattern_data:
+		print("[LevelEditorData] Custom audio pattern set:")
+		print("  BPM: ", pattern_data.bpm)
+		print("  Theme: ", pattern_data.theme)
+		print("  Level: ", pattern_data.get("level_name", "Unknown"))
+	else:
+		print("[LevelEditorData] Custom audio pattern cleared")
+
+func get_custom_audio_pattern():
+	return custom_audio_pattern
+
+func has_custom_audio_pattern() -> bool:
+	return custom_audio_pattern != null
+
+func clear_custom_audio_pattern():
+	custom_audio_pattern = null
