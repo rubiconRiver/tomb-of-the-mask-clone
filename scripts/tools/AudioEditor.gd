@@ -85,6 +85,14 @@ func _ready():
 	# Update BPM calculations
 	update_bpm(bpm)
 	
+	# Ensure SoundBank is initialized for immediate audio playback
+	if not SoundBank._initialized or SoundBank.cached_sounds.is_empty():
+		print("[AudioEditor] Initializing SoundBank for immediate audio playback...")
+		SoundBank.initialize()
+		print("[AudioEditor] SoundBank initialized with ", SoundBank.cached_sounds.size(), " sounds")
+	else:
+		print("[AudioEditor] SoundBank already initialized with ", SoundBank.cached_sounds.size(), " sounds")
+	
 	print("[AudioEditor] Audio editor ready!")
 
 func create_ui():
@@ -438,9 +446,11 @@ func _on_theme_selected(index: int):
 	var selected_theme = theme_names[index]
 	print("[AudioEditor] Selected theme: ", selected_theme)
 	
-	# Change the SoundBank theme
-	SoundBank.current_theme = selected_theme
-	print("[AudioEditor] Changed SoundBank theme to: ", selected_theme)
+	# Change the SoundBank theme and reinitialize to load new files
+	print("[AudioEditor] Switching SoundBank to theme: ", selected_theme)
+	SoundBank.set_theme(selected_theme)
+	print("[AudioEditor] Theme switched! New cached sounds: ", SoundBank.cached_sounds.size())
+	print("[AudioEditor] Available sound keys: ", SoundBank.cached_sounds.keys())
 
 func _on_preview_theme():
 	print("[AudioEditor] Previewing current theme...")
@@ -658,31 +668,17 @@ func highlight_current_step():
 				button.add_theme_stylebox_override("pressed", playback_style)
 
 func clear_step_highlights():
+	# Simply remove playback position styling, keeping toggle feedback intact
 	for track_type in TrackType.values():
 		if track_type in track_widgets:
 			var track_widget = track_widgets[track_type]
 			var step_buttons = track_widget.get_meta("step_buttons", [])
 			for i in range(step_buttons.size()):
 				var button = step_buttons[i]
-				var step = i
-				
-				# Check if this button should have active pattern styling
-				var is_active = patterns[track_type][step]
-				
-				if is_active:
-					# Restore active pattern styling (dark blue background)
-					var active_style = StyleBoxFlat.new()
-					active_style.bg_color = Color(0.3, 0.3, 0.4, 0.8)
-					active_style.corner_radius_top_left = 4
-					active_style.corner_radius_top_right = 4
-					active_style.corner_radius_bottom_left = 4
-					active_style.corner_radius_bottom_right = 4
-					button.add_theme_stylebox_override("normal", active_style)
-					button.add_theme_stylebox_override("pressed", active_style)
-				else:
-					# Remove all styling for inactive buttons
-					button.remove_theme_stylebox_override("normal")
-					button.remove_theme_stylebox_override("pressed")
+				# Remove playback position styling only
+				button.remove_theme_stylebox_override("normal")
+				button.remove_theme_stylebox_override("pressed")
+				# Keep the outline-based toggle feedback untouched!
 
 func advance_step():
 	current_step = (current_step + 1) % 16
