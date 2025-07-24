@@ -378,18 +378,25 @@ func create_track_widget(track_type: TrackType) -> Control:
 	var steps_container = HBoxContainer.new()
 	track_container.add_child(steps_container)
 	
-	# Create 16 step buttons (ORIGINAL WORKING VERSION)
+	# Create 16 step buttons with musical notation
 	var step_buttons = []
 	for step in range(16):
 		var step_button = Button.new()
 		step_button.custom_minimum_size = Vector2(40, 40)
 		step_button.toggle_mode = true
-		step_button.text = str(step + 1)
 		
-		# Color coding for beats (1, 5, 9, 13 are strong beats) - ORIGINAL VERSION
+		# Set text based on musical timing
 		if step % 4 == 0:
+			# Quarter notes: 1, 2, 3, 4 (steps 0,4,8,12 -> 1,2,3,4)
+			step_button.text = str((step / 4) + 1)
 			step_button.add_theme_color_override("font_color", Color.WHITE)
+		elif step % 2 == 0:
+			# 8th notes: + (steps 2,6,10,14)
+			step_button.text = "+"
+			step_button.add_theme_color_override("font_color", Color.GRAY)
 		else:
+			# 16th notes: • (steps 1,3,5,7,9,11,13,15)
+			step_button.text = "•"
 			step_button.add_theme_color_override("font_color", Color.GRAY)
 		
 		step_button.pressed.connect(_on_step_toggled.bind(track_type, step, step_button))
