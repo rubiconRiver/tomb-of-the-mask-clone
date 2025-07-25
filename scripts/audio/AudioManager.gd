@@ -18,7 +18,10 @@ var beat_timer = 0.0
 var beat_interval = 0.5
 var eighth_note_timer = 0.0
 var eighth_note_interval = 0.25
+var sixteenth_note_timer = 0.0
+var sixteenth_note_interval = 0.125
 var beat_count = 0
+var sixteenth_note_count = 0
 var audio_latency_offset = 0.0
 
 # State
@@ -83,6 +86,16 @@ func _process(delta):
 	# Update beat timing
 	beat_timer += delta
 	eighth_note_timer += delta
+	sixteenth_note_timer += delta
+	
+	# Check for sixteenth notes (for 16-step patterns)
+	if sixteenth_note_timer >= sixteenth_note_interval:
+		sixteenth_note_timer -= sixteenth_note_interval
+		sixteenth_note_count += 1
+		
+		# Play custom pattern on 16th notes if available
+		if custom_pattern_data and custom_pattern_data.has("patterns"):
+			play_custom_pattern_sixteenth_note(sixteenth_note_count)
 	
 	# Check for eighth notes
 	if eighth_note_timer >= eighth_note_interval:
@@ -114,10 +127,9 @@ func _process(delta):
 
 # === DRUM INTERFACE ===
 func play_beat_sound(beat_number: int):
-	# Use custom pattern if available, otherwise use default pattern
-	if custom_pattern_data and custom_pattern_data.has("patterns"):
-		play_custom_pattern_step(beat_number)
-	else:
+	# Only use default pattern if no custom pattern is available
+	# Custom patterns are now handled by the 16th note system
+	if not custom_pattern_data:
 		# Default pattern: Kick on 1 and 3, snare on 2 and 4
 		if beat_number % 4 == 0 or beat_number % 4 == 2:
 			if enable_timing_logs:
@@ -136,6 +148,42 @@ func play_custom_pattern_step(beat_number: int):
 	
 	if enable_timing_logs:
 		print("[AudioManager] Beat %d -> Pattern step %d (custom)" % [beat_number, step_index])
+	
+	# Play sounds for active steps
+	if patterns.has("kick") and step_index < patterns.kick.size() and patterns.kick[step_index]:
+		if enable_timing_logs:
+			print("[AudioManager] Playing custom KICK on step %d" % step_index)
+		drum_bank.play_kick()
+		
+	if patterns.has("snare") and step_index < patterns.snare.size() and patterns.snare[step_index]:
+		if enable_timing_logs:
+			print("[AudioManager] Playing custom SNARE on step %d" % step_index)
+		drum_bank.play_snare()
+		
+	if patterns.has("hi-hat") and step_index < patterns["hi-hat"].size() and patterns["hi-hat"][step_index]:
+		if enable_timing_logs:
+			print("[AudioManager] Playing custom HI-HAT on step %d" % step_index)
+		drum_bank.play_hihat()
+		
+	if patterns.has("percussion") and step_index < patterns.percussion.size() and patterns.percussion[step_index]:
+		if enable_timing_logs:
+			print("[AudioManager] Playing custom PERCUSSION on step %d" % step_index)
+		sfx_bank.play_wall_hit()  # Percussion uses tom sounds
+		
+	if patterns.has("melody") and step_index < patterns.melody.size() and patterns.melody[step_index]:
+		if enable_timing_logs:
+			print("[AudioManager] Playing custom MELODY on step %d" % step_index)
+		sfx_bank.play_coin_chime()  # Melody uses coin chime
+
+func play_custom_pattern_sixteenth_note(sixteenth_count: int):
+	var patterns = custom_pattern_data.patterns
+	
+	# Convert 16th note count to 16-step pattern index (0-15)
+	# Reset every 16 sixteenth notes (one measure)
+	var step_index = (sixteenth_count - 1) % 16
+	
+	if enable_timing_logs:
+		print("[AudioManager] 16th note %d -> Pattern step %d (custom)" % [sixteenth_count, step_index])
 	
 	# Play sounds for active steps
 	if patterns.has("kick") and step_index < patterns.kick.size() and patterns.kick[step_index]:
@@ -223,6 +271,7 @@ func load_custom_pattern(pattern_data):
 	var custom_bpm = pattern_data.get("bpm", 120)
 	beat_interval = 60.0 / custom_bpm
 	eighth_note_interval = beat_interval / 2.0
+	sixteenth_note_interval = beat_interval / 4.0
 	
 	print("[AudioManager] Custom pattern loaded:")
 	print("  BPM: ", custom_bpm, " (beat interval: ", beat_interval, "s)")
@@ -259,7 +308,9 @@ func start_beat_tracking():
 	# Reset all timers
 	beat_timer = 0.0
 	eighth_note_timer = 0.0
+	sixteenth_note_timer = 0.0
 	beat_count = 0
+	sixteenth_note_count = 0
 	
 	is_started = true
 	print("[AudioManager] Beat tracking started! First beat expected at: ", start_time + beat_interval)
@@ -270,6 +321,8 @@ func reset():
 	beat_count = 0
 	beat_timer = 0.0
 	eighth_note_timer = 0.0
+	sixteenth_note_timer = 0.0
+	sixteenth_note_count = 0
 	melodic_bank.reset()
 	ambient_system.stop_all()
 	
