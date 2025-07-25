@@ -107,6 +107,10 @@ func _ready():
 		setup_level()
 		spawn_player()
 		update_ui()
+		
+		# Enable input handling for editor mode (but don't start beat tracking)
+		game_started = true
+		print("[GameManager] Input enabled for level editor testing")
 
 func _exit_tree():
 	# Stop audio when exiting the scene
