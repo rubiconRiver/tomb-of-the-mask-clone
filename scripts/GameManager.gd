@@ -299,20 +299,22 @@ func _on_eighth_note():
 	# Track which 8th note we're on across 4 bars (0-31, resets every 4 bars)
 	bar_eighth_count = (bar_eighth_count + 1) % 32
 	
-	# Play hi-hat
-	AudioManager.play_hihat()
-	
-	# Add kick on half note after beat 1 (8th note position 1, which is between beats 1 and 2)
-	if eighth_note_count == 1:  # Half note after beat 1
-		AudioManager.drum_bank.play_kick()
-		print("[GameManager] Playing extra kick on half note after beat 1")
-	
-	# Add double snare on 3.5 beat of every 4th bar
-	# Position 7 within each bar = 3.5 beat
-	# 4th bar occurs at positions 24-31 in the 32-eighth-note cycle (bars 1-4 = 0-7, 8-15, 16-23, 24-31)
-	if eighth_note_count == 7 and bar_eighth_count >= 24:  # 3.5 beat of 4th bar
-		AudioManager.drum_bank.play_snare()
-		print("[GameManager] Playing double snare on 3.5 beat of 4th bar")
+	# Only play default patterns if NO custom pattern is active
+	if not AudioManager.custom_pattern_data:
+		# Play hi-hat (default pattern only)
+		AudioManager.play_hihat()
+		
+		# Add kick on half note after beat 1 (8th note position 1, which is between beats 1 and 2)
+		if eighth_note_count == 1:  # Half note after beat 1
+			AudioManager.drum_bank.play_kick()
+			print("[GameManager] Playing extra kick on half note after beat 1 (default)")
+		
+		# Add double snare on 3.5 beat of every 4th bar
+		# Position 7 within each bar = 3.5 beat
+		# 4th bar occurs at positions 24-31 in the 32-eighth-note cycle (bars 1-4 = 0-7, 8-15, 16-23, 24-31)
+		if eighth_note_count == 7 and bar_eighth_count >= 24:  # 3.5 beat of 4th bar
+			AudioManager.drum_bank.play_snare()
+			print("[GameManager] Playing double snare on 3.5 beat of 4th bar (default)")
 	
 	# Play pending 8th note sounds
 	if pending_coin_chimes_8th > 0:
