@@ -36,6 +36,7 @@ var coins = 0  # Session coins collected
 var current_level = 1  # Gets set by GameData
 var is_game_over = false
 var game_started = false
+var beat_tracking_started = false
 var level_start_time = 0.0
 var level_complete_time = 0.0
 var is_level_complete = false
@@ -197,6 +198,7 @@ func start_game():
 	current_level = GameData.current_level  # Get from GameData
 	is_game_over = false
 	game_started = false  # Will be set to true after GO message
+	beat_tracking_started = false  # Will be set to true when beat tracking starts
 	is_level_complete = false
 	level_start_time = 0.0  # Will be set when game actually starts
 	pending_coin_chimes = 0
@@ -362,6 +364,12 @@ func _on_eighth_note():
 func _on_swipe_detected(direction: Vector2):
 	if not game_started or is_game_over or not player:
 		return
+	
+	# Start beat tracking on first movement if launched from editor
+	if LevelEditorData.is_launched_from_editor() and not beat_tracking_started:
+		print("[GameManager] Starting beat tracking on first movement (editor mode)")
+		AudioManager.start_beat_tracking()
+		beat_tracking_started = true
 	
 	# If player is already moving, buffer the input
 	if player.is_moving:
@@ -701,6 +709,7 @@ func show_go_message():
 	# Start beat tracking
 	print("[GameManager] Starting beat tracking")
 	AudioManager.start_beat_tracking()
+	beat_tracking_started = true
 
 func initialize_effect_systems():
 	# Initialize ScreenShake system
