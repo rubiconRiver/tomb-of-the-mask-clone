@@ -98,7 +98,21 @@ func _ready():
 	AudioManager.beat_occurred.connect(_on_beat)
 	AudioManager.eighth_note_occurred.connect(_on_eighth_note)
 	
-	start_game()
+	# Auto-start game only if not launched from editor
+	if not LevelEditorData.is_launched_from_editor():
+		start_game()
+	else:
+		print("[GameManager] Launched from editor - setting up level without auto-starting game")
+		# Set up the level but don't start the game
+		setup_level()
+		spawn_player()
+		update_ui()
+
+func _exit_tree():
+	# Stop audio when exiting the scene
+	if AudioManager:
+		AudioManager.reset()
+		print("[GameManager] Audio stopped when exiting game scene")
 
 func setup_camera():
 	camera = Camera2D.new()
@@ -204,8 +218,12 @@ func start_game():
 	
 	print("[GameManager] Starting level ", current_level)
 	
-	# Show GO message and start game after delay
-	show_go_message()
+	# Only show GO message and auto-start if not launched from editor
+	if not LevelEditorData.is_launched_from_editor():
+		# Show GO message and start game after delay
+		show_go_message()
+	else:
+		print("[GameManager] Level editor test mode - waiting for manual start")
 
 func setup_level():
 	if level_generator:
