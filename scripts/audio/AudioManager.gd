@@ -15,11 +15,11 @@ var mixer: AudioMixer
 
 # Timing
 var beat_timer = 0.0
-var beat_interval = 0.5
+var beat_interval = 0.5  # 120 BPM default
 var eighth_note_timer = 0.0
-var eighth_note_interval = 0.25
+var eighth_note_interval = 0.25  # beat_interval / 2
 var sixteenth_note_timer = 0.0
-var sixteenth_note_interval = 0.125
+var sixteenth_note_interval = 0.125  # beat_interval / 4
 var beat_count = 0
 var sixteenth_note_count = 0
 var audio_latency_offset = 0.0
@@ -275,6 +275,8 @@ func load_custom_pattern(pattern_data):
 	
 	print("[AudioManager] Custom pattern loaded:")
 	print("  BPM: ", custom_bpm, " (beat interval: ", beat_interval, "s)")
+	print("  8th note interval: ", eighth_note_interval, "s")
+	print("  16th note interval: ", sixteenth_note_interval, "s")
 	print("  Theme: ", pattern_data.get("theme", "unknown"))
 	print("  Level: ", pattern_data.get("level_name", "unknown"))
 	
@@ -296,10 +298,19 @@ func start_beat_tracking():
 	start_time = Time.get_ticks_msec() / 1000.0
 	print("[AudioManager] Start time: ", start_time)
 	
+	# Log current timing intervals for verification
+	print("[AudioManager] Current timing intervals:")
+	print("  Beat interval (quarter note): ", beat_interval, "s")
+	print("  8th note interval: ", eighth_note_interval, "s") 
+	print("  16th note interval: ", sixteenth_note_interval, "s")
+	
 	if custom_pattern_data:
 		print("[AudioManager] 🎵 Using CUSTOM pattern for gameplay")
+		var bpm = custom_pattern_data.get("bpm", 120)
+		print("  Custom BPM: ", bpm)
 	else:
 		print("[AudioManager] 🎵 Using DEFAULT pattern for gameplay")
+		print("  Default BPM: 120")
 	
 	# Initialize timing diagnostics NOW
 	timing_diagnostics = AudioTimingDiagnostics.new(beat_interval)
