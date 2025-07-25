@@ -1159,14 +1159,77 @@ func open_audio_editor():
 	audio_editor.set_level_info(level_name)
 	print("[LevelEditor] Opening AudioEditor for level: ", level_name)
 	
-	# Load existing audio pattern if available (after a frame to ensure UI is ready)
+	# Wait a frame for AudioEditor UI to be fully initialized
+	await get_tree().process_frame
+	
+	# Load existing audio pattern if available, otherwise create default pattern
 	if level_audio_pattern:
 		print("[LevelEditor] Loading existing pattern into AudioEditor...")
-		# Wait a frame for AudioEditor UI to be fully initialized
-		await get_tree().process_frame
 		audio_editor.load_pattern_data(level_audio_pattern)
 	else:
-		print("[LevelEditor] No existing pattern found for this level")
+		print("[LevelEditor] No existing pattern found - creating default pattern")
+		var default_pattern = create_default_audio_pattern(level_name)
+		audio_editor.load_pattern_data(default_pattern)
+
+func create_default_audio_pattern(level_name: String) -> Dictionary:
+	print("[LevelEditor] Creating default audio pattern for level: ", level_name)
+	
+	# Create default 16-step patterns
+	var kick_pattern = []
+	var snare_pattern = []
+	var hihat_pattern = []
+	var percussion_pattern = []
+	var melody_pattern = []
+	
+	# Initialize all patterns as empty (false)
+	for i in range(16):
+		kick_pattern.append(false)
+		snare_pattern.append(false)
+		hihat_pattern.append(false)
+		percussion_pattern.append(false)
+		melody_pattern.append(false)
+	
+	# Set default pattern: Kick on beats 1,3 (16-step pattern)
+	# In 16 steps: 1=0, 2=4, 3=8, 4=12 (quarter notes)
+	kick_pattern[0] = true   # Beat 1 (step 1)
+	kick_pattern[8] = true   # Beat 3 (step 9)
+	
+	# Set default pattern: Snare on beats 2,4 
+	snare_pattern[4] = true   # Beat 2 (step 5)
+	snare_pattern[12] = true  # Beat 4 (step 13)
+	
+	# Set default pattern: Hi-hat on all 8th notes (every other step)
+	# Steps 1,3,5,7,9,11,13,15 (all odd steps)
+	for i in range(16):
+		if i % 2 == 1:  # Odd steps (8th notes)
+			hihat_pattern[i] = true
+	
+	var default_pattern = {
+		"bpm": 120,
+		"theme": "default",
+		"level_name": level_name,
+		"patterns": {
+			"kick": kick_pattern,
+			"snare": snare_pattern,
+			"hi-hat": hihat_pattern,
+			"percussion": percussion_pattern,
+			"melody": melody_pattern
+		}
+	}
+	
+	print("[LevelEditor] Default pattern created:")
+	print("  Kick steps: ", _get_active_step_numbers(kick_pattern))
+	print("  Snare steps: ", _get_active_step_numbers(snare_pattern))
+	print("  Hi-hat steps: ", _get_active_step_numbers(hihat_pattern))
+	
+	return default_pattern
+
+func _get_active_step_numbers(pattern: Array) -> Array:
+	var active_steps = []
+	for i in range(pattern.size()):
+		if pattern[i]:
+			active_steps.append(i + 1)  # Convert to 1-based numbering
+	return active_steps
 
 func _on_audio_editor_closed():
 	print("Audio editor closed")
