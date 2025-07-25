@@ -5,6 +5,7 @@ extends Node
 
 signal beat_occurred(beat_count: int)
 signal eighth_note_occurred()
+signal bpm_changed(new_bpm: float)
 
 # Subsystems
 var drum_bank: DrumBank
@@ -15,11 +16,11 @@ var mixer: AudioMixer
 
 # Timing
 var beat_timer = 0.0
-var beat_interval = 0.5  # 120 BPM default
+var beat_interval = 60.0 / 120.0  # 120 BPM default (0.5 seconds)
 var eighth_note_timer = 0.0
-var eighth_note_interval = 0.25  # beat_interval / 2
+var eighth_note_interval = beat_interval / 2.0  # beat_interval / 2
 var sixteenth_note_timer = 0.0
-var sixteenth_note_interval = 0.125  # beat_interval / 4
+var sixteenth_note_interval = beat_interval / 4.0  # beat_interval / 4
 var beat_count = 0
 var sixteenth_note_count = 0
 var audio_latency_offset = 0.0
@@ -273,6 +274,9 @@ func load_custom_pattern(pattern_data):
 	eighth_note_interval = beat_interval / 2.0
 	sixteenth_note_interval = beat_interval / 4.0
 	
+	# Notify systems about BPM change
+	bpm_changed.emit(custom_bpm)
+	
 	print("[AudioManager] Custom pattern loaded:")
 	print("  BPM: ", custom_bpm, " (beat interval: ", beat_interval, "s)")
 	print("  8th note interval: ", eighth_note_interval, "s")
@@ -311,6 +315,8 @@ func start_beat_tracking():
 	else:
 		print("[AudioManager] 🎵 Using DEFAULT pattern for gameplay")
 		print("  Default BPM: 120")
+		# Emit default BPM for player speed
+		bpm_changed.emit(120.0)
 	
 	# Initialize timing diagnostics NOW
 	timing_diagnostics = AudioTimingDiagnostics.new(beat_interval)

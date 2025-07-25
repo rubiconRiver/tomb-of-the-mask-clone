@@ -261,7 +261,7 @@ func create_ui():
 	bpm_slider = HSlider.new()
 	bpm_slider.min_value = 60.0
 	bpm_slider.max_value = 180.0
-	bpm_slider.step = 5.0
+	bpm_slider.step = 10.0  # Use 10 BPM increments for cleaner calculations
 	bpm_slider.value = 120.0
 	bpm_slider.custom_minimum_size = Vector2(200, 70)
 	bpm_slider.size_flags_horizontal = Control.SIZE_EXPAND_FILL

@@ -236,6 +236,11 @@ func spawn_player():
 	player.position = level_generator.get_player_spawn_position()
 	player.died.connect(_on_player_died)
 	player.collected_coin.connect(_on_coin_collected)
+	
+	# Connect BPM changes to player speed updates
+	if AudioManager:
+		AudioManager.bpm_changed.connect(player.update_speed_from_bpm)
+		print("[GameManager] Connected BPM changes to player speed updates")
 	player.moved.connect(_on_player_moved)
 	player.hit_wall.connect(_on_player_hit_wall)
 	

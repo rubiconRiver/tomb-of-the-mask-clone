@@ -1,8 +1,9 @@
 extends CharacterBody2D
 class_name Player
 
-@export var move_speed = 1024.0  # Exactly 8 cells per beat at 120 BPM
+@export var move_speed = 1024.0  # Will be calculated based on BPM
 const GRID_SIZE = 64
+const BLOCKS_PER_QUARTER_NOTE = 4  # Movement speed: 4 blocks per quarter note
 
 var is_moving = false
 var move_direction = Vector2.ZERO
@@ -37,6 +38,22 @@ signal died
 signal collected_coin
 signal hit_wall
 
+func update_speed_from_bpm(bpm: float):
+	# Calculate speed for 4 blocks per quarter note
+	# Speed = (blocks per beat × pixels per block) ÷ seconds per beat
+	var beat_duration = 60.0 / bpm  # seconds per quarter note
+	var pixels_per_beat = BLOCKS_PER_QUARTER_NOTE * GRID_SIZE  # 4 blocks × 64 pixels = 256 pixels
+	var calculated_speed = pixels_per_beat / beat_duration
+	
+	base_speed = calculated_speed
+	move_speed = base_speed * current_momentum
+	
+	print("[Player] Speed updated for ", bpm, " BPM:")
+	print("  Beat duration: ", beat_duration, "s")
+	print("  Pixels per beat: ", pixels_per_beat, " pixels")
+	print("  Base speed: ", base_speed, " pixels/s")
+	print("  Current speed (with momentum): ", move_speed, " pixels/s")
+
 func reset():
 	is_moving = false
 	move_direction = Vector2.ZERO
@@ -48,8 +65,8 @@ func _ready():
 	if area:
 		area.area_entered.connect(_on_area_entered)
 	
-	# Initialize base speed
-	base_speed = move_speed
+	# Initialize speed from default BPM (120)
+	update_speed_from_bpm(120.0)
 	
 	# Add trail effect
 	var trail_script = preload("res://scripts/visual/TrailEffect.gd")
