@@ -354,10 +354,10 @@ func _on_eighth_note():
 	if pending_wall_hits_8th > 0:
 		if pending_wall_hits_8th == 1:
 			# Perfect timing - full randomized tom fill
-			AudioManager.sfx_bank.play_random_tom_fill()
+			AudioManager.play_perfect_tom_fill()
 		elif pending_wall_hits_8th == 2:
-			# Great timing - 2-hit tom fill at half volume
-			AudioManager.sfx_bank.play_great_tom_fill()
+			# Great timing - 2-hit tom fill at half volume  
+			AudioManager.play_great_tom_fill()
 		pending_wall_hits_8th = 0  # Reset after playing
 
 # Old audio functions removed - now handled by AudioManager

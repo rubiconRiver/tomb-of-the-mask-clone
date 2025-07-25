@@ -229,6 +229,14 @@ func play_coin_collected():
 func play_wall_hit():
 	sfx_bank.play_wall_hit()
 
+func play_perfect_tom_fill():
+	# Perfect timing - full randomized tom fill
+	sfx_bank.play_random_tom_fill()
+
+func play_great_tom_fill():
+	# Great timing - 2-hit tom fill at half volume
+	sfx_bank.play_great_tom_fill()
+
 func play_whoosh():
 	sfx_bank.play_whoosh()
 
@@ -274,6 +282,12 @@ func load_custom_pattern(pattern_data):
 	eighth_note_interval = beat_interval / 2.0
 	sixteenth_note_interval = beat_interval / 4.0
 	
+	# Set theme from pattern data
+	var pattern_theme = pattern_data.get("theme", "default")
+	if pattern_theme != SoundBank.current_theme:
+		SoundBank.set_theme(pattern_theme)
+		print("[AudioManager] Theme switched to: ", pattern_theme)
+	
 	# Notify systems about BPM change
 	bpm_changed.emit(custom_bpm)
 	
@@ -281,7 +295,7 @@ func load_custom_pattern(pattern_data):
 	print("  BPM: ", custom_bpm, " (beat interval: ", beat_interval, "s)")
 	print("  8th note interval: ", eighth_note_interval, "s")
 	print("  16th note interval: ", sixteenth_note_interval, "s")
-	print("  Theme: ", pattern_data.get("theme", "unknown"))
+	print("  Theme: ", pattern_theme)
 	print("  Level: ", pattern_data.get("level_name", "unknown"))
 	
 	if pattern_data.has("patterns"):
