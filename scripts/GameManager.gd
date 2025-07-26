@@ -140,19 +140,35 @@ func position_camera_for_full_level():
 		return
 		
 	var level_height = level_data.size()
-	var level_width = level_data[0].size() if level_height > 0 else 11
+	var level_width = level_data[0].size() if level_height > 0 else 16
 	
 	# Calculate level size in pixels
 	var level_pixel_width = level_width * 64  # GRID_SIZE
 	var level_pixel_height = level_height * 64
 	
-	# Center camera on level
-	camera.position = Vector2(level_pixel_width / 2, level_pixel_height / 2)
+	# Debug output
+	print("[GameManager] Level dimensions: ", level_width, "x", level_height, " blocks")
+	print("[GameManager] Level pixel size: ", level_pixel_width, "x", level_pixel_height)
+	print("[GameManager] Viewport size: ", viewport_size)
 	
-	# Calculate zoom to fit entire level with some margin
+	# Center camera on level (simple calculation)
+	# Since level is built from (0,0), center is at half the pixel dimensions
+	camera.position = Vector2(level_pixel_width / 2, level_pixel_height / 2)
+	print("[GameManager] Camera positioned at: ", camera.position)
+	
+	# Calculate zoom to fit entire level perfectly in frame
 	var zoom_x = viewport_size.x / level_pixel_width
 	var zoom_y = viewport_size.y / level_pixel_height
-	var zoom_level = min(zoom_x, zoom_y) * 0.95  # 0.95 for slight margin
+	
+	# Use the smaller zoom to ensure entire level fits
+	# For 16:32 ratio, this should fit perfectly in most mobile screens
+	var zoom_level = min(zoom_x, zoom_y)
+	
+	# Apply slight margin only if needed for UI
+	zoom_level = zoom_level * 0.95  # Just 5% margin for UI elements
+	
+	# Ensure minimum zoom for visibility
+	zoom_level = max(zoom_level, 0.3)
 	
 	camera.zoom = Vector2(zoom_level, zoom_level)
 	
@@ -274,8 +290,9 @@ func setup_level():
 	# Pass the current level to the generator
 	level_generator.current_level = current_level
 	
-	# Reposition camera for the new level
+	# Reposition camera for the new level (with a small delay)
 	if camera:
+		await get_tree().process_frame
 		position_camera_for_full_level()
 	
 	# Count total coins in the level

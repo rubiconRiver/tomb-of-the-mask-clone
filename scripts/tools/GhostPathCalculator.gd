@@ -97,7 +97,7 @@ static func calculate_ghost_path(level_template: Array) -> Dictionary:
 	# Print the move sequence for copying
 	print("\n=== GHOST MOVE DATA ===")
 	print("# Copy this into GhostData.gd:")
-	print("static func get_test_notes_moves() -> Array:")
+	print("static func get_empty_level_moves() -> Array:")
 	print("\treturn [")
 	
 	var beat_counter = 0.0

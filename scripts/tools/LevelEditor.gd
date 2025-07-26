@@ -3,16 +3,16 @@ class_name LevelEditor
 
 const GRID_SIZE = 64
 
-# Default sizes
-var level_width = 11
-var level_height = 20
+# Default sizes - optimized for mobile
+var level_width = 16
+var level_height = 32
 
-# Size presets
+# Size presets - updated for mobile optimization
 const SIZE_PRESETS = {
-	"Small": Vector2i(11, 20),
-	"Medium": Vector2i(20, 40),
-	"Large": Vector2i(30, 60),
-	"Huge": Vector2i(50, 100)
+	"Mobile": Vector2i(16, 32),     # Standard mobile size (1:2 ratio)
+	"Mobile XL": Vector2i(20, 40),  # Larger mobile levels
+	"Tablet": Vector2i(24, 48),     # Tablet optimized  
+	"Large": Vector2i(32, 64)       # Extra large levels
 }
 
 enum TileType {
@@ -724,9 +724,9 @@ func load_test_notes():
 	load_level_from_json("res://levels/default_level.json")
 
 func load_big_level():
-	print("Loading big level...")
-	# Get the big level template
-	var template = LevelTemplates.get_big_level()
+	print("Loading empty level template...")
+	# Get the empty level template
+	var template = LevelTemplates.get_empty_level()
 	
 	# Update level dimensions
 	level_height = template.size()
