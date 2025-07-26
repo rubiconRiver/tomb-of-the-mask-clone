@@ -123,6 +123,40 @@ func setup_camera():
 	camera = Camera2D.new()
 	camera.enabled = true
 	add_child(camera)
+	
+	# Position camera to show entire level
+	position_camera_for_full_level()
+
+func position_camera_for_full_level():
+	if not camera or not level_generator:
+		return
+		
+	# Get viewport size
+	var viewport_size = get_viewport().get_visible_rect().size
+	
+	# Get level dimensions
+	var level_data = level_generator.get_level_data()
+	if level_data.is_empty():
+		return
+		
+	var level_height = level_data.size()
+	var level_width = level_data[0].size() if level_height > 0 else 11
+	
+	# Calculate level size in pixels
+	var level_pixel_width = level_width * 64  # GRID_SIZE
+	var level_pixel_height = level_height * 64
+	
+	# Center camera on level
+	camera.position = Vector2(level_pixel_width / 2, level_pixel_height / 2)
+	
+	# Calculate zoom to fit entire level with some margin
+	var zoom_x = viewport_size.x / level_pixel_width
+	var zoom_y = viewport_size.y / level_pixel_height
+	var zoom_level = min(zoom_x, zoom_y) * 0.95  # 0.95 for slight margin
+	
+	camera.zoom = Vector2(zoom_level, zoom_level)
+	
+	print("[GameManager] Static camera positioned - Level: ", level_width, "x", level_height, " Zoom: ", zoom_level)
 
 func setup_beat_indicator():
 	beat_indicator = beat_indicator_script.new()
@@ -165,9 +199,8 @@ func setup_timing_monitor():
 		ui_layer.add_child(timing_monitor)
 
 func _process(delta):
-	if camera and player:
-		camera.position = player.position
-		# Update background shader with camera position
+	# Update background shader with camera position
+	if camera:
 		var background = get_node_or_null("Background")
 		if background and background.material:
 			background.material.set_shader_parameter("camera_position", camera.position)
@@ -240,6 +273,10 @@ func setup_level():
 	
 	# Pass the current level to the generator
 	level_generator.current_level = current_level
+	
+	# Reposition camera for the new level
+	if camera:
+		position_camera_for_full_level()
 	
 	# Count total coins in the level
 	total_coins_in_level = 0
