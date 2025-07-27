@@ -1,5 +1,4 @@
-# Tomb of the Mask Clone
-
+# Techno Beat
 A fun 2D maze game built with Godot! This guide will help you run the game on your computer.
 
 ## Quick Start - Two Ways to Play
