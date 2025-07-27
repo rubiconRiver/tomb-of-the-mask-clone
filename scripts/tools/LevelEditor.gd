@@ -666,17 +666,17 @@ func save_level():
 			var cell_char = "."
 			
 			# Check regular tiles
-				var atlas_coords = tilemap.get_cell_atlas_coords(0, grid_pos)
-				if atlas_coords != Vector2i(-1, -1):
-					match atlas_coords.x:
-						TileType.WALL:
-							cell_char = "#"
-						TileType.COIN:
-							cell_char = "C"
-						TileType.PLAYER_SPAWN:
-							cell_char = "P"
-						TileType.GOAL:
-							cell_char = "G"
+			var atlas_coords = tilemap.get_cell_atlas_coords(0, grid_pos)
+			if atlas_coords != Vector2i(-1, -1):
+				match atlas_coords.x:
+					TileType.WALL:
+						cell_char = "#"
+					TileType.COIN:
+						cell_char = "C"
+					TileType.PLAYER_SPAWN:
+						cell_char = "P"
+					TileType.GOAL:
+						cell_char = "G"
 			
 			row.append(cell_char)
 		level_data.tiles.append(row)
@@ -869,17 +869,17 @@ func calculate_ghost_path():
 			var cell_char = "."
 			
 			# Check regular tiles
-				var atlas_coords = tilemap.get_cell_atlas_coords(0, grid_pos)
-				if atlas_coords != Vector2i(-1, -1):
-					match atlas_coords.x:
-						TileType.WALL:
-							cell_char = "#"
-						TileType.COIN:
-							cell_char = "C"
-						TileType.PLAYER_SPAWN:
-							cell_char = "P"
-						TileType.GOAL:
-							cell_char = "G"
+			var atlas_coords = tilemap.get_cell_atlas_coords(0, grid_pos)
+			if atlas_coords != Vector2i(-1, -1):
+				match atlas_coords.x:
+					TileType.WALL:
+						cell_char = "#"
+					TileType.COIN:
+						cell_char = "C"
+					TileType.PLAYER_SPAWN:
+						cell_char = "P"
+					TileType.GOAL:
+						cell_char = "G"
 			row += cell_char
 		level_template.append(row)
 	
