@@ -547,6 +547,17 @@ func update_ui():
 func restart_game():
 	start_game()
 
+func _on_menu_button_pressed():
+	HapticFeedback.on_button_press()
+	print("[GameManager] Menu button pressed - returning to main menu")
+	
+	# Stop audio
+	if beat_tracking_started:
+		AudioManager.stop_beat_tracking()
+	
+	# Return to main menu
+	get_tree().change_scene_to_file("res://scenes/MainMenu.tscn")
+
 func _on_timing_calculated(quality: int, multiplier: float):
 	# Update player visual based on timing quality
 	if player and player.has_method("set_timing_quality"):
