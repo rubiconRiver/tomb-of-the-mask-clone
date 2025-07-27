@@ -25,12 +25,38 @@ enum CellType {
 func _ready():
 	generate_level()
 
+func convert_string_level_to_enum(string_data: Array) -> Array:
+	var converted_data = []
+	for row in string_data:
+		var converted_row = []
+		for cell in row:
+			match cell:
+				'#':
+					converted_row.append(CellType.WALL)
+				'S':
+					converted_row.append(CellType.SPIKE)
+				'C':
+					converted_row.append(CellType.COIN)
+				'P':
+					converted_row.append(CellType.PLAYER_SPAWN)
+				'G':
+					converted_row.append(CellType.GOAL)
+				'.', ' ':
+					converted_row.append(CellType.EMPTY)
+				_:
+					converted_row.append(CellType.EMPTY)
+		converted_data.append(converted_row)
+	return converted_data
+
 func generate_level():
 	# Check if we should use a custom level from the editor
 	if LevelEditorData.should_use_custom_level():
 		print("Loading custom level from editor...")
-		level_data = LevelEditorData.get_custom_level()
-		LevelEditorData.clear_custom_level()  # Use it once, then clear
+		var raw_data = LevelEditorData.get_custom_level()
+		level_data = convert_string_level_to_enum(raw_data)
+		# Only clear if we're coming from the editor
+		if LevelEditorData.is_launched_from_editor():
+			LevelEditorData.clear_custom_level()  # Use it once, then clear
 	# Use empty level template for all levels now
 	else:
 		var template = LevelTemplates.get_empty_level()
