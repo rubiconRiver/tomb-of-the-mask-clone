@@ -27,7 +27,6 @@ var particle_manager: ParticleManager
 var latency_compensator: LatencyCompensator
 var audio_analyzer: AudioAnalyzer
 var beat_indicator_ui: BeatIndicatorUI
-var background_elements: BackgroundReactiveElements
 var grid_star_effect: GridStarEffect
 var mobile_controls: MobileControls
 
@@ -215,12 +214,6 @@ func setup_timing_monitor():
 		ui_layer.add_child(timing_monitor)
 
 func _process(delta):
-	# Update background shader with camera position
-	if camera:
-		var background = get_node_or_null("Background")
-		if background and background.material:
-			background.material.set_shader_parameter("camera_position", camera.position)
-		
 	# Mobile controls now handled by MobileControls UI component
 		
 	
@@ -796,11 +789,6 @@ func initialize_effect_systems():
 	beat_indicator_ui = BeatIndicatorUI.new()
 	ui_layer.add_child(beat_indicator_ui)
 	beat_indicator_ui.set_position_preset("bottom_center")
-	
-	# Initialize Background Reactive Elements
-	background_elements = BackgroundReactiveElements.new()
-	add_child(background_elements)
-	background_elements.z_index = -5  # Behind game elements
 	
 	# Initialize Grid Star Effect
 	var grid_star_script = preload("res://scripts/effects/GridStarEffect.gd")

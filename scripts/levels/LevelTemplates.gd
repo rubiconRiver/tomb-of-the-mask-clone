@@ -4,7 +4,6 @@ extends RefCounted
 # Level template format:
 # '#' = Wall
 # '.' = Empty  
-# 'S' = Spike
 # 'C' = Coin
 # 'P' = Player spawn
 # 'G' = Goal
@@ -63,8 +62,6 @@ static func parse_template(template: Array) -> Array:
 			match char:
 				'#':
 					row.append(LevelGenerator.CellType.WALL)
-				'S':
-					row.append(LevelGenerator.CellType.SPIKE)
 				'C':
 					row.append(LevelGenerator.CellType.COIN)
 				'P':

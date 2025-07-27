@@ -6,7 +6,6 @@ const LEVEL_WIDTH = 16  # Optimized for mobile portrait mode
 const LEVEL_HEIGHT = 32  # 16x32 provides perfect 1:2 aspect ratio
 
 var wall_scene = preload("res://scenes/obstacles/Wall.tscn")
-var spike_scene = preload("res://scenes/obstacles/Spike.tscn")
 var coin_scene = preload("res://scenes/obstacles/Coin.tscn")
 var goal_scene = preload("res://scenes/obstacles/Goal.tscn")
 
@@ -16,7 +15,6 @@ var current_level = 0
 enum CellType {
 	EMPTY,
 	WALL,
-	SPIKE,
 	COIN,
 	PLAYER_SPAWN,
 	GOAL
@@ -59,8 +57,6 @@ func load_from_tilemap(tilemap: TileMap):
 					row.append(CellType.WALL)
 				Vector2i(1, 0):
 					row.append(CellType.COIN)
-				Vector2i(2, 0):
-					row.append(CellType.SPIKE)
 				Vector2i(3, 0):
 					row.append(CellType.PLAYER_SPAWN)
 				_:
@@ -83,7 +79,6 @@ func generate_random_level():
 		level_data.append(row)
 	
 	generate_maze()
-	place_hazards()
 	place_coins()
 	
 	# Place player spawn and goal
@@ -104,19 +99,6 @@ func generate_maze():
 				if y + dy < LEVEL_HEIGHT - 1:
 					level_data[y + dy][x] = CellType.WALL
 
-func place_hazards():
-	var spike_count = mini(current_level * 2 + 3, 15)
-	
-	for i in range(spike_count):
-		var attempts = 0
-		while attempts < 50:
-			var x = randi() % (LEVEL_WIDTH - 2) + 1
-			var y = randi() % (LEVEL_HEIGHT - 2) + 1
-			
-			if level_data[y][x] == CellType.EMPTY:
-				level_data[y][x] = CellType.SPIKE
-				break
-			attempts += 1
 
 func place_coins():
 	var coin_count = 10 + current_level * 2
@@ -169,14 +151,6 @@ func build_level():
 					#	var sprite = wall.get_node_or_null("Sprite2D")
 					#	if sprite:
 					#		sprite.material = beat_visualizer.get_material_for_type("wall")
-				CellType.SPIKE:
-					var spike = spike_scene.instantiate()
-					spike.position = world_pos
-					add_child(spike)
-					if beat_visualizer:
-						var sprite = spike.get_node_or_null("Sprite2D")
-						if sprite:
-							sprite.material = beat_visualizer.get_material_for_type("spike")
 				CellType.COIN:
 					var coin = coin_scene.instantiate()
 					coin.position = world_pos
