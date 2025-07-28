@@ -68,16 +68,23 @@ func _ready():
 	# Initialize speed from default BPM (120)
 	update_speed_from_bpm(120.0)
 	
-	# Add trail effect
-	var trail_script = preload("res://scripts/visual/TrailEffect.gd")
-	trail_effect = trail_script.new()
-	add_child(trail_effect)
-	trail_effect.set_trail_color(Color("#94fbe6"))  # Match player color
+	# Add trail effect - with error handling for Android
+	var trail_script = load("res://scripts/visual/TrailEffect.gd")
+	if trail_script:
+		trail_effect = trail_script.new()
+		add_child(trail_effect)
+		if trail_effect.has_method("set_trail_color"):
+			trail_effect.set_trail_color(Color("#94fbe6"))  # Match player color
+	else:
+		print("[Player] Warning: Could not load TrailEffect.gd")
 	
-	# Add player visual controller
-	var visual_script = preload("res://scripts/player/PlayerVisual.gd")
-	player_visual = visual_script.new()
-	add_child(player_visual)
+	# Add player visual controller - with error handling for Android
+	var visual_script = load("res://scripts/player/PlayerVisual.gd")
+	if visual_script:
+		player_visual = visual_script.new()
+		add_child(player_visual)
+	else:
+		print("[Player] Warning: Could not load PlayerVisual.gd")
 	
 	# Get effect systems from game manager and connect to beat system
 	var game_manager = get_tree().get_first_node_in_group("game_manager")
@@ -109,7 +116,7 @@ func _physics_process(delta):
 		move_and_slide()
 		
 		# Add trail points while moving
-		if trail_effect:
+		if trail_effect and trail_effect.has_method("add_point"):
 			trail_effect.add_point(global_position)
 		
 		# Log position relative to beat every 0.25 seconds for debugging
@@ -143,11 +150,11 @@ func _physics_process(delta):
 			velocity = Vector2.ZERO
 			
 			# Add landing effects
-			if particle_manager:
+			if particle_manager and particle_manager.has_method("spawn_landing"):
 				particle_manager.spawn_landing(global_position, get_parent())
 			
 			# Subtle landing screen shake
-			if screen_shake:
+			if screen_shake and screen_shake.has_method("shake_preset"):
 				screen_shake.shake_preset("landing")
 			
 			# Build momentum for successful moves
@@ -195,11 +202,11 @@ func _physics_process(delta):
 				velocity = Vector2.ZERO
 				
 				# Wall hit effects
-				if particle_manager:
+				if particle_manager and particle_manager.has_method("spawn_wall_hit"):
 					particle_manager.spawn_wall_hit(collision.get_position(), get_parent())
 				
 				# Wall hit screen shake
-				if screen_shake:
+				if screen_shake and screen_shake.has_method("shake_preset"):
 					screen_shake.shake_preset("wall_hit")
 				
 				# Reduce momentum on wall hit
@@ -304,7 +311,7 @@ func _on_area_entered(other_area):
 			other_area.queue_free()
 		
 		# Coin collection screen shake
-		if screen_shake:
+		if screen_shake and screen_shake.has_method("shake_preset"):
 			screen_shake.shake_preset("coin_collect")
 		
 		emit_signal("collected_coin")
