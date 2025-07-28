@@ -1,0 +1,19 @@
+{
+  "branches": {
+    "garettstestbranch": {
+      "owner": "Landphil",
+      "email": "landphil@Landphils-MacBook-Pro.local",
+      "createdAt": "2025-07-27T17:08:31.883Z"
+    },
+    "better-menu-main-candidate": {
+      "owner": "Landphil",
+      "email": "landphil@Landphils-MacBook-Pro.local",
+      "createdAt": "2025-07-27T17:08:31.918Z"
+    },
+    "july2027-main-candidate": {
+      "owner": "Garett",
+      "email": "garett.gelsinger@gmail.com",
+      "createdAt": "2025-07-28T00:47:26.647Z"
+    }
+  }
+}
