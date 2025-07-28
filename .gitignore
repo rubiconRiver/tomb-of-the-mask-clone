@@ -33,3 +33,4 @@ dist/
 *.apk
 *.aab
 *.ipa
+.intentional.dev/
