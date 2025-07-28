@@ -2,8 +2,8 @@ extends Node2D
 class_name LevelGenerator
 
 const GRID_SIZE = 64
-const LEVEL_WIDTH = 16  # Optimized for mobile portrait mode  
-const LEVEL_HEIGHT = 32  # 16x32 provides perfect 1:2 aspect ratio
+var LEVEL_WIDTH = 16  # Optimized for mobile portrait mode  
+var LEVEL_HEIGHT = 32  # 16x32 provides perfect 1:2 aspect ratio
 
 var wall_scene = preload("res://scenes/obstacles/Wall.tscn")
 var coin_scene = preload("res://scenes/obstacles/Coin.tscn")
@@ -21,20 +21,86 @@ enum CellType {
 }
 
 func _ready():
-	generate_level()
+	# Don't generate immediately - wait for current_level to be set by GameManager
+	pass
 
 func generate_level():
+	print("[LevelGenerator] generate_level called with current_level: ", current_level)
+	
 	# Check if we should use a custom level from the editor
 	if LevelEditorData.should_use_custom_level():
-		print("Loading custom level from editor...")
+		print("[LevelGenerator] Loading custom level from editor...")
 		level_data = LevelEditorData.get_custom_level()
 		LevelEditorData.clear_custom_level()  # Use it once, then clear
-	# Use empty level template for all levels now
+	# Try to load numbered level first
 	else:
-		var template = LevelTemplates.get_empty_level()
-		level_data = LevelTemplates.parse_template(template)
+		print("[LevelGenerator] Attempting to load numbered level: ", current_level)
+		var level_loaded = load_numbered_level(current_level)
+		if not level_loaded:
+			print("[LevelGenerator] Failed to load numbered level, using template")
+			# Fallback to empty template
+			var template = LevelTemplates.get_empty_level()
+			level_data = LevelTemplates.parse_template(template)
+		else:
+			print("[LevelGenerator] Successfully loaded numbered level: ", current_level)
 	
 	build_level()
+
+func load_numbered_level(level_num: int) -> bool:
+	# Try to load level with 3-digit format (001, 002, etc.)
+	var level_name = "%03d" % level_num
+	var level_path = "res://levels/%s.json" % level_name
+	
+	if not FileAccess.file_exists(level_path):
+		print("[LevelGenerator] Level file not found: ", level_path)
+		return false
+	
+	var file = FileAccess.open(level_path, FileAccess.READ)
+	if not file:
+		print("[LevelGenerator] Failed to open level: ", level_path)
+		return false
+		
+	var json_string = file.get_as_text()
+	file.close()
+	
+	var json = JSON.new()
+	var parse_result = json.parse(json_string)
+	
+	if parse_result != OK:
+		print("[LevelGenerator] Failed to parse level JSON: ", level_path)
+		return false
+		
+	var data = json.data
+	if not data.has("tiles"):
+		print("[LevelGenerator] Level data missing 'tiles' array: ", level_path)
+		return false
+	
+	# Convert JSON tile format to level_data format
+	level_data = []
+	for row in data.tiles:
+		var parsed_row = []
+		for cell in row:
+			match cell:
+				"#":
+					parsed_row.append(CellType.WALL)
+				"C":
+					parsed_row.append(CellType.COIN)
+				"P":
+					parsed_row.append(CellType.PLAYER_SPAWN)
+				"G":
+					parsed_row.append(CellType.GOAL)
+				_:
+					parsed_row.append(CellType.EMPTY)
+		level_data.append(parsed_row)
+	
+	# Update level dimensions if available
+	if data.has("metadata") and data.metadata.has("width") and data.metadata.has("height"):
+		LEVEL_WIDTH = data.metadata.width
+		LEVEL_HEIGHT = data.metadata.height
+		print("[LevelGenerator] Level dimensions: ", LEVEL_WIDTH, "x", LEVEL_HEIGHT)
+	
+	print("[LevelGenerator] Successfully loaded level: ", level_path)
+	return true
 
 func load_from_tilemap(tilemap: TileMap):
 	# Clear existing level
@@ -165,9 +231,11 @@ func build_level():
 					var goal = goal_scene.instantiate()
 					goal.position = world_pos
 					add_child(goal)
+					print("[LevelGenerator] Created goal at position: ", world_pos)
 					# Connect goal signal to game manager
 					if game_manager and game_manager.has_method("_on_goal_reached"):
 						goal.player_reached_goal.connect(game_manager._on_goal_reached)
+						print("[LevelGenerator] Connected goal signal to game manager")
 	
 	# Pass total coin count to game manager
 	if game_manager:

@@ -690,23 +690,36 @@ func next_level():
 	
 	# Clear any existing level objects
 	if level_generator:
+		print("[GameManager] Clearing existing level objects...")
 		# Clear existing level and wait for cleanup
 		for child in level_generator.get_children():
 			child.queue_free()
 		
 		# Wait a frame to ensure cleanup is complete
 		await get_tree().process_frame
+		print("[GameManager] Level cleanup complete")
 		
 		# Setup new level
+		print("[GameManager] Generating new level ", current_level)
 		level_generator.current_level = current_level
 		level_generator.generate_level()
 		
 		# Reset player position
 		var spawn_pos = level_generator.get_player_spawn_position()
+		print("[GameManager] Player spawn position: ", spawn_pos)
 		if player:
 			player.position = spawn_pos
 			player.reset()
-			print("[GameManager] Player reset to position: ", spawn_pos)
+			print("[GameManager] Player reset to position: ", player.position)
+			
+			# Check if player position is same as any goal position (collision detection)
+			var distance_to_goal = Vector2.ZERO
+			for child in level_generator.get_children():
+				if child.name.begins_with("Goal"):
+					distance_to_goal = child.position - player.position
+					print("[GameManager] WARNING: Distance from player to goal: ", distance_to_goal.length())
+					if distance_to_goal.length() < 32:  # Less than half a grid cell
+						print("[GameManager] CRITICAL: Player spawned too close to goal!")
 	
 	# Reset all scoring systems
 	if style_score_manager:
@@ -716,6 +729,11 @@ func next_level():
 	AudioManager.stop_ambient_guitar()
 	
 	print("[GameManager] Level ", current_level, " setup complete")
+	
+	# Add a small delay to prevent immediate goal triggering
+	print("[GameManager] Waiting brief moment before level becomes active...")
+	await get_tree().create_timer(0.1).timeout
+	print("[GameManager] Level is now active and ready for play")
 
 func return_to_menu():
 	# If launched from editor, go back to editor instead
