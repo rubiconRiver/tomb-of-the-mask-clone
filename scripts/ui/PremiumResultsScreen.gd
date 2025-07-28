@@ -222,6 +222,9 @@ func animate_grade_badge(speed: int, coins: int, style: int):
 	animate_buttons()
 
 func animate_buttons():
+	# Check if next level exists and disable button if not
+	check_next_level_availability()
+	
 	buttons_container.modulate.a = 0.0
 	buttons_container.position.y += 50
 	
@@ -230,6 +233,24 @@ func animate_buttons():
 	buttons_tween.set_trans(Tween.TRANS_CUBIC)
 	buttons_tween.tween_property(buttons_container, "position:y", buttons_container.position.y - 50, 0.3)
 	buttons_tween.parallel().tween_property(buttons_container, "modulate:a", 1.0, 0.3)
+
+func check_next_level_availability():
+	# Check if the next level file exists
+	var next_level_num = level_num + 1
+	var next_level_path = "res://levels/%03d.json" % next_level_num
+	
+	print("[ResultsScreen] Checking next level: ", next_level_path)
+	
+	if not FileAccess.file_exists(next_level_path):
+		print("[ResultsScreen] Next level does not exist - disabling Next button")
+		next_button.disabled = true
+		next_button.modulate = Color(0.5, 0.5, 0.5, 0.7)  # Grey out the button
+		next_button.text = "No More Levels"
+	else:
+		print("[ResultsScreen] Next level exists - enabling Next button")
+		next_button.disabled = false
+		next_button.modulate = Color.WHITE
+		next_button.text = "Next Level"
 
 func calculate_speed_rating(time: float, level: int) -> int:
 	var thresholds = SPEED_THRESHOLDS.get(level, [60, 40, 30])

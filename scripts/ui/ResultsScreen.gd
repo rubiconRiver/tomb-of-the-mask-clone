@@ -50,7 +50,28 @@ func show_results(level_time: float, coins_collected: int, total_coins: int, sty
 	var letter_grade = calculate_letter_grade(speed_rating, coins_rating, style_rating)
 	display_grade(letter_grade)
 	
+	# Check next level availability
+	check_next_level_availability(level_num)
+	
 	visible = true
+
+func check_next_level_availability(current_level: int):
+	# Check if the next level file exists
+	var next_level_num = current_level + 1
+	var next_level_path = "res://levels/%03d.json" % next_level_num
+	
+	print("[ResultsScreen] Checking next level: ", next_level_path)
+	
+	if not FileAccess.file_exists(next_level_path):
+		print("[ResultsScreen] Next level does not exist - disabling Next button")
+		next_button.disabled = true
+		next_button.modulate = Color(0.5, 0.5, 0.5, 0.7)  # Grey out the button
+		next_button.text = "No More Levels"
+	else:
+		print("[ResultsScreen] Next level exists - enabling Next button")
+		next_button.disabled = false
+		next_button.modulate = Color.WHITE
+		next_button.text = "Next Level"
 
 func calculate_speed_rating(time: float, level: int) -> int:
 	var thresholds = SPEED_THRESHOLDS.get(level, [60, 40, 30])

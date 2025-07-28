@@ -281,7 +281,11 @@ func setup_level():
 	add_child(level_generator)
 	
 	# Pass the current level to the generator
+	print("[GameManager] Setting level_generator.current_level = ", current_level)
 	level_generator.current_level = current_level
+	
+	# Now generate the level with the correct level number
+	level_generator.generate_level()
 	
 	# Reposition camera for the new level (with a small delay)
 	if camera:
@@ -642,7 +646,7 @@ func show_results_screen():
 		style_accuracy = style_score_manager.get_accuracy()
 		timing_counts = style_score_manager.get_timing_counts()
 	
-	results_screen.show_results(level_complete_time, coins, total_coins_in_level, style_accuracy, current_level + 1, timing_counts)
+	results_screen.show_results(level_complete_time, coins, total_coins_in_level, style_accuracy, current_level, timing_counts)
 
 func restart_level():
 	# Save current level before resetting
@@ -656,12 +660,27 @@ func restart_level():
 
 func next_level():
 	current_level += 1
+	print("[GameManager] Moving to next level: ", current_level)
+	
+	# Check if next level exists before proceeding
+	var next_level_path = "res://levels/%03d.json" % current_level
+	if not FileAccess.file_exists(next_level_path):
+		print("[GameManager] Next level does not exist: ", next_level_path)
+		# Stay on current level and return to menu instead
+		current_level -= 1
+		return_to_menu()
+		return
+	
 	is_level_complete = false
 	level_start_time = Time.get_ticks_msec() / 1000.0
 	coins = 0
 	
+	# Tell GameData about the new level
+	GameData.start_level(current_level)
+	
 	# Generate the next level
 	if level_generator:
+		level_generator.current_level = current_level
 		level_generator.generate_level()
 		var spawn_pos = level_generator.get_player_spawn_position()
 		if player:
