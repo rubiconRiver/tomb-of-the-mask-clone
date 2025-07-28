@@ -3,7 +3,7 @@ class_name GameManager
 
 var player_scene = preload("res://scenes/player/Player.tscn")
 var level_generator_scene = preload("res://scenes/levels/LevelGenerator.tscn")
-var beat_indicator_script = preload("res://scripts/ui/BeatIndicator.gd")
+# var beat_indicator_script = preload("res://scripts/ui/BeatIndicator.gd")  # REMOVED: Beat counter UI
 var style_score_manager_script = preload("res://scripts/ui/StyleScoreManager.gd")
 var timing_feedback_script = preload("res://scripts/ui/TimingFeedback.gd")
 var beat_timeline_script = preload("res://scripts/ui/BeatTimeline.gd")
@@ -15,7 +15,7 @@ var player: Player
 var level_generator: LevelGenerator
 var swipe_detector: SwipeDetector
 var camera: Camera2D
-var beat_indicator: Control
+# var beat_indicator: Control  # REMOVED: Beat counter UI
 var beat_timeline: BeatTimeline
 var style_score_manager: StyleScoreManager
 var beat_visualizer: BeatVisualizer
@@ -26,7 +26,7 @@ var screen_shake: ScreenShake
 var particle_manager: ParticleManager
 var latency_compensator: LatencyCompensator
 var audio_analyzer: AudioAnalyzer
-var beat_indicator_ui: BeatIndicatorUI
+# var beat_indicator_ui: BeatIndicatorUI  # REMOVED: Beat counter UI
 var grid_star_effect: GridStarEffect
 var mobile_controls: MobileControls
 
@@ -88,7 +88,7 @@ func _ready():
 	style_score_manager.multiplier_changed.connect(_on_multiplier_changed)
 	
 	setup_camera()
-	setup_beat_indicator()
+	# setup_beat_indicator()  # REMOVED: Beat counter UI
 	setup_beat_timeline()
 	setup_beat_visualizer()
 	setup_multiplier_indicator()
@@ -173,12 +173,13 @@ func position_camera_for_full_level():
 	
 	print("[GameManager] Static camera positioned - Level: ", level_width, "x", level_height, " Zoom: ", zoom_level)
 
-func setup_beat_indicator():
-	beat_indicator = beat_indicator_script.new()
-	beat_indicator.position = Vector2(20, 20)
-	
-	if ui_layer:
-		ui_layer.add_child(beat_indicator)
+# REMOVED: Beat counter UI function
+# func setup_beat_indicator():
+#	beat_indicator = beat_indicator_script.new()
+#	beat_indicator.position = Vector2(20, 20)
+#	
+#	if ui_layer:
+#		ui_layer.add_child(beat_indicator)
 		
 	# Don't auto-connect, we'll call manually based on beat type
 
@@ -327,11 +328,12 @@ func spawn_player():
 
 func _on_beat(beat_count_param: int):
 	# Update beat indicator with appropriate pulse strength
-	if beat_indicator:
-		if beat_count_param % 4 == 0:
-			beat_indicator.pulse_strong()
-		else:
-			beat_indicator.pulse()
+	# REMOVED: Beat counter UI
+	# if beat_indicator:
+	#	if beat_count_param % 4 == 0:
+	#		beat_indicator.pulse_strong()
+	#	else:
+	#		beat_indicator.pulse()
 	
 	# Check if this is a 4th beat and we haven't moved
 	if beat_count_param % 4 == 0 and beat_count_param > 0:
@@ -864,10 +866,10 @@ func initialize_effect_systems():
 	audio_analyzer.beat_detected.connect(_on_audio_beat_detected)
 	audio_analyzer.tempo_detected.connect(_on_tempo_detected)
 	
-	# Initialize BeatIndicator UI
-	beat_indicator_ui = BeatIndicatorUI.new()
-	ui_layer.add_child(beat_indicator_ui)
-	beat_indicator_ui.set_position_preset("bottom_center")
+	# REMOVED: Beat counter UI
+	# beat_indicator_ui = BeatIndicatorUI.new()
+	# ui_layer.add_child(beat_indicator_ui)
+	# beat_indicator_ui.set_position_preset("bottom_center")
 	
 	# Initialize Grid Star Effect
 	var grid_star_script = preload("res://scripts/effects/GridStarEffect.gd")
@@ -914,6 +916,7 @@ func _on_tempo_detected(bpm: float):
 	print("[GameManager] Tempo detected: ", bpm, " BPM")
 	
 	# Update beat indicator with detected tempo
-	if beat_indicator_ui:
-		var beat_interval = 60.0 / bpm
-		beat_indicator_ui.set_beat_interval(beat_interval)
+	# REMOVED: Beat counter UI
+	# if beat_indicator_ui:
+	#	var beat_interval = 60.0 / bpm
+	#	beat_indicator_ui.set_beat_interval(beat_interval)
