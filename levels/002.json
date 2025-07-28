@@ -1,6 +1,6 @@
 {
 	"audio_pattern": {
-		"bpm": 120,
+		"bpm": 120.0,
 		"level_name": "levels/001",
 		"patterns": {
 			"hi-hat": [
@@ -98,14 +98,14 @@
 	},
 	"metadata": {
 		"author": "Level Editor",
-		"created": "2025-07-28T16:29:04",
+		"created": "2025-07-28T17:08:30",
 		"height": 20.0,
 		"name": "002",
 		"version": 1,
 		"width": 11.0
 	},
 	"settings": {
-		"beats_per_minute": 120,
+		"beats_per_minute": 120.0,
 		"cells_per_beat": 8
 	},
 	"tiles": [
@@ -338,8 +338,8 @@
 			"#",
 			"C",
 			"#",
-			"#",
-			"#",
+			"C",
+			"C",
 			"C",
 			"#"
 		],
@@ -352,7 +352,7 @@
 			"C",
 			"C",
 			"C",
-			"C",
+			"#",
 			"G",
 			"#"
 		],
