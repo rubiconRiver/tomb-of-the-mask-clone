@@ -712,9 +712,6 @@ func next_level():
 	if style_score_manager:
 		style_score_manager.reset_score()
 	
-	# Reset multiplier
-	multiplier = 1
-	
 	# Reset audio state
 	AudioManager.stop_ambient_guitar()
 	
