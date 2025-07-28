@@ -236,8 +236,14 @@ func move(direction: Vector2):
 	
 	# NEVER REMOVE - Critical for debugging movement glitches
 	var move_id = Time.get_ticks_msec()
-	var current_beat = AudioManager.get_current_beat() if AudioManager else 0
-	var beat_progress = AudioManager.get_beat_progress() if AudioManager else 0.0
+	var current_beat = 0
+	var beat_progress = 0.0
+	
+	# Safe AudioManager access
+	if AudioManager:
+		current_beat = AudioManager.get_current_beat()
+		beat_progress = AudioManager.get_beat_progress()
+	
 	print("=== MOVE START [", move_id, "] ===")
 	print("Start position: ", position, " Grid: ", Vector2i(position / GRID_SIZE))
 	print("Direction: ", direction)
@@ -246,8 +252,8 @@ func move(direction: Vector2):
 	move_direction = direction.normalized()
 	is_moving = true
 	
-	# Play whoosh sound for movement start
-	if AudioManager:
+	# Play whoosh sound for movement start - with safe checks
+	if AudioManager and AudioManager.has_method("play_whoosh"):
 		AudioManager.play_whoosh()
 	
 	# Store start position for tracking blocks traveled

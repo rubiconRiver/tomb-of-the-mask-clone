@@ -9,6 +9,7 @@ var timing_feedback_script = preload("res://scripts/ui/TimingFeedback.gd")
 var beat_timeline_script = preload("res://scripts/ui/BeatTimeline.gd")
 var beat_visualizer_script = preload("res://scripts/visual/BeatVisualizer.gd")
 var timing_monitor_script = preload("res://scripts/ui/TimingMonitor.gd")
+# var error_handler_script = preload("res://scripts/debug/ErrorHandler.gd")
 # Combo music now handled by AudioManager
 
 var player: Player
