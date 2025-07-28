@@ -1165,6 +1165,14 @@ func return_to_main_menu():
 	print("Returning to main menu...")
 	get_tree().change_scene_to_file("res://scenes/MainMenu.tscn")
 
+func new_level():
+	print("Creating new level...")
+	clear_level()
+	current_filename = ""
+	update_level_name_display()
+	if status_label:
+		status_label.text = "New level created | Ctrl+S to save"
+
 func _on_edit_button_pressed():
 	print("Edit menu - TODO")
 	if status_label:
