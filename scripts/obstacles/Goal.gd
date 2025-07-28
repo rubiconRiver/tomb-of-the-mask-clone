@@ -44,16 +44,33 @@ func update_portal():
 
 func _on_body_entered(body):
 	if body.is_in_group("player"):
-		print("Goal detection - Player pos: ", body.position, " Goal pos: ", position)
-		print("Distance: ", body.position.distance_to(position))
+		# More precise collision detection - check if player is actually in the goal square
+		const GRID_SIZE = 64
+		var distance = body.position.distance_to(position)
 		
-		emit_signal("player_reached_goal")
+		# Convert world positions to grid coordinates (centered on grid cells)
+		var goal_grid_x = int((position.x + GRID_SIZE/2) / GRID_SIZE)
+		var goal_grid_y = int((position.y + GRID_SIZE/2) / GRID_SIZE)
+		var player_grid_x = int((body.position.x + GRID_SIZE/2) / GRID_SIZE)
+		var player_grid_y = int((body.position.y + GRID_SIZE/2) / GRID_SIZE)
 		
-		# Visual feedback
-		var tween = get_tree().create_tween()
-		tween.set_parallel(true)
-		tween.tween_property(self, "scale", Vector2(2, 2), 0.3)
-		tween.tween_property(self, "modulate:a", 0.0, 0.3)
+		print("[Goal] Goal detection triggered:")
+		print("  Goal pos: ", position, " (grid: ", goal_grid_x, ",", goal_grid_y, ")")
+		print("  Player pos: ", body.position, " (grid: ", player_grid_x, ",", player_grid_y, ")")
+		print("  Distance: ", distance)
+		
+		# Only trigger if player is in the exact same grid square as the goal
+		if player_grid_x == goal_grid_x and player_grid_y == goal_grid_y:
+			print("[Goal] ✓ Player is in goal square - completing level")
+			emit_signal("player_reached_goal")
+			
+			# Visual feedback
+			var tween = get_tree().create_tween()
+			tween.set_parallel(true)
+			tween.tween_property(self, "scale", Vector2(2, 2), 0.3)
+			tween.tween_property(self, "modulate:a", 0.0, 0.3)
+		else:
+			print("[Goal] ✗ Player not in goal square - ignoring collision")
 
 func _on_animation_timer_timeout():
 	# Additional animation updates if needed
