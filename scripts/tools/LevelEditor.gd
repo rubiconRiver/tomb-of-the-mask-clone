@@ -58,11 +58,13 @@ const BEAT_GUIDE_COLORS = {
 @onready var save_button = $UI/TopBar/ToolButtons/SaveButton
 @onready var load_button = $UI/TopBar/ToolButtons/LoadButton
 @onready var audio_button = $UI/TopBar/ToolButtons/AudioButton
+@onready var level_name_label = $UI/TopBar/LevelNameLabel
 
 
 
 # Audio pattern system
 var level_audio_pattern = null  # Stores the audio pattern from AudioEditor
+var audio_editor_open = false  # Track if audio editor is open to block input
 
 func _ready():
 	# Override project's mobile viewport settings for level editor
@@ -107,13 +109,24 @@ func _ready():
 	
 	z_index = 10
 	
-	# Check if we're returning from testing a level
+	# Check if we're returning from testing a level or need to load a specific level
 	print("=== LEVEL EDITOR STARTING ===")
 	var backup = LevelEditorData.get_editor_backup()
 	if backup:
 		print("Found backup - restoring previous work")
 		restore_from_backup(backup)
 		LevelEditorData.clear_editor_backup()
+	elif LevelEditorData.has_level_to_edit():
+		# Load the specified level from the menu
+		var level_filename = LevelEditorData.get_level_to_edit()
+		print("Loading specified level: ", level_filename)
+		var level_path = "res://levels/" + level_filename
+		if load_level_from_json(level_path):
+			print("Successfully loaded: ", level_filename)
+		else:
+			print("Failed to load: ", level_filename, " - loading default")
+			load_test_notes()
+		LevelEditorData.clear_level_to_edit()
 	else:
 		print("No backup found - loading default level")
 		# Load the test notes level by default
@@ -228,6 +241,42 @@ func setup_ui():
 	current_tile_label = $UI/TopBar/CurrentTilePanel/CurrentTileLabel
 	update_current_tile_display()
 	
+	
+	# Create level name label if it doesn't exist
+	if not level_name_label:
+		var top_bar = $UI/TopBar
+		if top_bar:
+			# Create a container for the level name positioned to the right of buttons
+			var level_name_container = PanelContainer.new()
+			level_name_container.name = "LevelNameContainer"
+			level_name_container.set_anchors_preset(Control.PRESET_CENTER_LEFT)
+			level_name_container.position = Vector2(700, 10)  # Position to the right of buttons
+			level_name_container.size = Vector2(300, 40)
+			
+			# Style the container
+			var panel_style = StyleBoxFlat.new()
+			panel_style.bg_color = Color(0.2, 0.2, 0.25, 0.8)
+			panel_style.corner_radius_top_left = 4
+			panel_style.corner_radius_top_right = 4
+			panel_style.corner_radius_bottom_left = 4
+			panel_style.corner_radius_bottom_right = 4
+			panel_style.content_margin_left = 10
+			panel_style.content_margin_right = 10
+			panel_style.content_margin_top = 5
+			panel_style.content_margin_bottom = 5
+			level_name_container.add_theme_stylebox_override("panel", panel_style)
+			
+			level_name_label = Label.new()
+			level_name_label.text = "Level: Untitled"
+			level_name_label.add_theme_font_size_override("font_size", 16)
+			level_name_label.add_theme_color_override("font_color", Color(0.9, 0.9, 0.9))
+			level_name_label.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+			level_name_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+			level_name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+			
+			level_name_container.add_child(level_name_label)
+			top_bar.add_child(level_name_container)
+	
 	# Connect button signals
 	if file_button:
 		file_button.pressed.connect(_on_file_button_pressed)
@@ -238,7 +287,7 @@ func setup_ui():
 	if play_button:
 		play_button.pressed.connect(load_into_game)
 	if save_button:
-		save_button.pressed.connect(save_level)
+		save_button.pressed.connect(_on_save_button_pressed)
 	if load_button:
 		load_button.pressed.connect(_on_load_button_pressed)
 	if audio_button:
@@ -247,8 +296,15 @@ func setup_ui():
 	# Update status
 	if status_label:
 		status_label.text = "Ready"
+	
+	# Update level name display
+	update_level_name_display()
 
 func _input(event):
+	# Block input if audio editor is open
+	if audio_editor_open:
+		return
+		
 	# Handle mouse wheel zoom
 	if event is InputEventMouseButton:
 		if event.pressed:
@@ -283,7 +339,7 @@ func _input(event):
 				update_current_tile_display()
 			KEY_S:
 				if event.ctrl_pressed:
-					save_level()
+					_on_save_button_pressed()
 			KEY_L:
 				load_into_game()
 			KEY_C:
@@ -423,6 +479,14 @@ func update_current_tile_display():
 	if current_tile_label:
 		current_tile_label.text = "Current: " + get_tile_type_name(current_tile_type)
 
+func update_level_name_display():
+	if level_name_label:
+		if current_filename == "":
+			level_name_label.text = "Level: Untitled"
+		else:
+			var level_name = current_filename.get_file().get_basename()
+			level_name_label.text = "Level: " + level_name
+
 
 func _draw():
 	# Draw beat guides
@@ -497,6 +561,9 @@ func load_level_from_json(path: String):
 	
 	var data = json.data
 	
+	# Set the current filename for saving
+	current_filename = path.replace("res://", "")
+	
 	# Load metadata
 	if data.has("metadata"):
 		var meta = data.metadata
@@ -556,10 +623,12 @@ func load_level_from_json(path: String):
 			print("  data.audio_pattern is null: ", data.audio_pattern == null)
 	
 	update_current_tile_display()
+	update_level_name_display()
 	if status_label:
 		var status_text = "Loaded: " + path.get_file()
 		if level_audio_pattern:
 			status_text += " (with audio pattern)"
+		status_text += " | Ctrl+S to save"
 		status_label.text = status_text
 	
 	return true
@@ -628,22 +697,155 @@ func clear_level():
 	if grid_node:
 		grid_node.queue_redraw()
 
+func _on_save_button_pressed():
+	# Create save options dialog
+	var dialog = AcceptDialog.new()
+	dialog.title = "Save Options"
+	dialog.dialog_hide_on_ok = false
+	dialog.size = Vector2(500, 400)
+	
+	var vbox = VBoxContainer.new()
+	vbox.add_theme_constant_override("separation", 20)
+	
+	# Save current file section
+	var save_section = VBoxContainer.new()
+	vbox.add_child(save_section)
+	
+	var save_label = Label.new()
+	save_label.text = "Save Current Level"
+	save_label.add_theme_font_size_override("font_size", 18)
+	save_section.add_child(save_label)
+	
+	var current_file_label = Label.new()
+	if current_filename != "":
+		current_file_label.text = "Current file: " + current_filename
+	else:
+		current_file_label.text = "No file loaded - use Save As to create new file"
+	current_file_label.add_theme_color_override("font_color", Color(0.7, 0.7, 0.7))
+	save_section.add_child(current_file_label)
+	
+	var save_button_dialog = Button.new()
+	save_button_dialog.text = "Save"
+	save_button_dialog.custom_minimum_size = Vector2(200, 40)
+	save_button_dialog.disabled = (current_filename == "")
+	save_section.add_child(save_button_dialog)
+	
+	# Separator
+	var separator = HSeparator.new()
+	vbox.add_child(separator)
+	
+	# Save As section
+	var save_as_section = VBoxContainer.new()
+	vbox.add_child(save_as_section)
+	
+	var save_as_label = Label.new()
+	save_as_label.text = "Save As New Level"
+	save_as_label.add_theme_font_size_override("font_size", 18)
+	save_as_section.add_child(save_as_label)
+	
+	# Name input
+	var name_label = Label.new()
+	name_label.text = "Level name (numbers 001-999 for main levels):"
+	save_as_section.add_child(name_label)
+	
+	var name_input = LineEdit.new()
+	name_input.placeholder_text = "e.g., 001 or bonus_level_1"
+	if current_filename != "":
+		name_input.text = current_filename.get_file().get_basename()
+	save_as_section.add_child(name_input)
+	
+	# Save location choice
+	var location_label = Label.new()
+	location_label.text = "Save location:"
+	save_as_section.add_child(location_label)
+	
+	var location_choice = OptionButton.new()
+	location_choice.add_item("Main Levels (for level select)")
+	location_choice.add_item("Custom Levels")
+	location_choice.selected = 0
+	save_as_section.add_child(location_choice)
+	
+	var save_as_button_dialog = Button.new()
+	save_as_button_dialog.text = "Save As"
+	save_as_button_dialog.custom_minimum_size = Vector2(200, 40)
+	save_as_section.add_child(save_as_button_dialog)
+	
+	dialog.add_child(vbox)
+	
+	# Handle Save button
+	save_button_dialog.pressed.connect(func():
+		save_level()
+		dialog.queue_free()
+	)
+	
+	# Handle Save As button
+	save_as_button_dialog.pressed.connect(func():
+		var level_name = name_input.text.strip_edges()
+		if level_name == "":
+			print("No name entered")
+			return
+			
+		var file_path = ""
+		if location_choice.selected == 0:  # Main levels
+			file_path = "res://levels/%s.json" % level_name
+		else:  # Custom levels
+			file_path = "res://levels/custom/%s.json" % level_name
+			
+		# Check if file exists
+		if FileAccess.file_exists(file_path):
+			var confirm_dialog = ConfirmationDialog.new()
+			confirm_dialog.dialog_text = "Level '%s' already exists. Overwrite?" % level_name
+			confirm_dialog.confirmed.connect(func():
+				save_level_to_path(file_path)
+				dialog.queue_free()
+			)
+			ui_layer.add_child(confirm_dialog)
+			confirm_dialog.popup_centered()
+		else:
+			save_level_to_path(file_path)
+			dialog.queue_free()
+	)
+	
+	# Add cancel button
+	dialog.get_ok_button().text = "Cancel"
+	
+	ui_layer.add_child(dialog)
+	dialog.popup_centered()
+
 func save_level():
 	print("Saving level...")
 	
-	# Debug: Check if we have audio pattern data
-	if level_audio_pattern:
-		print("[LevelEditor] Audio pattern found for saving:")
-		print("  BPM: ", level_audio_pattern.bpm)
-		print("  Theme: ", level_audio_pattern.theme)
-		print("  Pattern tracks: ", level_audio_pattern.patterns.keys())
+	# If we have a current filename, save to that file
+	# Otherwise, show error
+	if current_filename == "":
+		print("ERROR: No current file to save")
+		return
+	
+	# Determine the full path based on current_filename
+	var file_path = ""
+	if current_filename.begins_with("custom/"):
+		file_path = "res://levels/" + current_filename
+	elif current_filename.begins_with("levels/"):
+		file_path = "res://" + current_filename
 	else:
-		print("[LevelEditor] No audio pattern to save")
+		# Assume it's a main level
+		file_path = "res://levels/" + current_filename
+	
+	# Ensure it has .json extension
+	if not file_path.ends_with(".json"):
+		file_path += ".json"
+	
+	print("Saving to existing file: ", file_path)
+	save_level_to_path(file_path)
+
+
+func save_level_to_path(file_path: String):
+	print("Saving level to: ", file_path)
 	
 	# Build the level data structure
 	var level_data = {
 		"metadata": {
-			"name": current_filename.get_basename() if current_filename != "" else "Untitled",
+			"name": file_path.get_file().get_basename(),
 			"author": "Level Editor",
 			"created": Time.get_datetime_string_from_system(),
 			"version": 1,
@@ -681,38 +883,79 @@ func save_level():
 			row.append(cell_char)
 		level_data.tiles.append(row)
 	
-	
 	# Save to JSON file
 	var json = JSON.new()
 	var json_string = json.stringify(level_data, "\t")
-	
-	# Find next available filename
-	var base_name = "level_"
-	var number = 1
-	var file_path = ""
-	
-	# Check for existing files and find next number
-	while true:
-		file_path = "res://levels/custom/%s%03d.json" % [base_name, number]
-		if not FileAccess.file_exists(file_path):
-			break
-		number += 1
 	
 	var file = FileAccess.open(file_path, FileAccess.WRITE)
 	if file:
 		file.store_string(json_string)
 		file.close()
-		current_filename = "custom/" + file_path.get_file()
+		current_filename = file_path.replace("res://levels/", "")
+		update_level_name_display()
 		print("Level saved to: ", file_path)
 		if status_label:
-			status_label.text = "Saved: " + file_path.get_file()
-		
-		# Also print a summary
-		print("Level: ", level_width, "x", level_height)
+			status_label.text = "Saved: " + file_path.get_file() + " | Ctrl+S to save"
+			
+		# Generate thumbnail
+		generate_level_thumbnail(file_path)
 	else:
 		print("ERROR: Failed to save level!")
 		if status_label:
 			status_label.text = "Error: Failed to save"
+
+func generate_level_thumbnail(level_path: String):
+	print("Generating thumbnail for: ", level_path)
+	
+	# Create a clear, high-contrast thumbnail
+	var thumbnail_size = 128
+	
+	# Ensure minimum cell size for visibility
+	var cell_size = float(thumbnail_size - 8) / float(max(level_width, level_height))  # Leave 4px border
+	cell_size = max(cell_size, 2.0)  # Minimum 2x2 pixels per cell
+	
+	var img = Image.create(thumbnail_size, thumbnail_size, false, Image.FORMAT_RGBA8)
+	img.fill(Color(0.05, 0.05, 0.15))  # Very dark blue background for contrast
+	
+	# Calculate offset to center the level in the thumbnail
+	var actual_width = level_width * cell_size
+	var actual_height = level_height * cell_size
+	var offset_x = (thumbnail_size - actual_width) / 2
+	var offset_y = (thumbnail_size - actual_height) / 2
+	
+	print("Thumbnail info: cell_size=", cell_size, " offset=(", offset_x, ",", offset_y, ")")
+	
+	# Draw only the walls as solid blocks
+	for y in range(level_height):
+		for x in range(level_width):
+			var atlas_coords = tilemap.get_cell_atlas_coords(0, Vector2i(x, y))
+			if atlas_coords != Vector2i(-1, -1) and atlas_coords.x == TileType.WALL:
+				# Use bright white for maximum contrast
+				var color = Color(0.95, 0.95, 0.95)  # Very light gray/white
+				
+				# Draw a solid block for this tile
+				var rect_x = int(offset_x + x * cell_size)
+				var rect_y = int(offset_y + y * cell_size)
+				var rect_w = max(2, int(cell_size))  # Minimum 2 pixels wide
+				var rect_h = max(2, int(cell_size))  # Minimum 2 pixels tall
+				
+				# Fill the entire cell area
+				for py in range(rect_h):
+					for px in range(rect_w):
+						var pixel_x = rect_x + px
+						var pixel_y = rect_y + py
+						if pixel_x >= 0 and pixel_x < thumbnail_size and pixel_y >= 0 and pixel_y < thumbnail_size:
+							img.set_pixel(pixel_x, pixel_y, color)
+	
+	# Save the thumbnail
+	# For now, store thumbnails in user:// directory since we can't write to res:// at runtime
+	var thumbnail_name = level_path.get_file().replace(".json", "_thumbnail.png")
+	var thumbnail_path = "user://" + thumbnail_name
+	img.save_png(thumbnail_path)
+	print("Thumbnail saved to: ", thumbnail_path)
+	
+	# Note: In production, thumbnails would need to be pre-generated or stored differently
+	# since res:// is read-only at runtime
 
 func load_into_game():
 	print("=== LOADING LEVEL INTO GAME ===")
@@ -891,9 +1134,36 @@ func calculate_ghost_path():
 
 # Button handlers
 func _on_file_button_pressed():
-	print("File menu - TODO")
-	if status_label:
-		status_label.text = "File menu coming soon..."
+	# Create a simple popup menu for file operations
+	var popup = PopupMenu.new()
+	popup.add_item("Back to Menu", 0)
+	popup.add_separator()
+	popup.add_item("New Level", 1)
+	popup.add_item("Save Level", 2)
+	popup.add_item("Load Level", 3)
+	
+	# Position popup near the File button
+	popup.position = file_button.global_position + Vector2(0, file_button.size.y)
+	get_tree().current_scene.add_child(popup)
+	popup.popup()
+	
+	# Connect the selection signal
+	popup.id_pressed.connect(_on_file_popup_selected)
+
+func _on_file_popup_selected(id: int):
+	match id:
+		0: # Back to Menu
+			return_to_main_menu()
+		1: # New Level
+			new_level()
+		2: # Save Level
+			_on_save_button_pressed()
+		3: # Load Level
+			_on_load_button_pressed()
+
+func return_to_main_menu():
+	print("Returning to main menu...")
+	get_tree().change_scene_to_file("res://scenes/MainMenu.tscn")
 
 func _on_edit_button_pressed():
 	print("Edit menu - TODO")
@@ -923,7 +1193,6 @@ func open_file_browser():
 func _on_file_selected(path: String):
 	print("Loading level: ", path)
 	if load_level_from_json(path):
-		current_filename = path.get_file()
 		if status_label:
 			status_label.text = "Loaded: " + current_filename
 
@@ -937,6 +1206,9 @@ func open_audio_editor():
 	ui_layer.add_child(audio_editor)
 	audio_editor.closed.connect(_on_audio_editor_closed)
 	audio_editor.pattern_saved.connect(_on_audio_pattern_saved)
+	
+	# Set flag to block level editor input
+	audio_editor_open = true
 	
 	# Set level information
 	print("[LevelEditor] Debug - current_filename: '", current_filename, "'")
@@ -1018,6 +1290,8 @@ func _get_active_step_numbers(pattern: Array) -> Array:
 
 func _on_audio_editor_closed():
 	print("Audio editor closed")
+	# Clear flag to re-enable level editor input
+	audio_editor_open = false
 
 func _on_audio_pattern_saved(pattern_data):
 	print("[LevelEditor] Audio pattern received from AudioEditor:")
