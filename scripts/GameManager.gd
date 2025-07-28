@@ -659,37 +659,66 @@ func restart_level():
 	current_level = saved_level
 
 func next_level():
-	current_level += 1
-	print("[GameManager] Moving to next level: ", current_level)
+	print("[GameManager] next_level() called - current level: ", current_level)
 	
 	# Check if next level exists before proceeding
-	var next_level_path = "res://levels/%03d.json" % current_level
+	var next_level_num = current_level + 1
+	var next_level_path = "res://levels/%03d.json" % next_level_num
+	
+	print("[GameManager] Checking for next level: ", next_level_path)
+	
 	if not FileAccess.file_exists(next_level_path):
-		print("[GameManager] Next level does not exist: ", next_level_path)
-		# Stay on current level and return to menu instead
-		current_level -= 1
+		print("[GameManager] Next level does not exist - returning to menu")
 		return_to_menu()
 		return
 	
+	# Move to next level
+	current_level = next_level_num
+	print("[GameManager] Successfully moved to level: ", current_level)
+	
+	# Clear level completion state completely
 	is_level_complete = false
-	level_start_time = Time.get_ticks_msec() / 1000.0
+	level_complete_time = 0.0
+	
+	# Reset game state
+	score = 0
 	coins = 0
+	level_start_time = Time.get_ticks_msec() / 1000.0
 	
 	# Tell GameData about the new level
 	GameData.start_level(current_level)
 	
-	# Generate the next level
+	# Clear any existing level objects
 	if level_generator:
+		# Clear existing level and wait for cleanup
+		for child in level_generator.get_children():
+			child.queue_free()
+		
+		# Wait a frame to ensure cleanup is complete
+		await get_tree().process_frame
+		
+		# Setup new level
 		level_generator.current_level = current_level
 		level_generator.generate_level()
+		
+		# Reset player position
 		var spawn_pos = level_generator.get_player_spawn_position()
 		if player:
 			player.position = spawn_pos
 			player.reset()
+			print("[GameManager] Player reset to position: ", spawn_pos)
 	
-	# Reset style scoring
+	# Reset all scoring systems
 	if style_score_manager:
 		style_score_manager.reset_score()
+	
+	# Reset multiplier
+	multiplier = 1
+	
+	# Reset audio state
+	AudioManager.stop_ambient_guitar()
+	
+	print("[GameManager] Level ", current_level, " setup complete")
 
 func return_to_menu():
 	# If launched from editor, go back to editor instead
@@ -724,7 +753,10 @@ func return_to_level_editor():
 		print("ERROR: Failed to load level editor scene")
 
 func _on_goal_reached():
+	print("[GameManager] _on_goal_reached() called - current_level: ", current_level, " is_level_complete: ", is_level_complete)
+	
 	if is_level_complete:
+		print("[GameManager] Level already complete - ignoring goal reached")
 		return
 		
 	is_level_complete = true
@@ -736,14 +768,16 @@ func _on_goal_reached():
 	# Level complete haptic feedback
 	HapticFeedback.on_level_complete()
 	
-	print("Level completed! Time: ", level_complete_time, " seconds")
-	print("Coins collected: ", coins, " Score: ", score)
-	print("Style accuracy: ", style_score_manager.get_accuracy(), "%")
+	print("[GameManager] Level ", current_level, " completed! Time: ", level_complete_time, " seconds")
+	print("[GameManager] Coins collected: ", coins, " Score: ", score)
+	if style_score_manager:
+		print("[GameManager] Style accuracy: ", style_score_manager.get_accuracy(), "%")
 	
 	# Update GameData with completion
 	GameData.complete_level(current_level, score, coins, level_complete_time)
 	
 	# Show results screen
+	print("[GameManager] Showing results screen...")
 	show_results_screen()
 
 func show_go_message():

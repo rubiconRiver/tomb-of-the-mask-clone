@@ -160,9 +160,16 @@ func _on_retry_pressed():
 	queue_free()
 
 func _on_next_pressed():
+	print("[ResultsScreen] Next Level button pressed")
 	if game_manager:
-		game_manager.next_level()
-	queue_free()
+		print("[ResultsScreen] Calling game_manager.next_level()")
+		# Queue free first to prevent any interference
+		queue_free()
+		# Use call_deferred to ensure results screen is cleaned up first
+		game_manager.call_deferred("next_level")
+	else:
+		print("[ResultsScreen] ERROR: game_manager is null!")
+		queue_free()
 
 func _on_menu_pressed():
 	if game_manager:
