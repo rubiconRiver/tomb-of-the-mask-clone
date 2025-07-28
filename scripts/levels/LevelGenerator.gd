@@ -2,8 +2,8 @@ extends Node2D
 class_name LevelGenerator
 
 const GRID_SIZE = 64
-const LEVEL_WIDTH = 11  # Adjusted for mobile screen
-const LEVEL_HEIGHT = 20
+const LEVEL_WIDTH = 16  # Optimized for mobile portrait mode  
+const LEVEL_HEIGHT = 32  # 16x32 provides perfect 1:2 aspect ratio
 
 var wall_scene = preload("res://scenes/obstacles/Wall.tscn")
 var spike_scene = preload("res://scenes/obstacles/Spike.tscn")
@@ -25,28 +25,42 @@ enum CellType {
 func _ready():
 	generate_level()
 
+func convert_string_level_to_enum(string_data: Array) -> Array:
+	var converted_data = []
+	for row in string_data:
+		var converted_row = []
+		for cell in row:
+			match cell:
+				'#':
+					converted_row.append(CellType.WALL)
+				'S':
+					converted_row.append(CellType.SPIKE)
+				'C':
+					converted_row.append(CellType.COIN)
+				'P':
+					converted_row.append(CellType.PLAYER_SPAWN)
+				'G':
+					converted_row.append(CellType.GOAL)
+				'.', ' ':
+					converted_row.append(CellType.EMPTY)
+				_:
+					converted_row.append(CellType.EMPTY)
+		converted_data.append(converted_row)
+	return converted_data
+
 func generate_level():
 	# Check if we should use a custom level from the editor
 	if LevelEditorData.should_use_custom_level():
 		print("Loading custom level from editor...")
-		level_data = LevelEditorData.get_custom_level()
-		LevelEditorData.clear_custom_level()  # Use it once, then clear
-	# Use hand-crafted levels instead of random generation
-	elif current_level == 0:
-		# Load Test Notes Level
-		var template = LevelTemplates.get_test_notes()
-		level_data = LevelTemplates.parse_template(template)
-	elif current_level == 1:
-		# Load Tutorial Level
-		var template = LevelTemplates.get_tutorial_level()
-		level_data = LevelTemplates.parse_template(template)
-	elif current_level == 2:
-		# Load Garett's Tutorial
-		var template = LevelTemplates.get_garett_tutorial()
-		level_data = LevelTemplates.parse_template(template)
+		var raw_data = LevelEditorData.get_custom_level()
+		level_data = convert_string_level_to_enum(raw_data)
+		# Only clear if we're coming from the editor
+		if LevelEditorData.is_launched_from_editor():
+			LevelEditorData.clear_custom_level()  # Use it once, then clear
+	# Use empty level template for all levels now
 	else:
-		# Fall back to random generation for now
-		generate_random_level()
+		var template = LevelTemplates.get_empty_level()
+		level_data = LevelTemplates.parse_template(template)
 	
 	build_level()
 
@@ -98,7 +112,9 @@ func generate_random_level():
 	place_hazards()
 	place_coins()
 	
-	level_data[LEVEL_HEIGHT - 2][LEVEL_WIDTH / 2] = CellType.PLAYER_SPAWN
+	# Place player spawn and goal
+	level_data[1][1] = CellType.PLAYER_SPAWN  # Top-left
+	level_data[LEVEL_HEIGHT - 2][LEVEL_WIDTH - 2] = CellType.GOAL  # Bottom-right
 
 func generate_maze():
 	for i in range(current_level + 5):

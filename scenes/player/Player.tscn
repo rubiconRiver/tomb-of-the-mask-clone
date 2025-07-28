@@ -24,5 +24,6 @@ texture = SubResource("2")
 shape = SubResource("1")
 
 [node name="Camera2D" type="Camera2D" parent="."]
-position_smoothing_enabled = true
-position_smoothing_speed = 8.0
+enabled = false
+zoom = Vector2(0.35, 0.35)
+position_smoothing_enabled = false

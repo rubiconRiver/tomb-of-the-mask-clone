@@ -64,7 +64,7 @@ static func set_theme(theme_name: String):
 static func get_available_themes() -> Array:
 	# Could scan the audio directory for available themes
 	# For now, just return known themes
-	return ["default"]
+	return ["default", "test", "Kid"]
 
 # ============================================
 # AUDIO FILE LOADING
@@ -72,13 +72,20 @@ static func get_available_themes() -> Array:
 
 static func _load_wav_file(path: String) -> AudioStream:
 	var full_path = "res://assets/audio/" + current_theme + "/" + path
+	print("[SoundBank] Attempting to load: ", full_path)
 	
 	# Load the audio file
 	var audio_stream = load(full_path)
 	if not audio_stream:
 		push_error("[SoundBank] Failed to load audio file: " + full_path)
+		# Check if file exists
+		if FileAccess.file_exists(full_path):
+			print("[SoundBank] File exists but failed to load - possible import issue")
+		else:
+			print("[SoundBank] File does not exist at path: ", full_path)
 		return null
 	
+	print("[SoundBank] Successfully loaded: ", full_path)
 	return audio_stream
 
 # Removed - no longer needed since we're using AudioStream directly
@@ -123,21 +130,33 @@ static func _load_sfx_sounds():
 	# Load coin variations
 	for i in range(1, 4):
 		var key = "coin_" + str(i)
-		cached_sounds[key] = _load_wav_file("sfx/coin_" + current_theme + "_" + str(i) + ".wav")
+		var file_path = "sfx/coin_" + current_theme + "_" + str(i) + ".wav"
+		print("[SoundBank] Loading coin sound: ", key, " from ", file_path)
+		cached_sounds[key] = _load_wav_file(file_path)
 	
 	cached_sounds["wall_hit"] = _load_wav_file("sfx/wall_hit_" + current_theme + ".wav")
 	cached_sounds["game_over"] = _load_wav_file("sfx/game_over_" + current_theme + ".wav")
+	cached_sounds["whoosh"] = _load_wav_file("sfx/whoosh_" + current_theme + ".wav")
 
 static func get_coin_chime() -> AudioStream:
 	# Randomly select one of three coin variants
 	var variant = randi() % 3 + 1
-	return cached_sounds.get("coin_" + str(variant), null)
+	var key = "coin_" + str(variant)
+	print("[SoundBank] get_coin_chime requesting: ", key)
+	var sound = cached_sounds.get(key, null)
+	if not sound:
+		print("[SoundBank] Warning: coin sound not found for key: ", key)
+		print("[SoundBank] Available cached sounds: ", cached_sounds.keys())
+	return sound
 
 static func get_wall_hit() -> AudioStream:
 	return cached_sounds.get("wall_hit", null)
 
 static func get_game_over() -> AudioStream:
 	return cached_sounds.get("game_over", null)
+
+static func get_whoosh() -> AudioStream:
+	return cached_sounds.get("whoosh", null)
 
 # ============================================
 # MELODIC SOUNDS

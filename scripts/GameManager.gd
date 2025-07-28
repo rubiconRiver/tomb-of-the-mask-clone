@@ -36,6 +36,7 @@ var coins = 0  # Session coins collected
 var current_level = 1  # Gets set by GameData
 var is_game_over = false
 var game_started = false
+var beat_tracking_started = false
 var level_start_time = 0.0
 var level_complete_time = 0.0
 var is_level_complete = false
@@ -53,6 +54,15 @@ var pending_coin_chimes = 0
 var pending_wall_hits = 0
 var pending_coin_chimes_8th = 0  # For 8th note coin timing
 var pending_wall_hits_8th = 0    # For 8th note wall hit timing
+
+# 8th note tracking (0-7, resets every 2 beats)
+var eighth_note_count = 0
+
+# Bar tracking for double snare pattern (0-15, resets every 4 bars)
+var bar_eighth_count = 0
+
+# Current move timing quality (for wall hit tom fills)
+var current_move_quality = StyleScoreManager.TimingQuality.OFF_BEAT
 
 @onready var ui_layer = $UILayer
 @onready var score_label = $UILayer/ScoreLabel
@@ -89,12 +99,80 @@ func _ready():
 	AudioManager.beat_occurred.connect(_on_beat)
 	AudioManager.eighth_note_occurred.connect(_on_eighth_note)
 	
-	start_game()
+	# Auto-start game only if not launched from editor
+	if not LevelEditorData.is_launched_from_editor():
+		start_game()
+	else:
+		print("[GameManager] Launched from editor - setting up level without auto-starting game")
+		# Set up the level but don't start the game
+		setup_level()
+		spawn_player()
+		update_ui()
+		
+		# Enable input handling for editor mode (but don't start beat tracking)
+		game_started = true
+		print("[GameManager] Input enabled for level editor testing")
+
+func _exit_tree():
+	# Stop audio when exiting the scene
+	if AudioManager:
+		AudioManager.reset()
+		print("[GameManager] Audio stopped when exiting game scene")
 
 func setup_camera():
 	camera = Camera2D.new()
 	camera.enabled = true
 	add_child(camera)
+	
+	# Position camera to show entire level
+	position_camera_for_full_level()
+
+func position_camera_for_full_level():
+	if not camera or not level_generator:
+		return
+		
+	# Get viewport size
+	var viewport_size = get_viewport().get_visible_rect().size
+	
+	# Get level dimensions
+	var level_data = level_generator.get_level_data()
+	if level_data.is_empty():
+		return
+		
+	var level_height = level_data.size()
+	var level_width = level_data[0].size() if level_height > 0 else 16
+	
+	# Calculate level size in pixels
+	var level_pixel_width = level_width * 64  # GRID_SIZE
+	var level_pixel_height = level_height * 64
+	
+	# Debug output
+	print("[GameManager] Level dimensions: ", level_width, "x", level_height, " blocks")
+	print("[GameManager] Level pixel size: ", level_pixel_width, "x", level_pixel_height)
+	print("[GameManager] Viewport size: ", viewport_size)
+	
+	# Center camera on level (simple calculation)
+	# Since level is built from (0,0), center is at half the pixel dimensions
+	camera.position = Vector2(level_pixel_width / 2, level_pixel_height / 2)
+	print("[GameManager] Camera positioned at: ", camera.position)
+	
+	# Calculate zoom to fit entire level perfectly in frame
+	var zoom_x = viewport_size.x / level_pixel_width
+	var zoom_y = viewport_size.y / level_pixel_height
+	
+	# Use the smaller zoom to ensure entire level fits
+	# For 16:32 ratio, this should fit perfectly in most mobile screens
+	var zoom_level = min(zoom_x, zoom_y)
+	
+	# Apply slight margin only if needed for UI
+	zoom_level = zoom_level * 0.95  # Just 5% margin for UI elements
+	
+	# Ensure minimum zoom for visibility
+	zoom_level = max(zoom_level, 0.3)
+	
+	camera.zoom = Vector2(zoom_level, zoom_level)
+	
+	print("[GameManager] Static camera positioned - Level: ", level_width, "x", level_height, " Zoom: ", zoom_level)
 
 func setup_beat_indicator():
 	beat_indicator = beat_indicator_script.new()
@@ -137,9 +215,8 @@ func setup_timing_monitor():
 		ui_layer.add_child(timing_monitor)
 
 func _process(delta):
-	if camera and player:
-		camera.position = player.position
-		# Update background shader with camera position
+	# Update background shader with camera position
+	if camera:
 		var background = get_node_or_null("Background")
 		if background and background.material:
 			background.material.set_shader_parameter("camera_position", camera.position)
@@ -170,12 +247,16 @@ func start_game():
 	current_level = GameData.current_level  # Get from GameData
 	is_game_over = false
 	game_started = false  # Will be set to true after GO message
+	beat_tracking_started = false  # Will be set to true when beat tracking starts
 	is_level_complete = false
 	level_start_time = 0.0  # Will be set when game actually starts
 	pending_coin_chimes = 0
 	pending_wall_hits = 0
 	pending_coin_chimes_8th = 0
 	pending_wall_hits_8th = 0
+	eighth_note_count = 0
+	bar_eighth_count = 0
+	current_move_quality = StyleScoreManager.TimingQuality.OFF_BEAT
 	last_4th_beat_move = -1
 	last_move_quality = StyleScoreManager.TimingQuality.OFF_BEAT
 	
@@ -192,8 +273,12 @@ func start_game():
 	
 	print("[GameManager] Starting level ", current_level)
 	
-	# Show GO message and start game after delay
-	show_go_message()
+	# Only show GO message and auto-start if not launched from editor
+	if not LevelEditorData.is_launched_from_editor():
+		# Show GO message and start game after delay
+		show_go_message()
+	else:
+		print("[GameManager] Level editor test mode - waiting for manual start")
 
 func setup_level():
 	if level_generator:
@@ -204,6 +289,11 @@ func setup_level():
 	
 	# Pass the current level to the generator
 	level_generator.current_level = current_level
+	
+	# Reposition camera for the new level (with a small delay)
+	if camera:
+		await get_tree().process_frame
+		position_camera_for_full_level()
 	
 	# Count total coins in the level
 	total_coins_in_level = 0
@@ -224,6 +314,11 @@ func spawn_player():
 	player.position = level_generator.get_player_spawn_position()
 	player.died.connect(_on_player_died)
 	player.collected_coin.connect(_on_coin_collected)
+	
+	# Connect BPM changes to player speed updates
+	if AudioManager:
+		AudioManager.bpm_changed.connect(player.update_speed_from_bpm)
+		print("[GameManager] Connected BPM changes to player speed updates")
 	player.moved.connect(_on_player_moved)
 	player.hit_wall.connect(_on_player_hit_wall)
 	
@@ -281,22 +376,54 @@ func _on_beat(beat_count_param: int):
 			tween.tween_property(background.material, "shader_parameter/pulse_strength", 0.3, 0.3)
 
 func _on_eighth_note():
-	# Play hi-hat
-	AudioManager.play_hihat()
+	# Track which 8th note we're on (0-7, resets every 4 quarter notes)
+	eighth_note_count = (eighth_note_count + 1) % 8
+	
+	# Track which 8th note we're on across 4 bars (0-31, resets every 4 bars)
+	bar_eighth_count = (bar_eighth_count + 1) % 32
+	
+	# Only play default patterns if NO custom pattern is active
+	if not AudioManager.custom_pattern_data:
+		# Play hi-hat (default pattern only)
+		AudioManager.play_hihat()
+		
+		# Add kick on half note after beat 1 (8th note position 1, which is between beats 1 and 2)
+		if eighth_note_count == 1:  # Half note after beat 1
+			AudioManager.drum_bank.play_kick()
+			print("[GameManager] Playing extra kick on half note after beat 1 (default)")
+		
+		# Add double snare on 3.5 beat of every 4th bar
+		# Position 7 within each bar = 3.5 beat
+		# 4th bar occurs at positions 24-31 in the 32-eighth-note cycle (bars 1-4 = 0-7, 8-15, 16-23, 24-31)
+		if eighth_note_count == 7 and bar_eighth_count >= 24:  # 3.5 beat of 4th bar
+			AudioManager.drum_bank.play_snare()
+			print("[GameManager] Playing double snare on 3.5 beat of 4th bar (default)")
 	
 	# Play pending 8th note sounds
 	if pending_coin_chimes_8th > 0:
 		AudioManager.play_coin_collected()
 		pending_coin_chimes_8th -= 1
 	
+	# Handle timing-based tom fills
 	if pending_wall_hits_8th > 0:
-		AudioManager.play_wall_hit()
-		pending_wall_hits_8th -= 1
+		if pending_wall_hits_8th == 1:
+			# Perfect timing - full randomized tom fill
+			AudioManager.play_perfect_tom_fill()
+		elif pending_wall_hits_8th == 2:
+			# Great timing - 2-hit tom fill at half volume  
+			AudioManager.play_great_tom_fill()
+		pending_wall_hits_8th = 0  # Reset after playing
 
 # Old audio functions removed - now handled by AudioManager
 func _on_swipe_detected(direction: Vector2):
 	if not game_started or is_game_over or not player:
 		return
+	
+	# Start beat tracking on first movement if launched from editor
+	if LevelEditorData.is_launched_from_editor() and not beat_tracking_started:
+		print("[GameManager] Starting beat tracking on first movement (editor mode)")
+		AudioManager.start_beat_tracking()
+		beat_tracking_started = true
 	
 	# If player is already moving, buffer the input
 	if player.is_moving:
@@ -312,6 +439,9 @@ func _on_swipe_detected(direction: Vector2):
 	
 	# Calculate timing and score
 	var timing_result = style_score_manager.register_move(AudioManager.get_beat_progress(), AudioManager.beat_interval)
+	
+	# Store timing quality for tom fill rewards
+	current_move_quality = timing_result.timing
 	
 	# Haptic feedback based on timing quality
 	match timing_result.timing:
@@ -382,9 +512,25 @@ func _on_player_hit_wall():
 	# Haptic feedback for wall collision
 	HapticFeedback.on_wall_hit()
 	
-	# Queue wall hit tom fill to play on next 8th note (much more responsive!)
-	pending_wall_hits_8th += 1
-	print("Wall hit - tom fill queued for next 8th note")
+	# Queue tom fill based on timing quality to play on next 8th note (beat-synchronized)
+	match current_move_quality:
+		StyleScoreManager.TimingQuality.PERFECT:
+			# Queue full randomized tom fill
+			pending_wall_hits_8th += 1
+			print("Perfect timing - full tom fill queued for next 8th note")
+		StyleScoreManager.TimingQuality.GREAT:
+			# Queue 2-hit tom fill at half volume  
+			pending_wall_hits_8th += 2  # Use different value to distinguish type
+			print("Great timing - 2-hit tom fill queued for next 8th note")
+		StyleScoreManager.TimingQuality.GOOD:
+			# No tom fill
+			print("Good timing - no tom fill")
+		_:
+			# Off-beat or other - no tom fill
+			print("Off-beat timing - no tom fill")
+	
+	# Reset timing quality for next move
+	current_move_quality = StyleScoreManager.TimingQuality.OFF_BEAT
 
 func update_ui():
 	if score_label:
@@ -400,6 +546,17 @@ func update_ui():
 
 func restart_game():
 	start_game()
+
+func _on_menu_button_pressed():
+	HapticFeedback.on_button_press()
+	print("[GameManager] Menu button pressed - returning to main menu")
+	
+	# Stop audio
+	if beat_tracking_started:
+		AudioManager.stop_beat_tracking()
+	
+	# Return to main menu
+	get_tree().change_scene_to_file("res://scenes/MainMenu.tscn")
 
 func _on_timing_calculated(quality: int, multiplier: float):
 	# Update player visual based on timing quality
@@ -617,6 +774,7 @@ func show_go_message():
 	# Start beat tracking
 	print("[GameManager] Starting beat tracking")
 	AudioManager.start_beat_tracking()
+	beat_tracking_started = true
 
 func initialize_effect_systems():
 	# Initialize ScreenShake system

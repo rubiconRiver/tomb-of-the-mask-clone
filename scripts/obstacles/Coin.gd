@@ -1,7 +1,7 @@
 extends Area2D
 
-var base_scale = Vector2(0.3, 0.3)  # 30% of wall size (more subtle)
-var snare_scale = 0.38  # 38% size on snare hits (more subtle animation)
+var base_scale = Vector2(0.225, 0.225)  # 22.5% of wall size (75% of previous 30%)
+var snare_scale = 0.285  # 28.5% size on snare hits (75% of previous 38%)
 var tween: Tween
 var particles: GPUParticles2D
 var coin_color = Color("#94fbe6")  # Light cyan color

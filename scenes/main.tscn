@@ -69,6 +69,16 @@ offset_bottom = 210.0
 text = "Latency: 0ms"
 label_settings = SubResource("1")
 
+[node name="MenuButton" type="Button" parent="UILayer"]
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -100.0
+offset_top = 20.0
+offset_right = -20.0
+offset_bottom = 70.0
+text = "MENU"
+
 [node name="GameOverPanel" type="Panel" parent="UILayer"]
 visible = false
 anchors_preset = 8
@@ -104,3 +114,4 @@ offset_bottom = -30.0
 text = "Restart"
 
 [connection signal="pressed" from="UILayer/GameOverPanel/RestartButton" to="." method="restart_game"]
+[connection signal="pressed" from="UILayer/MenuButton" to="." method="_on_menu_button_pressed"]
