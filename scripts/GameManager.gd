@@ -680,6 +680,9 @@ func next_level():
 	is_level_complete = false
 	level_complete_time = 0.0
 	
+	# Disable goal detection temporarily during setup
+	set_meta("level_transition_in_progress", true)
+	
 	# Reset game state
 	score = 0
 	coins = 0
@@ -733,6 +736,9 @@ func next_level():
 	# Add a small delay to prevent immediate goal triggering
 	print("[GameManager] Waiting brief moment before level becomes active...")
 	await get_tree().create_timer(0.1).timeout
+	
+	# Re-enable goal detection
+	set_meta("level_transition_in_progress", false)
 	print("[GameManager] Level is now active and ready for play")
 
 func return_to_menu():
@@ -769,6 +775,11 @@ func return_to_level_editor():
 
 func _on_goal_reached():
 	print("[GameManager] _on_goal_reached() called - current_level: ", current_level, " is_level_complete: ", is_level_complete)
+	
+	# Check if we're in the middle of a level transition
+	if get_meta("level_transition_in_progress", false):
+		print("[GameManager] Level transition in progress - ignoring goal reached")
+		return
 	
 	if is_level_complete:
 		print("[GameManager] Level already complete - ignoring goal reached")

@@ -162,11 +162,17 @@ func _on_retry_pressed():
 func _on_next_pressed():
 	print("[ResultsScreen] Next Level button pressed")
 	if game_manager:
-		print("[ResultsScreen] Calling game_manager.next_level()")
-		# Queue free first to prevent any interference
+		print("[ResultsScreen] Removing results screen immediately")
+		# Remove from tree immediately to prevent any UI interference
+		if get_parent():
+			get_parent().remove_child(self)
+		
+		# Call next_level directly without deferring
+		print("[ResultsScreen] Calling game_manager.next_level() directly")
+		game_manager.next_level()
+		
+		# Free the results screen
 		queue_free()
-		# Use call_deferred to ensure results screen is cleaned up first
-		game_manager.call_deferred("next_level")
 	else:
 		print("[ResultsScreen] ERROR: game_manager is null!")
 		queue_free()
