@@ -7,8 +7,13 @@ var portal_points = []
 signal player_reached_goal
 
 func _ready():
+	# Ensure goal is visible above other elements
+	z_index = 10
+	
 	# Create a spinning portal effect
 	update_portal()
+	
+	print("[Goal] Goal created at position: ", position, " with z_index: ", z_index)
 
 func _process(delta):
 	time += delta
@@ -24,7 +29,7 @@ func _process(delta):
 func update_portal():
 	portal_points.clear()
 	var num_points = 16
-	var radius = 25.0
+	var radius = 20.0  # Smaller radius to fit within 64x64 grid
 	
 	for i in range(num_points + 1):
 		var angle = (float(i) / num_points) * TAU + time * 2.0
