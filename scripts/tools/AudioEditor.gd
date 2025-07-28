@@ -108,6 +108,7 @@ func create_ui():
 	var background = ColorRect.new()
 	background.anchors_preset = Control.PRESET_FULL_RECT
 	background.color = Color(0, 0, 0, 0.7)
+	background.mouse_filter = Control.MOUSE_FILTER_STOP  # Block mouse events from passing through
 	add_child(background)
 	
 	# Create main panel with styling

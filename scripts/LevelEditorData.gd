@@ -6,6 +6,7 @@ var use_custom_level = false
 var launched_from_editor = false
 var editor_level_backup = null  # Store the tilemap state before testing
 var custom_audio_pattern = null  # Store audio pattern from level editor
+var level_to_edit = ""  # Store which level file to load in editor
 
 func set_custom_level(level_data: Array):
 	custom_level_data = level_data
@@ -56,3 +57,17 @@ func has_custom_audio_pattern() -> bool:
 
 func clear_custom_audio_pattern():
 	custom_audio_pattern = null
+
+# Level editing functions
+func set_level_to_edit(filename: String):
+	level_to_edit = filename
+	print("[LevelEditorData] Set level to edit: ", filename)
+
+func get_level_to_edit() -> String:
+	return level_to_edit
+
+func has_level_to_edit() -> bool:
+	return level_to_edit != ""
+
+func clear_level_to_edit():
+	level_to_edit = ""

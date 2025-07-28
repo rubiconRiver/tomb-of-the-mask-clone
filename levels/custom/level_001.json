@@ -2,9 +2,9 @@
 	"audio_pattern": null,
 	"metadata": {
 		"author": "Level Editor",
-		"created": "2025-07-26T16:42:37",
+		"created": "2025-07-28T15:39:53",
 		"height": 20.0,
-		"name": "default_level",
+		"name": "level_001",
 		"version": 1,
 		"width": 11.0
 	},
@@ -273,11 +273,5 @@
 			"#",
 			"#"
 		]
-	],
-	"waypoints": {
-		"order": [],
-		"positions": {
-
-		}
-	}
+	]
 }

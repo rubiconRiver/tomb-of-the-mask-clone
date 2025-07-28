@@ -126,49 +126,127 @@ func create_level_grid():
 	print("[MainMenu] Level grid created successfully")
 
 func create_level_button(level_num: int):
-	var level_button = Button.new()
-	level_button.text = str(level_num)
-	level_button.custom_minimum_size = Vector2(80, 80)
+	var level_button = TextureButton.new()  # Use TextureButton for better thumbnail display
+	level_button.custom_minimum_size = Vector2(120, 120)  # Larger for better visibility
+	level_button.stretch_mode = TextureButton.STRETCH_KEEP_ASPECT_CENTERED
+	level_button.ignore_texture_size = true
 	
 	# Get data from GameData singleton
 	var is_unlocked = GameData.is_level_unlocked(level_num)
 	var is_completed = GameData.is_level_completed(level_num)
 	var stars = GameData.get_level_stars(level_num)
 	
-	# Create synthwave styling
-	var style_box = StyleBoxFlat.new()
-	style_box.corner_radius_top_left = 8
-	style_box.corner_radius_top_right = 8
-	style_box.corner_radius_bottom_left = 8
-	style_box.corner_radius_bottom_right = 8
+	# Check for level thumbnail
+	var level_name = "%03d" % level_num  # Format as 001, 002, etc.
+	# First check user:// directory (for runtime-generated thumbnails)
+	var user_thumbnail_path = "user://%s_thumbnail.png" % level_name
+	var res_thumbnail_path = "res://levels/%s_thumbnail.png" % level_name
 	
+	# Create button content with thumbnail
+	var thumbnail_texture = null
+	
+	# Try user directory first (for editor-generated thumbnails)
+	print("[MainMenu] Checking for thumbnail: ", user_thumbnail_path)
+	if FileAccess.file_exists(user_thumbnail_path):
+		print("[MainMenu] Found user thumbnail, loading...")
+		var img = Image.new()
+		if img.load(user_thumbnail_path) == OK:
+			thumbnail_texture = ImageTexture.create_from_image(img)
+			print("[MainMenu] ✓ User thumbnail loaded successfully")
+		else:
+			print("[MainMenu] ✗ Failed to load user thumbnail")
+	# Then try res directory (for pre-packaged thumbnails)
+	elif FileAccess.file_exists(res_thumbnail_path):
+		print("[MainMenu] Found res thumbnail, loading...")
+		thumbnail_texture = load(res_thumbnail_path)
+		if thumbnail_texture:
+			print("[MainMenu] ✓ Res thumbnail loaded successfully")
+		else:
+			print("[MainMenu] ✗ Failed to load res thumbnail")
+	else:
+		print("[MainMenu] No thumbnail found at:")
+		print("  User: ", user_thumbnail_path)
+		print("  Res: ", res_thumbnail_path)
+	
+	# If no thumbnail, create a simple placeholder
+	if not thumbnail_texture:
+		print("[MainMenu] Creating placeholder for level ", level_num)
+		var img = Image.create(128, 128, false, Image.FORMAT_RGBA8)
+		img.fill(Color(0.1, 0.1, 0.2))  # Dark blue background
+		
+		# Draw a simple border
+		for i in range(128):
+			img.set_pixel(i, 0, Color(0.5, 0.5, 0.5))  # Top border
+			img.set_pixel(i, 127, Color(0.5, 0.5, 0.5))  # Bottom border
+			img.set_pixel(0, i, Color(0.5, 0.5, 0.5))  # Left border
+			img.set_pixel(127, i, Color(0.5, 0.5, 0.5))  # Right border
+		
+		# Draw level number text area
+		for y in range(50, 78):
+			for x in range(50, 78):
+				img.set_pixel(x, y, Color(0.3, 0.3, 0.3))
+		
+		thumbnail_texture = ImageTexture.create_from_image(img)
+	
+	# Apply thumbnail
+	level_button.texture_normal = thumbnail_texture
+	
+	# Create overlay for level number and state
+	var overlay_container = Control.new()
+	overlay_container.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	overlay_container.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	level_button.add_child(overlay_container)
+	
+	# Level number label with background
+	var number_bg = Panel.new()
+	number_bg.custom_minimum_size = Vector2(40, 30)
+	number_bg.position = Vector2(5, 5)
+	var number_style = StyleBoxFlat.new()
+	number_style.bg_color = Color(0, 0, 0, 0.7)
+	number_style.corner_radius_top_left = 4
+	number_style.corner_radius_top_right = 4
+	number_style.corner_radius_bottom_left = 4
+	number_style.corner_radius_bottom_right = 4
+	number_bg.add_theme_stylebox_override("panel", number_style)
+	overlay_container.add_child(number_bg)
+	
+	var number_label = Label.new()
+	number_label.text = str(level_num)
+	number_label.add_theme_font_size_override("font_size", 18)
+	number_label.add_theme_color_override("font_color", Color.WHITE)
+	number_label.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	number_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	number_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	number_bg.add_child(number_label)
+	
+	# Stars display if completed
+	if is_completed and stars > 0:
+		var stars_label = Label.new()
+		stars_label.text = "★".repeat(stars)
+		stars_label.add_theme_font_size_override("font_size", 16)
+		stars_label.add_theme_color_override("font_color", Color(1.0, 0.8, 0.0))
+		stars_label.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
+		stars_label.position = Vector2(-35, -25)
+		overlay_container.add_child(stars_label)
+	
+	# Apply state-based styling
 	if is_completed:
-		# Completed level - cyan with glow
-		style_box.bg_color = Color("#94fbe6", 0.3)
-		style_box.border_color = Color("#94fbe6")
-		level_button.modulate = Color.WHITE
+		# Completed level - cyan border glow
+		level_button.modulate = Color(0.9, 1.0, 1.0)
 	elif is_unlocked:
-		# Unlocked but not completed - yellow
-		style_box.bg_color = Color("#dcfb94", 0.2)
-		style_box.border_color = Color("#dcfb94")
+		# Unlocked but not completed - normal
 		level_button.modulate = Color.WHITE
 	else:
 		# Locked level - dim
-		style_box.bg_color = Color(0.1, 0.1, 0.1, 0.5)
-		style_box.border_color = Color(0.3, 0.3, 0.3, 0.5)
-		level_button.modulate = Color(0.5, 0.5, 0.5, 0.7)
+		level_button.modulate = Color(0.4, 0.4, 0.4)
 		level_button.disabled = true
-	
-	style_box.border_width_left = 2
-	style_box.border_width_top = 2
-	style_box.border_width_right = 2
-	style_box.border_width_bottom = 2
-	
-	level_button.add_theme_stylebox_override("normal", style_box)
-	
-	# Add star rating if completed
-	if is_completed and stars > 0:
-		level_button.text = str(level_num) + "\n" + "★".repeat(stars)
+		
+		# Add lock icon
+		var lock_label = Label.new()
+		lock_label.text = "🔒"
+		lock_label.add_theme_font_size_override("font_size", 32)
+		lock_label.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
+		overlay_container.add_child(lock_label)
 	
 	# Connect signal
 	level_button.pressed.connect(_on_level_selected.bind(level_num))
