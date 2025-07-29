@@ -23,6 +23,7 @@ LevelEditorData="*res://scripts/LevelEditorData.gd"
 AudioManager="*res://scripts/audio/AudioManager.gd"
 GameData="*res://scripts/singletons/GameData.gd"
 HapticFeedback="*res://scripts/utils/HapticFeedback.gd"
+VisualThemeManager="*res://scripts/visual/VisualThemeManager.gd"
 
 [display]
 

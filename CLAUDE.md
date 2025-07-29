@@ -306,5 +306,95 @@ godot --path . --script test_audio.gd
 - **Ambient**: `[type]_[theme].wav` (e.g., `guitar_chord_default.wav`)
 ```
 
+## Visual Theme System
+
+### Overview
+The game now includes a visual theme system similar to the audio theme structure, allowing easy swapping of visual assets.
+
+### File Structure
+```
+assets/visuals/
+└── [theme_name]/
+    ├── environment/
+    │   ├── background.png    # Main game background
+    │   └── wall.png         # Wall blocks
+    ├── objects/
+    │   ├── coin.png         # Collectible coins
+    │   ├── goal.png         # Level goal
+    │   ├── player.png       # Player character
+    │   └── player_spawn.png # Starting position
+    ├── ui/
+    │   ├── button.png       # UI buttons
+    │   └── panel.png        # UI panels
+    └── effects/
+        ├── particle.png     # Particle effects
+        └── explosion.png    # Explosion effects
+```
+
+### Key Components
+
+#### 1. `scripts/visual/VisualThemeManager.gd` - Theme Manager (Autoloaded)
+- Discovers and loads visual themes
+- Provides texture access functions
+- Handles theme switching
+- Fallback to procedural generation if assets missing
+
+#### 2. Asset Categories
+- **Environment**: Background, walls
+- **Objects**: Player, coins, goals, spawn points
+- **UI**: Buttons, panels
+- **Effects**: Particles, explosions
+
+#### 3. Updated Components
+All visual components now use the theme system:
+- `Wall.gd` - Uses `VisualThemeManager.get_wall_texture()`
+- `Goal.gd` - Uses `VisualThemeManager.get_goal_texture()`
+- `Coin.gd` - Uses `VisualThemeManager.get_coin_texture()`
+- `PlayerVisual.gd` - Uses `VisualThemeManager.get_player_texture()`
+- `GameManager.gd` - Uses `VisualThemeManager.get_background_texture()`
+
+### Usage
+
+#### Switching Themes
+```gdscript
+# Switch to a different theme
+VisualThemeManager.switch_theme("my_theme")
+
+# Get current theme
+var current = VisualThemeManager.get_current_theme()
+
+# Get available themes
+var themes = VisualThemeManager.get_available_themes()
+```
+
+#### Creating New Themes
+1. Create folder: `assets/visuals/your_theme/`
+2. Add subdirectories: `environment/`, `objects/`, `ui/`, `effects/`
+3. Add PNG files with correct names (see README files)
+4. Theme loads automatically when referenced
+
+### Asset Requirements
+- **Format**: PNG with alpha transparency
+- **Sizes**: See individual README files in each category
+- **Naming**: Must match expected filenames exactly
+
+### Testing
+Use `ThemeTestHelper.gd` for:
+- Creating theme previews
+- Testing theme switching
+- Printing theme information
+- Creating example theme structures
+
+### Fallback System
+- Missing textures fall back to procedural generation
+- Game remains functional without custom themes
+- Default theme provides documentation and structure
+
+### Integration Notes
+- All visual components check for themed textures first
+- Shaders and effects are preserved for procedural fallbacks
+- Theme switching can happen at runtime
+- Memory efficient - only current theme loaded
+
 ## Collaboration Notes
 - If Phil is working on the project (you'll know because of the directory structure, garett's is Users/garettgelsinger/......., phil's is likely something similar) prompt him to commit and push at good milestones. Remind him it's good to do snapshots. If he's worried, you can always make a new branch

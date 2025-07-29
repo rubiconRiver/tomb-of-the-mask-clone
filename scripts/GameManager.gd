@@ -125,6 +125,37 @@ func setup_camera():
 	
 	# Position camera to show entire level
 	position_camera_for_full_level()
+	
+	# Setup themed background
+	setup_themed_background()
+
+func setup_themed_background():
+	var background = get_node_or_null("Background")
+	if not background:
+		return
+	
+	# Try to get themed background texture
+	var themed_texture = VisualThemeManager.get_background_texture()
+	
+	if themed_texture and background is ColorRect:
+		# Convert ColorRect to TextureRect for themed texture
+		var texture_rect = TextureRect.new()
+		texture_rect.name = "Background"
+		texture_rect.z_index = background.z_index
+		texture_rect.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		texture_rect.texture = themed_texture
+		texture_rect.stretch_mode = TextureRect.STRETCH_TILE
+		
+		# Replace the ColorRect
+		var parent = background.get_parent()
+		parent.remove_child(background)
+		parent.add_child(texture_rect)
+		background.queue_free()
+		
+		print("[GameManager] Applied themed background texture")
+	elif background is ColorRect:
+		# Keep ColorRect with default color
+		print("[GameManager] Using default ColorRect background")
 
 func position_camera_for_full_level():
 	if not camera or not level_generator:

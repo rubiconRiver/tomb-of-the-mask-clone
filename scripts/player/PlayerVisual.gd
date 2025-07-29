@@ -23,13 +23,22 @@ func _ready():
 	# Apply to sprite
 	var sprite = get_parent().get_node_or_null("Sprite2D")
 	if sprite:
-		# Create a circular texture for the orb
-		var image = Image.create(48, 48, false, Image.FORMAT_RGBA8)
-		image.fill(Color.WHITE)
-		var texture = ImageTexture.create_from_image(image)
-		sprite.texture = texture
-		sprite.material = player_material
-		sprite.modulate = Color.WHITE
+		# Try to get themed player texture first
+		var themed_texture = VisualThemeManager.get_player_texture()
+		
+		if themed_texture:
+			# Use themed texture without shader effects
+			sprite.texture = themed_texture
+			sprite.material = null  # Remove shader when using themed texture
+			sprite.modulate = Color.WHITE
+		else:
+			# Fallback: Create a circular texture for the orb with shader
+			var image = Image.create(48, 48, false, Image.FORMAT_RGBA8)
+			image.fill(Color.WHITE)
+			var texture = ImageTexture.create_from_image(image)
+			sprite.texture = texture
+			sprite.material = player_material
+			sprite.modulate = Color.WHITE
 
 func pulse_on_beat(strength: float = 1.0):
 	if player_material:

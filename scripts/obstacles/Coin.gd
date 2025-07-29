@@ -7,31 +7,40 @@ var particles: GPUParticles2D
 var coin_color = Color("#94fbe6")  # Light cyan color
 
 func _ready():
-	# Create rotated square block (same as wall but rotated 45 degrees)
+	# Apply themed coin texture/visual
 	var sprite = $Sprite2D
 	if sprite:
-		# Create higher resolution image for crisp edges
-		var image = Image.create(128, 128, false, Image.FORMAT_RGBA8)
+		# Try to get themed texture first
+		var themed_texture = VisualThemeManager.get_coin_texture()
 		
-		# Fill with transparent first
-		image.fill(Color.TRANSPARENT)
+		if themed_texture:
+			sprite.texture = themed_texture
+			sprite.rotation_degrees = 0  # Don't rotate themed textures
+			scale = base_scale
+		else:
+			# Fallback: Create rotated square block (same as wall but rotated 45 degrees)
+			var image = Image.create(128, 128, false, Image.FORMAT_RGBA8)
+			
+			# Fill with transparent first
+			image.fill(Color.TRANSPARENT)
+			
+			# Fill solid square (like wall but no border) - centered for crisp rotation
+			var border = 16  # 16 pixel border on each side for clean rotation
+			for y in range(border, 128 - border):
+				for x in range(border, 128 - border):
+					image.set_pixel(x, y, coin_color)
+			
+			var texture = ImageTexture.create_from_image(image)
+			sprite.texture = texture
+			
+			# Disable texture filtering for crisp pixel-perfect edges
+			texture.set_image(image)
+			
+			# Apply transformations: 45 degree rotation and 30% scale
+			sprite.rotation_degrees = 45
+			scale = base_scale
 		
-		# Fill solid square (like wall but no border) - centered for crisp rotation
-		var border = 16  # 16 pixel border on each side for clean rotation
-		for y in range(border, 128 - border):
-			for x in range(border, 128 - border):
-				image.set_pixel(x, y, coin_color)
-		
-		var texture = ImageTexture.create_from_image(image)
-		sprite.texture = texture
 		sprite.modulate = Color.WHITE
-		
-		# Disable texture filtering for crisp pixel-perfect edges
-		texture.set_image(image)
-		
-		# Apply transformations: 45 degree rotation and 30% scale
-		sprite.rotation_degrees = 45
-		scale = base_scale
 	
 	# Create particle system
 	particles = GPUParticles2D.new()

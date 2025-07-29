@@ -4,23 +4,30 @@ var particle_scene = preload("res://scenes/effects/WallParticles.tscn")
 var particles: GPUParticles2D
 
 func _ready():
-	# Generate wall texture with solid color and transparent border
+	# Apply themed wall texture
 	var sprite = $Sprite2D
 	if sprite:
-		# Create 64x64 image with solid color and 1px transparent border
-		var image = Image.create(64, 64, false, Image.FORMAT_RGBA8)
-		var wall_color = Color("#dcfb94")  # Light green color
+		# Try to get themed texture first
+		var themed_texture = VisualThemeManager.get_wall_texture()
 		
-		# Fill entire image with transparent first
-		image.fill(Color.TRANSPARENT)
+		if themed_texture:
+			sprite.texture = themed_texture
+		else:
+			# Fallback: Generate wall texture with solid color and transparent border
+			var image = Image.create(64, 64, false, Image.FORMAT_RGBA8)
+			var wall_color = Color("#dcfb94")  # Light green color
+			
+			# Fill entire image with transparent first
+			image.fill(Color.TRANSPARENT)
+			
+			# Fill inner area (leaving 1px border transparent)
+			for y in range(1, 63):
+				for x in range(1, 63):
+					image.set_pixel(x, y, wall_color)
+			
+			var texture = ImageTexture.create_from_image(image)
+			sprite.texture = texture
 		
-		# Fill inner area (leaving 1px border transparent)
-		for y in range(1, 63):
-			for x in range(1, 63):
-				image.set_pixel(x, y, wall_color)
-		
-		var texture = ImageTexture.create_from_image(image)
-		sprite.texture = texture
 		sprite.modulate = Color.WHITE
 	
 	# Add particle system
